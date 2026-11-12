@@ -50,7 +50,9 @@ mission et on consigne la leçon en section 4.
 | T-004 | réalisateur | Noyau : contrôleur P, ascenseur, boucle, oracle | VALIDÉ | logs/T-004.md |
 | T-005 | validateur | Validation indépendante du noyau (oracle exact MATLAB) | VALIDÉ (réserves) | logs/T-005.md |
 | T-004b | réalisateur | Corrections issues de T-005 (D-1, D-2, D-6, D-7) | VALIDÉ | logs/T-004b.md |
-| T-006 | réalisateur | i18n FR/EN | EN COURS | logs/T-006.md |
+| T-006 | réalisateur | i18n FR/EN | VALIDÉ | logs/T-006.md |
+| T-007 | réalisateur | Logique du niveau 1 | EN COURS | logs/T-007.md |
+| D-004 | rédacteur | Doc du noyau, de l'i18n, de la validation ; errata de spec | EN COURS | logs/D-004.md |
 | D-002 | rédacteur | Doc technique initiale (README, docs/) | VALIDÉ | logs/D-002.md |
 
 ## 4. Leçons sur les consignes
@@ -60,3 +62,4 @@ mission et on consigne la leçon en section 4.
 - L3 (T-002) : un CA de l'orchestrateur a contredit la spec (import three dans main.ts) ; relire la spec avant d'ajouter un CA maison.
 - L4 (T-002) : pas de processus en arrière-plan dans device_bash ; commandes au premier plan, < 180 s.
 - L5 (D-002) : ne pas lancer le rédacteur en parallèle d'un réalisateur : il lit un dépôt en mouvement. Le rédacteur passe après la validation, sur un état figé.
+- L6 (T-006) : dans device_bash, les heredocs convertissent les échappements \\uXXXX en caractères réels ; écrire les fichiers qui en contiennent par script python.

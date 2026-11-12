@@ -6,10 +6,15 @@ _English version below._
 
 ## État actuel
 
-Le dépôt contient seulement le **socle outillé** (tâches T-000 à T-002, validées le 2026-11-12). Rien n'est jouable.
+**Rien n'est jouable.** Le dépôt contient le socle outillé, le noyau de simulation et les textes FR/EN, validés le 2026-11-12. Aucun de ces éléments n'est encore affiché dans le navigateur.
 
-- Validé : configuration npm, TypeScript, Vite, ESLint, Prettier, dependency-cruiser, Vitest ; un test fumée ; les règles d'architecture.
-- Prévu : noyau de simulation (T-003, T-004), i18n (T-006), logique du niveau 1 (T-007), rendu (T-008, T-009), interface (T-010), CI et GitHub Pages (T-011).
+- Validé :
+  - socle : npm, TypeScript, Vite, ESLint, Prettier, dependency-cruiser, Vitest, règles d'architecture (T-002) ;
+  - noyau de simulation `src/sim` : horloge à pas fixe, RK4, saturation, enregistreur, contrôleur P, modèle de l'ascenseur, boucle fermée (T-003, T-004, T-004b) ;
+  - validation indépendante du noyau par un oracle exact MATLAB, hors du site (T-005) ;
+  - i18n FR/EN `src/i18n` : 89 clés par langue, interpolation, formatage des nombres (T-006) ;
+  - 169 tests unitaires verts ; couverture de `src/sim` à 100 %.
+- Prévu : logique du niveau 1 (T-007), rendu (T-008, T-009), interface et accessibilité (T-010), CI et GitHub Pages (T-011).
 
 Le détail est dans [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
@@ -29,22 +34,23 @@ npm ci
 
 ## Scripts principaux
 
-| Commande        | Effet                                                              |
-| --------------- | ------------------------------------------------------------------ |
-| `npm run dev`   | serveur de développement Vite                                      |
-| `npm run check` | typecheck, lint, tests puis build ; à lancer avant toute livraison |
-| `npm run test`  | tests unitaires Vitest                                             |
-| `npm run build` | build de production dans `dist/` (base `/pid-game/`)               |
+| Commande           | Effet                                                              |
+| ------------------ | ------------------------------------------------------------------ |
+| `npm run dev`      | serveur de développement Vite                                      |
+| `npm run check`    | typecheck, lint, tests puis build ; à lancer avant toute livraison |
+| `npm run test`     | tests unitaires Vitest                                             |
+| `npm run test:cov` | tests unitaires et couverture de `src/sim`                         |
+| `npm run build`    | build de production dans `dist/` (base `/pid-game/`)               |
 
-Liste complète : [docs/developpement.md](docs/developpement.md).
+Ne lancez pas `npm run e2e` avant T-010 : il n'y a pas encore de test de bout en bout. Liste complète : [docs/developpement.md](docs/developpement.md).
 
 ## Documentation
 
-Index : [docs/README.md](docs/README.md). Architecture : [docs/architecture.md](docs/architecture.md).
+Index : [docs/README.md](docs/README.md). Pour commencer : [noyau de simulation](docs/simulation.md), [physique de l'ascenseur](docs/physique/ascenseur.md).
 
 ## Licence
 
-Non décidée. Le dépôt ne contient pas encore de fichier `LICENSE`.
+MIT. Voir le fichier [LICENSE](LICENSE).
 
 ---
 
@@ -54,7 +60,10 @@ A planned educational web game about control theory, up to the PID controller. P
 
 ## Current status
 
-The repository holds only the **tooling foundation** (tasks T-000 to T-002, validated on 2026-11-12). Nothing is playable yet. Simulation core, i18n, level logic, rendering, UI, CI and GitHub Pages deployment are planned (T-003 to T-011).
+**Nothing is playable yet.** The repository holds the tooling foundation, the simulation core and the French/English texts, validated on 2026-11-12. None of them is shown in the browser yet.
+
+- Validated: tooling (T-002); simulation core `src/sim` with fixed-step clock, RK4, saturation, recorder, P controller, lift model and closed loop (T-003, T-004, T-004b); independent validation of the core against an exact MATLAB oracle, outside the site (T-005); French/English i18n `src/i18n` (T-006); 169 passing unit tests, 100% coverage of `src/sim`.
+- Planned: level logic (T-007), rendering (T-008, T-009), UI and accessibility (T-010), CI and GitHub Pages deployment (T-011).
 
 ## Requirements
 
@@ -65,9 +74,12 @@ The repository holds only the **tooling foundation** (tasks T-000 to T-002, vali
 
 ```sh
 npm ci
-npm run dev     # Vite dev server
-npm run check   # typecheck, lint, test, build
+npm run dev       # Vite dev server
+npm run check     # typecheck, lint, test, build
+npm run test:cov  # unit tests with coverage of src/sim
 ```
+
+Do not run `npm run e2e` before T-010: there are no end-to-end tests yet.
 
 `node_modules/` contains platform-specific binaries: reinstall with `npm ci` when switching between Linux and Windows.
 
@@ -77,4 +89,4 @@ Technical documentation is in French: [docs/README.md](docs/README.md).
 
 ## License
 
-Not decided yet. There is no `LICENSE` file.
+MIT. See the [LICENSE](LICENSE) file.

@@ -1,5 +1,7 @@
 # Développement
 
+À quoi sert cette page : installer le projet, connaître chaque script npm et les conventions de code. État au commit `c00e678`.
+
 ## Prérequis
 
 | Outil | Version | Source |
@@ -8,7 +10,7 @@
 | nvm (facultatif) | — | `.nvmrc` contient `22` |
 | npm | fourni avec Node | versions utilisées sur la VM du projet : Node v22.23.4, npm 10.9.9 (`node -v`, `npm -v`) |
 
-Attention : `.nvmrc` indique seulement `22`. Une version 22 antérieure à 22.12.0 ne convient pas. Vérifiez avec `node -v`.
+Attention : `.nvmrc` contient la constante `22` (version majeure seulement), alors que le minimum réel est 22.12.0 (`engines`). `nvm install` peut donc choisir une version 22 trop ancienne si elle est déjà installée. Vérifiez avec `node -v` : la valeur doit être ≥ v22.12.0.
 
 La version de Node installée sur le PC Windows de l'utilisateur n'est pas connue (spec T-001 §12, Q5).
 
@@ -26,7 +28,7 @@ Pour les tests e2e, il faudra aussi installer Chromium pour Playwright : `npx pl
 
 ## Scripts npm
 
-Commandes exactes de `package.json` dans le socle validé (T-002).
+Commandes exactes de `package.json` au commit `c00e678` (11 scripts).
 
 | Script | Commande | Usage |
 |---|---|---|
@@ -36,14 +38,15 @@ Commandes exactes de `package.json` dans le socle validé (T-002).
 | `npm run lint:arch` | `depcruise src --config .dependency-cruiser.cjs` | règles d'architecture seules |
 | `npm run format` | `prettier --write .` | reformate les fichiers (hors `docs/` et `orchestration/`, voir `.prettierignore`) |
 | `npm run test` | `vitest run` | tests unitaires, une passe |
+| `npm run test:cov` | `vitest run --coverage` | tests unitaires et couverture de `src/sim` ; échoue sous 95 % des lignes ou 90 % des branches (voir [tests.md](tests.md#couverture)) |
 | `npm run build` | `vite build` | build de production dans `dist/` |
 | `npm run preview` | `vite preview` | sert le contenu de `dist/` |
-| `npm run e2e` | `playwright test` | tests de bout en bout. Prévu (T-010) : pas encore de `playwright.config.ts` ni de test e2e |
+| `npm run e2e` | `playwright test` | tests de bout en bout. Prévu (T-010) : pas encore de `playwright.config.ts` ni de test e2e. **Ne pas lancer avant T-010** |
 | `npm run check` | `npm run typecheck && npm run lint && npm run test && npm run build` | vérification complète avant livraison |
 
-Ne lancez pas `npm run e2e` aujourd'hui. Sans configuration, Playwright ramasse `tests/smoke.test.ts`, qui est un test Vitest, et échoue (constaté le 2026-11-12 avec `npx playwright test --list` dans une copie du dépôt : code de sortie 1, `TypeError: Cannot read properties of undefined (reading 'config')` à `tests/smoke.test.ts:4`, puis « No tests found »).
+Ne lancez pas `npm run e2e` avant T-010. Sans configuration, Playwright ramasse `tests/smoke.test.ts`, qui est un test Vitest, et échoue (constaté le 2026-11-12 avec `npx playwright test --list` dans une copie du dépôt : code de sortie 1, `TypeError: Cannot read properties of undefined (reading 'config')` à `tests/smoke.test.ts:4`, puis « No tests found »).
 
-Script `test:cov` (couverture de `src/sim`) : Prévu (T-003). Il ne fait pas partie du socle validé T-002 ; T-003, en cours, l'ajoute. Il sera documenté après validation. Le paquet `@vitest/coverage-v8` 5.1.0 figure dans `devDependencies`.
+Le script `test:cov` a été ajouté par T-003 avec le paquet `@vitest/coverage-v8` 5.1.0 (seule dépendance ajoutée, log T-003). `npm run check` ne le lance pas : lancez-le à part avant de livrer une modification de `src/sim`.
 
 ## Conventions de code
 
@@ -60,18 +63,27 @@ Script `test:cov` (couverture de `src/sim`) : Prévu (T-003). Il ne fait pas par
 
 Cible de compilation : ES2023 (`tsconfig.json` et `build.target` de `vite.config.ts`).
 
-## Arborescence du socle validé (T-002)
+## Arborescence au commit `c00e678`
+
+Liste tirée de `git ls-files`.
 
 ```text
 .dependency-cruiser.cjs  eslint.config.js  index.html  package.json  package-lock.json
-tsconfig.json  tsconfig.sim.json  vite.config.ts  vitest.config.ts
+tsconfig.json  tsconfig.sim.json  vite.config.ts  vitest.config.ts  LICENSE  README.md
 .nvmrc  .prettierrc.json  .prettierignore  .gitignore  .gitattributes
-src/main.ts  src/render/index.ts  src/sim/index.ts
-tests/smoke.test.ts
+src/main.ts  src/render/index.ts
+src/sim/       noyau de simulation (9 fichiers), voir simulation.md
+src/i18n/      i18n FR/EN (7 fichiers TypeScript + locales/fr.json, locales/en.json)
+tests/smoke.test.ts  tests/sim/ (9 fichiers)  tests/i18n/ (5 fichiers)
+validation/    oracle MATLAB de T-005 : matlab/ (9 scripts), data/ (3 CSV), README.md
 docs/  orchestration/
 ```
 
-`dist/` et `node_modules/` sont ignorés par git (`.gitignore`). Le dépôt git existe (branche `main`) mais n'a encore aucun commit.
+`dist/`, `node_modules/` et `coverage/` ne sont pas versionnés. Le dépôt git (branche `main`) a 9 commits ; la correspondance tâche → commit est dans [CHANGELOG.md](CHANGELOG.md#correspondance-tâche--commit). `src/game/` et `tests/game/` : Prévu (T-007).
+
+## Licence
+
+MIT, titulaire lucashg7892 (décision D12 du registre). Texte dans `LICENSE` à la racine. Voir [ADR-008](decisions/ADR-008-licence-mit.md).
 
 ## Déploiement sur GitHub Pages
 
@@ -84,4 +96,4 @@ Ce qui reste à faire : workflows `.github/workflows/ci.yml` et `deploy.yml`, pu
 
 ## Taille du bundle
 
-Le log T-002 consigne 219,75 kB gzip pour le JavaScript du build (812,66 kB non compressé, mesure Vite du 2026-11-12 ; le bouchon `main.ts` importe déjà `three/webgpu`). Vite affiche l'avertissement « Some chunks are larger than 500 kB after minification ». Budget visé par la spec T-001 §7 : 400 ko gzip pour le JS initial.
+Mesure du socle, non refaite depuis : le log T-002 consigne 219,75 kB gzip pour le JavaScript du build (812,66 kB non compressé, mesure Vite du 2026-11-12 ; le bouchon `main.ts` importe déjà `three/webgpu`). Vite affiche l'avertissement « Some chunks are larger than 500 kB after minification ». Budget visé par la spec T-001 §7 : 400 ko gzip pour le JS initial.

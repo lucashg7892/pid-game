@@ -1,22 +1,30 @@
 # Architecture
 
-État au 2026-11-12, après T-002. Le code source validé se limite à des bouchons ; l'architecture est surtout portée par les règles automatiques décrites ici.
-
-La tâche T-003 (noyau : horloge, saturation, RK4, enregistreur) est en cours et modifie `src/sim/`, `tests/sim/`, `package.json` et `vitest.config.ts`. Ces changements ne sont pas validés et ne sont pas décrits ici.
+À quoi sert cette page : présenter les modules du code, qui a le droit d'importer qui, et les garde-fous automatiques qui l'imposent. État au commit `c00e678` (2026-11-12) : noyau de simulation et i18n validés, rendu et interface encore à l'état de bouchons, rien de jouable.
 
 ## Modules
 
 | Module | Rôle | État |
 |---|---|---|
-| `src/sim/` | noyau de simulation pur : pas fixe, déterministe, sans rendu ni DOM | bouchon : `index.ts` exporte `SIM_DT = 1 / 120` (s). Contenu Prévu (T-003, T-004) |
-| `src/game/` | logique de niveau : état, victoire et échec, bonhomme | Prévu (T-007) ; dossier absent |
-| `src/i18n/` | chargeur de textes et locales FR/EN | Prévu (T-006) ; dossier absent |
+| `src/sim/` | noyau de simulation pur : pas fixe, déterministe, sans rendu ni DOM | **validé** (T-003, T-004, T-004b, T-005) : horloge, RK4, saturation, enregistreur, contrôleur P, ascenseur, boucle fermée. Voir [simulation.md](simulation.md) |
+| `src/game/` | logique de niveau : état, victoire et échec, bonhomme | Prévu (T-007) ; rien n'est committé |
+| `src/i18n/` | textes FR/EN, interpolation, formatage, détection de langue | **validé** (T-006) ; pas encore utilisé par `src/main.ts`. Voir [i18n-accessibilite.md](i18n-accessibilite.md) |
 | `src/render/` | rendu three.js (`three/webgpu`, repli WebGL2) | bouchon : `index.ts` exporte `parseRendererChoice(search)`, qui renvoie `'webgl'` si l'URL contient `?renderer=webgl`, sinon `'auto'`. Contenu Prévu (T-008, T-009) |
 | `src/ui/` | interface DOM accessible : panneau Kp, boutons, messages | Prévu (T-010) ; dossier absent |
 | `src/main.ts` | point de composition : seul fichier qui connaît tous les modules | bouchon, voir ci-dessous |
 
+Fichiers des modules validés :
+
+```text
+src/sim/   index.ts  types.ts  clock.ts  integrators.ts  saturation.ts  signals.ts  loop.ts
+           controllers/p.ts  plants/elevator.ts
+src/i18n/  index.ts  catalogs.ts  params.ts  interpolate.ts  format.ts  detect.ts  translator.ts
+           locales/fr.json  locales/en.json
+```
+
 ### Ce que fait `src/main.ts` aujourd'hui
 
+- Il importe seulement `SIM_DT` du noyau ; il n'importe pas `src/i18n`.
 - Il cherche le `<canvas id="scene">` de `index.html` et écrit `SIM_DT` dans son attribut `data-sim-dt`.
 - Au premier `pointerdown` sur le canvas, il crée un `WebGPURenderer` (import `three/webgpu`), avec `forceWebGL: true` si l'URL contient `?renderer=webgl`, puis appelle `await renderer.init()`.
 - Il écrit le backend obtenu dans `document.body.dataset.backend` (`'webgl'` ou `'webgpu'`).
@@ -98,6 +106,14 @@ x 2 dependency violations (2 errors, 0 warnings). 6 modules, 4 dependencies crui
 
 (Chemin vers `node_modules` raccourci : la copie pointait vers le `node_modules` du projet.)
 
+Sur le dépôt réel, au commit `c00e678` (code de sortie 0) :
+
+```text
+✔ no dependency violations found (21 modules, 40 dependencies cruised)
+```
+
+Les 21 modules sont les 20 fichiers suivis de `src/` (18 fichiers TypeScript, 2 fichiers JSON de locales) et `three/build/three.webgpu.js`, importé par `src/main.ts`. Mesure faite sur une extraction propre du commit (`git archive c00e678`), pour ne pas compter les fichiers non validés de `src/game/` en cours d'écriture. La sortie du test de violation ci-dessus (6 modules) date de la copie du socle T-002.
+
 Limite : la commande analyse seulement `src/`. Les fichiers de `tests/` ne sont pas contrôlés.
 
 ### 2. TypeScript sans DOM
@@ -142,5 +158,5 @@ La configuration fait foi. Écarts relevés :
 
 ## Prévu
 
-- Flux d'une image (horloge à pas fixe, interpolation du rendu) : Prévu (T-003, T-008), décrit dans la spec T-001 §4.
-- Arborescence complète (`src/game`, `src/i18n`, `src/ui`, `tests/e2e`, `.github/workflows`) : Prévu (T-006 à T-011).
+- Flux d'une image : l'horloge à pas fixe existe (voir [simulation.md](simulation.md#horloge-à-pas-fixe)) ; la boucle `requestAnimationFrame` qui l'appelle et l'interpolation du rendu par `alpha` sont Prévu (T-008, T-010), décrites dans la spec T-001 §4.
+- Arborescence complète (`src/game`, `src/ui`, `tests/game`, `tests/e2e`, `.github/workflows`) : Prévu (T-007 à T-011).

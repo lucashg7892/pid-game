@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+package-lock.json
+# Rédigés et gardés par d'autres rôles (doc, orchestration) : hors du périmètre de formatage du code.
+docs/
+orchestration/

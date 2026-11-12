@@ -4,10 +4,12 @@
 
 ## Correspondance tâche → commit
 
-Sortie de `git log --oneline` sur `main` (9 commits, tous du 2026-11-12).
+Sortie de `git log --oneline 7bcd9ce` (11 commits, tous du 2026-11-12).
 
 | Commit | Contenu |
 |---|---|
+| `7bcd9ce` | D-004 : documentation du noyau, de l'i18n et de la validation ; errata de la spec ; ADR-005 à 008 |
+| `6259ccc` | T-007 : logique du niveau 1 et ses tests ; log T-007 |
 | `c00e678` | registre : logs T-004b et T-006 |
 | `1ee1010` | T-006 : i18n FR/EN |
 | `bf7fd65` | licence MIT (`LICENSE`) et registre d'orchestration (T-000 à T-005) |
@@ -18,7 +20,26 @@ Sortie de `git log --oneline` sur `main` (9 commits, tous du 2026-11-12).
 | `d57b05b` | T-001 : spécification |
 | `e627a96` | T-000 : initialisation du dépôt |
 
-Les commits ont été créés après coup, à la suite, à partir de l'état validé : leur ordre ne suit pas exactement l'ordre des validations (T-004b, validée après T-005, est dans `beb6086`).
+Les neuf premiers commits ont été créés après coup, à la suite, à partir de l'état validé : leur ordre ne suit pas exactement l'ordre des validations (T-004b, validée après T-005, est dans `beb6086`). Depuis `6259ccc`, chaque tâche validée a son commit.
+
+## D-004 — Documentation du noyau, de l'i18n et de la validation (2026-11-12)
+
+- Ajoute [simulation.md](simulation.md), [physique/ascenseur.md](physique/ascenseur.md), [i18n-accessibilite.md](i18n-accessibilite.md), les [errata de la spec T-001](specs/T-001-errata.md) et les ADR-005 à ADR-008 ; met à jour `README.md`, `docs/README.md`, `architecture.md`, `developpement.md`, `tests.md` et ce journal.
+- Vérification de l'orchestrateur : 14 SHA-256 identiques ; 76 liens relatifs, 0 cassé ; recalcul indépendant de e_ss, ζ, Mp et t_pic pour 1000, 2500 et 4000 N/m conforme.
+- Commit : `7bcd9ce`.
+- Statut : validé pour l'état `c00e678` (avant T-007). Points reportés à D-007 : mentions « Prévu (T-007) » dépassées ; tutoriel de lancement local ; titre provisoire ; dépôt GitHub.
+
+## T-007 — Logique du niveau 1 (2026-11-12)
+
+- Ajoute `src/game/` (7 fichiers : machine à états, arbitre des issues, marche du bonhomme, file d'événements, constantes) et `tests/game/` (6 fichiers de test, 62 tests, plus `helpers.ts`). Voir [jeu.md](jeu.md) et [ADR-009](decisions/ADR-009-machine-a-etats.md).
+- Issues : `noLift` de 0 à 100 N/m, `step` de 200 à 1900, `win` de 2000 à 3800, `bonk` de 3900 à 8000 ; pas d'issue identiques à T-005 (2500 → 291, 3800 → 273, 3900 → 63).
+- Vérification de l'orchestrateur : 14 SHA-256 identiques ; contre-épreuve par l'API publique en images irrégulières (8 à 40 ms) puis à 1/60 s, mêmes résultats (dont 2700 N/m → victoire au pas 289, non testé par l'agent) ; couverture `src/game` 100 % ; `npm run check` code 0 (231 tests, 28 modules sans violation).
+- Commit : `6259ccc`.
+- Statut : validé. Arbitrages et contrats :
+  - D-a : le réglage ne produit que des multiples de 100 N/m ; `initialKp` sert aux tests hors grille (150 N/m) ;
+  - D-b : `restart` revient au réglage (spec §6.6) ;
+  - contrats pour T-008 à T-010 : instantané et événements réutilisés, à copier ; interpolation par `alpha` ; enregistreur de signaux avant chaque pas ; animations d'embarquement et de sortie laissées au rendu.
+- Applique la recommandation D-11 de T-005 (issues à 3800 et 3900 N/m figées par un test).
 
 ## T-006 — Internationalisation FR/EN (2026-11-12)
 

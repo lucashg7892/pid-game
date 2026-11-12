@@ -12,7 +12,7 @@ Ce que le noyau fait aujourd'hui :
 - il fournit un modèle (l'ascenseur), un contrôleur (proportionnel) et un intégrateur (RK4) ;
 - il fournit une horloge à pas fixe et un enregistreur de signaux, destinés au rendu des courbes : Prévu (T-008, T-009).
 
-Ce qu'il ne fait pas : il ne décide ni de la victoire ni de l'échec. Ces règles sont dans `src/game/` : Prévu (T-007). Aucun module du site n'utilise encore le noyau, hormis `src/main.ts`, qui lit `SIM_DT`.
+Ce qu'il ne fait pas : il ne décide ni de la victoire ni de l'échec. Ces règles sont dans `src/game/` (validé en T-007, voir [jeu.md](jeu.md#règles-dissue)). Seuls `src/game/` et `src/main.ts` (qui lit `SIM_DT`) importent le noyau ; `src/main.ts` n'utilise pas encore `src/game/`.
 
 Unités : SI partout (m, s, kg, N). Le temps est un entier de pas `k` ; `t = k·dt` est calculé par multiplication, jamais accumulé.
 
@@ -45,7 +45,7 @@ Points à retenir :
 
 ## Exports de `src/sim/index.ts`
 
-Liste complète, vérifiée contre le fichier au commit `c00e678`. 21 valeurs et 16 types.
+Liste complète, vérifiée contre le fichier au commit `c00e678` ; `src/sim/` est inchangé au commit `7bcd9ce`. 21 valeurs et 16 types.
 
 ### Constantes
 
@@ -224,7 +224,7 @@ Exemple chiffré, boucle de jeu Kp = 2500 N/m (valeurs calculées par une réimp
 
 Lecture : au 1er appel, `y` vaut 0 (mesure à t = 0) mais `x[0]` vaut déjà 0,003063 m (position à t = 1/120 s). Au 2e appel, `y` reprend cette valeur. La mesure au pas k + 1 est donc `plant.output(sample.x)` du pas k.
 
-Trois règles pour l'appelant (futur `src/game/`, Prévu T-007) :
+Trois règles pour tout appelant. `src/game/` les applique (T-007) : il juge l'issue sur l'état après le pas et copie les nombres (voir [jeu.md](jeu.md#convention-de-pas) et [ses contrats](jeu.md#contrats-pour-le-rendu-et-linterface)) :
 
 1. **Choisir l'instant jugé.** Pour un seuil (choc à 3,30 m, par exemple), utiliser `sample.y` (avant le pas) ou `sample.x[0]` (après le pas). Le maximum est le même, décalé d'un pas (rapport T-005, recommandation 4).
 2. **Ne jamais garder une référence à l'échantillon.** `step()` réécrit le même objet. Trois échantillons rangés dans un tableau affichent tous le dernier k (T-005, attaque F8c : k stockés = 2, 2, 2). Copier les champs utiles.

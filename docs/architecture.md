@@ -1,13 +1,13 @@
 # Architecture
 
-À quoi sert cette page : présenter les modules du code, qui a le droit d'importer qui, et les garde-fous automatiques qui l'imposent. État au commit `c00e678` (2026-11-12) : noyau de simulation et i18n validés, rendu et interface encore à l'état de bouchons, rien de jouable.
+À quoi sert cette page : présenter les modules du code, qui a le droit d'importer qui, et les garde-fous automatiques qui l'imposent. État au commit `7bcd9ce` (2026-11-12) : noyau de simulation, i18n et logique du niveau 1 validés ; rendu et interface encore à l'état de bouchons ; rien n'est affiché.
 
 ## Modules
 
 | Module | Rôle | État |
 |---|---|---|
 | `src/sim/` | noyau de simulation pur : pas fixe, déterministe, sans rendu ni DOM | **validé** (T-003, T-004, T-004b, T-005) : horloge, RK4, saturation, enregistreur, contrôleur P, ascenseur, boucle fermée. Voir [simulation.md](simulation.md) |
-| `src/game/` | logique de niveau : état, victoire et échec, bonhomme | Prévu (T-007) ; rien n'est committé |
+| `src/game/` | logique de niveau : état, victoire et échec, bonhomme | **validé** (T-007) : machine à états du niveau 1, arbitre des issues, marche du bonhomme, événements ; pas encore utilisé par `src/main.ts`. Voir [jeu.md](jeu.md) |
 | `src/i18n/` | textes FR/EN, interpolation, formatage, détection de langue | **validé** (T-006) ; pas encore utilisé par `src/main.ts`. Voir [i18n-accessibilite.md](i18n-accessibilite.md) |
 | `src/render/` | rendu three.js (`three/webgpu`, repli WebGL2) | bouchon : `index.ts` exporte `parseRendererChoice(search)`, qui renvoie `'webgl'` si l'URL contient `?renderer=webgl`, sinon `'auto'`. Contenu Prévu (T-008, T-009) |
 | `src/ui/` | interface DOM accessible : panneau Kp, boutons, messages | Prévu (T-010) ; dossier absent |
@@ -20,11 +20,12 @@ src/sim/   index.ts  types.ts  clock.ts  integrators.ts  saturation.ts  signals.
            controllers/p.ts  plants/elevator.ts
 src/i18n/  index.ts  catalogs.ts  params.ts  interpolate.ts  format.ts  detect.ts  translator.ts
            locales/fr.json  locales/en.json
+src/game/  index.ts  constants.ts  kp.ts  outcome.ts  walker.ts  events.ts  level.ts
 ```
 
 ### Ce que fait `src/main.ts` aujourd'hui
 
-- Il importe seulement `SIM_DT` du noyau ; il n'importe pas `src/i18n`.
+- Il importe seulement `SIM_DT` du noyau ; il n'importe ni `src/i18n` ni `src/game`.
 - Il cherche le `<canvas id="scene">` de `index.html` et écrit `SIM_DT` dans son attribut `data-sim-dt`.
 - Au premier `pointerdown` sur le canvas, il crée un `WebGPURenderer` (import `three/webgpu`), avec `forceWebGL: true` si l'URL contient `?renderer=webgl`, puis appelle `await renderer.init()`.
 - Il écrit le backend obtenu dans `document.body.dataset.backend` (`'webgl'` ou `'webgpu'`).
@@ -106,13 +107,13 @@ x 2 dependency violations (2 errors, 0 warnings). 6 modules, 4 dependencies crui
 
 (Chemin vers `node_modules` raccourci : la copie pointait vers le `node_modules` du projet.)
 
-Sur le dépôt réel, au commit `c00e678` (code de sortie 0) :
+Sur le dépôt réel, au commit `7bcd9ce` (code de sortie 0, mesure sur une extraction propre `git archive 7bcd9ce`) :
 
 ```text
-✔ no dependency violations found (21 modules, 40 dependencies cruised)
+✔ no dependency violations found (28 modules, 57 dependencies cruised)
 ```
 
-Les 21 modules sont les 20 fichiers suivis de `src/` (18 fichiers TypeScript, 2 fichiers JSON de locales) et `three/build/three.webgpu.js`, importé par `src/main.ts`. Mesure faite sur une extraction propre du commit (`git archive c00e678`), pour ne pas compter les fichiers non validés de `src/game/` en cours d'écriture. La sortie du test de violation ci-dessus (6 modules) date de la copie du socle T-002.
+Les 28 modules sont les 27 fichiers suivis de `src/` (25 fichiers TypeScript, dont 7 dans `src/game/`, et 2 fichiers JSON de locales) et `three/build/three.webgpu.js`, importé par `src/main.ts`. Au commit `c00e678`, avant T-007, la même commande donnait 21 modules et 40 dépendances. La sortie du test de violation ci-dessus (6 modules) date de la copie du socle T-002.
 
 Limite : la commande analyse seulement `src/`. Les fichiers de `tests/` ne sont pas contrôlés.
 
@@ -144,7 +145,7 @@ L'import de `three` dans le même fichier provoque en plus 452 autres erreurs (3
 ✖ 3 problems (3 errors, 0 warnings)
 ```
 
-Ces règles ne s'appliquent pas à `src/game/`, conformément à la spec T-001 §3.
+Ces règles ne s'appliquent pas à `src/game/`, conformément à la spec T-001 §3. Pour `src/game/`, un test (`tests/game/units.test.ts`) lit les sources et refuse `Math.random`, `Date`, `performance`, `window` et `document`, et tout import hors de `src/game` et `src/sim`.
 
 Justification de ces choix : [ADR-003](decisions/ADR-003-noyau-pur.md).
 
@@ -159,4 +160,4 @@ La configuration fait foi. Écarts relevés :
 ## Prévu
 
 - Flux d'une image : l'horloge à pas fixe existe (voir [simulation.md](simulation.md#horloge-à-pas-fixe)) ; la boucle `requestAnimationFrame` qui l'appelle et l'interpolation du rendu par `alpha` sont Prévu (T-008, T-010), décrites dans la spec T-001 §4.
-- Arborescence complète (`src/game`, `src/ui`, `tests/game`, `tests/e2e`, `.github/workflows`) : Prévu (T-007 à T-011).
+- Arborescence complète (`src/ui`, `tests/e2e`, `.github/workflows`) : Prévu (T-008 à T-011).

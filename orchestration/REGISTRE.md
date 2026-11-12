@@ -54,7 +54,8 @@ mission et on consigne la leçon en section 4.
 | T-006 | réalisateur | i18n FR/EN | VALIDÉ | logs/T-006.md |
 | T-007 | réalisateur | Logique du niveau 1 | VALIDÉ | logs/T-007.md |
 | D-004 | rédacteur | Doc du noyau, de l'i18n, de la validation ; errata de spec | VALIDÉ | logs/D-004.md |
-| D-007 | rédacteur | Doc de la logique du niveau ; tutoriel de lancement local | EN COURS | logs/D-007.md |
+| T-008 | réalisateur | Rendu : démarrage WebGPU/WebGL2, caméra, papier millimétré | EN COURS | logs/T-008.md |
+| D-007 | rédacteur | Doc de la logique du niveau ; tutoriel de lancement local | VALIDÉ (réserve) | logs/D-007.md |
 | D-002 | rédacteur | Doc technique initiale (README, docs/) | VALIDÉ | logs/D-002.md |
 
 ## 4. Leçons sur les consignes

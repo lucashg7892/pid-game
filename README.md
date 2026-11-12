@@ -2,19 +2,22 @@
 
 Projet de jeu web éducatif destiné à enseigner les bases de l'automatique, jusqu'au contrôleur PID. Prévu : un bonhomme bâton dessiné au crayon traversera un monde de papier millimétré ; chaque obstacle sera un système dont le joueur règle le contrôleur.
 
+Titre provisoire : « Huygens's world », en hommage à Christiaan Huygens. Le code affiche encore les anciens titres ; le changement est prévu avec l'interface (T-010).
+
 _English version below._
 
 ## État actuel
 
-**Rien n'est jouable.** Le dépôt contient le socle outillé, le noyau de simulation et les textes FR/EN, validés le 2026-11-12. Aucun de ces éléments n'est encore affiché dans le navigateur.
+**Rien n'est jouable ni affiché.** Le dépôt contient le socle outillé, le noyau de simulation, les textes FR/EN et la logique du niveau 1, validés le 2026-11-12. Aucun de ces éléments n'est encore affiché dans le navigateur : la page est blanche.
 
 - Validé :
   - socle : npm, TypeScript, Vite, ESLint, Prettier, dependency-cruiser, Vitest, règles d'architecture (T-002) ;
   - noyau de simulation `src/sim` : horloge à pas fixe, RK4, saturation, enregistreur, contrôleur P, modèle de l'ascenseur, boucle fermée (T-003, T-004, T-004b) ;
   - validation indépendante du noyau par un oracle exact MATLAB, hors du site (T-005) ;
   - i18n FR/EN `src/i18n` : 89 clés par langue, interpolation, formatage des nombres (T-006) ;
-  - 169 tests unitaires verts ; couverture de `src/sim` à 100 %.
-- Prévu : logique du niveau 1 (T-007), rendu (T-008, T-009), interface et accessibilité (T-010), CI et GitHub Pages (T-011).
+  - logique du niveau 1 `src/game` : phases, réglage de Kp, règles de victoire et d'échec, événements (T-007) ;
+  - 231 tests unitaires verts ; couverture de `src/sim` et de `src/game` à 100 %.
+- Prévu : rendu (T-008, T-009), interface et accessibilité (T-010), CI et GitHub Pages (T-011).
 
 Le détail est dans [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
@@ -25,6 +28,8 @@ Le détail est dans [docs/CHANGELOG.md](docs/CHANGELOG.md).
 - npm (testé avec npm 10.9.9 et Node v22.23.4).
 
 ## Installation
+
+Pas à pas sous Windows : [tutoriel « Lancer le projet sur son PC »](docs/tutoriel-lancer-en-local.md).
 
 ```sh
 npm ci
@@ -58,12 +63,14 @@ MIT. Voir le fichier [LICENSE](LICENSE).
 
 A planned educational web game about control theory, up to the PID controller. Planned: a pencil-drawn stick figure will walk across graph paper; each obstacle will be a system whose controller the player tunes.
 
+Working title: "Huygens's world", a tribute to Christiaan Huygens. The code still shows the old titles; the change is planned with the UI (T-010).
+
 ## Current status
 
-**Nothing is playable yet.** The repository holds the tooling foundation, the simulation core and the French/English texts, validated on 2026-11-12. None of them is shown in the browser yet.
+**Nothing is playable or displayed yet.** The repository holds the tooling foundation, the simulation core, the French/English texts and the level 1 logic, validated on 2026-11-12. None of them is shown in the browser yet: the page is blank.
 
-- Validated: tooling (T-002); simulation core `src/sim` with fixed-step clock, RK4, saturation, recorder, P controller, lift model and closed loop (T-003, T-004, T-004b); independent validation of the core against an exact MATLAB oracle, outside the site (T-005); French/English i18n `src/i18n` (T-006); 169 passing unit tests, 100% coverage of `src/sim`.
-- Planned: level logic (T-007), rendering (T-008, T-009), UI and accessibility (T-010), CI and GitHub Pages deployment (T-011).
+- Validated: tooling (T-002); simulation core `src/sim` with fixed-step clock, RK4, saturation, recorder, P controller, lift model and closed loop (T-003, T-004, T-004b); independent validation of the core against an exact MATLAB oracle, outside the site (T-005); French/English i18n `src/i18n` (T-006); level 1 logic `src/game` (T-007); 231 passing unit tests, 100% coverage of `src/sim` and `src/game`.
+- Planned: rendering (T-008, T-009), UI and accessibility (T-010), CI and GitHub Pages deployment (T-011).
 
 ## Requirements
 
@@ -71,6 +78,8 @@ A planned educational web game about control theory, up to the PID controller. P
 - npm.
 
 ## Install and run
+
+Step-by-step guide for Windows (in French): [docs/tutoriel-lancer-en-local.md](docs/tutoriel-lancer-en-local.md).
 
 ```sh
 npm ci

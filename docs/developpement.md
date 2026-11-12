@@ -1,6 +1,6 @@
 # Développement
 
-À quoi sert cette page : installer le projet, connaître chaque script npm et les conventions de code. État au commit `c00e678`.
+À quoi sert cette page : installer le projet, connaître chaque script npm et les conventions de code. État au commit `7bcd9ce`. Pour un pas-à-pas sous Windows destiné à un non-développeur, voir le [tutoriel de lancement local](tutoriel-lancer-en-local.md).
 
 ## Prérequis
 
@@ -22,13 +22,13 @@ npm ci
 
 `npm ci` installe exactement les versions de `package-lock.json`.
 
-`node_modules/` contient des binaires propres au système. Exemple : Vite 8 utilise Rolldown, installé ici sous forme de `@rolldown/binding-linux-x64-gnu`. Le `node_modules/` actuel a été installé sous Linux. Sous Windows, relancez `npm ci` avant toute commande.
+`node_modules/` contient des binaires propres au système. Exemple : Vite 8 utilise Rolldown, installé ici sous forme de `@rolldown/binding-linux-x64-gnu`. Le `node_modules/` du dossier `PID_GAME` a été installé sous Linux et sert aux agents de développement : ne relancez pas `npm ci` sous Windows dans ce dossier. Pour travailler sous Windows, utilisez une copie : procédure complète dans le [tutoriel](tutoriel-lancer-en-local.md).
 
 Pour les tests e2e, il faudra aussi installer Chromium pour Playwright : `npx playwright install chromium`. Prévu (T-010).
 
 ## Scripts npm
 
-Commandes exactes de `package.json` au commit `c00e678` (11 scripts).
+Commandes exactes de `package.json` au commit `7bcd9ce` (11 scripts).
 
 | Script | Commande | Usage |
 |---|---|---|
@@ -63,7 +63,7 @@ Le script `test:cov` a été ajouté par T-003 avec le paquet `@vitest/coverage-
 
 Cible de compilation : ES2023 (`tsconfig.json` et `build.target` de `vite.config.ts`).
 
-## Arborescence au commit `c00e678`
+## Arborescence au commit `7bcd9ce`
 
 Liste tirée de `git ls-files`.
 
@@ -74,12 +74,14 @@ tsconfig.json  tsconfig.sim.json  vite.config.ts  vitest.config.ts  LICENSE  REA
 src/main.ts  src/render/index.ts
 src/sim/       noyau de simulation (9 fichiers), voir simulation.md
 src/i18n/      i18n FR/EN (7 fichiers TypeScript + locales/fr.json, locales/en.json)
+src/game/      logique du niveau 1 (7 fichiers), voir jeu.md
 tests/smoke.test.ts  tests/sim/ (9 fichiers)  tests/i18n/ (5 fichiers)
+tests/game/    6 fichiers de test + helpers.ts (outils partagés)
 validation/    oracle MATLAB de T-005 : matlab/ (9 scripts), data/ (3 CSV), README.md
 docs/  orchestration/
 ```
 
-`dist/`, `node_modules/` et `coverage/` ne sont pas versionnés. Le dépôt git (branche `main`) a 9 commits ; la correspondance tâche → commit est dans [CHANGELOG.md](CHANGELOG.md#correspondance-tâche--commit). `src/game/` et `tests/game/` : Prévu (T-007).
+`dist/`, `node_modules/` et `coverage/` ne sont pas versionnés. Le dépôt git (branche `main`) a 11 commits au commit `7bcd9ce` (`git rev-list --count 7bcd9ce`) ; la correspondance tâche → commit est dans [CHANGELOG.md](CHANGELOG.md#correspondance-tâche--commit). `src/ui/`, `tests/e2e/` et `.github/workflows/` : Prévu (T-010, T-011).
 
 ## Licence
 
@@ -89,10 +91,14 @@ MIT, titulaire lucashg7892 (décision D12 du registre). Texte dans `LICENSE` à 
 
 Prévu (T-011). Ce qui est déjà en place :
 
-- Nom du dépôt GitHub retenu : `pid-game` (décision D11 du registre).
+- Dépôt GitHub : <https://github.com/lucashg7892/pid-game> (nom retenu par la décision D11 du registre). Il est **privé** pour l'instant.
+- Remote `origin` du dossier local : `https://github.com/lucashg7892/pid-game.git` (`git remote -v`).
 - `vite.config.ts` fixe `base: '/pid-game/'` : les URL du build sont préfixées par `/pid-game/`.
 
-Ce qui reste à faire : workflows `.github/workflows/ci.yml` et `deploy.yml`, publication de `dist/` depuis `main` (spec T-001 §9 et §11).
+Ce qui reste à faire, Prévu (T-011) :
+
+- workflows `.github/workflows/ci.yml` et `deploy.yml`, publication de `dist/` depuis `main` (spec T-001 §9 et §11) ;
+- rendre le dépôt public avant la publication : GitHub Pages n'est pas disponible pour un dépôt privé avec un compte gratuit (il faudrait une offre payante). Décision de l'utilisateur.
 
 ## Taille du bundle
 

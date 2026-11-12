@@ -1,6 +1,6 @@
 # Tests
 
-À quoi sert cette page : dire quels tests existent au commit `c00e678`, ce que chacun prouve, avec quelles tolérances, et comment relancer la validation indépendante. Les tests de la logique de jeu, de bout en bout et la CI sont encore à venir (fin de page).
+À quoi sert cette page : dire quels tests existent au commit `7bcd9ce`, ce que chacun prouve, avec quelles tolérances, et comment relancer la validation indépendante. Les tests de bout en bout et la CI sont encore à venir (fin de page).
 
 ## Lancer les tests
 
@@ -14,11 +14,17 @@ Configuration (`vitest.config.ts`) : environnement `node`, fichiers `tests/**/*.
 
 ## Inventaire
 
-Sortie de `npx vitest run` au commit `c00e678` : **15 fichiers, 169 tests, tous verts**. Mesure faite sur une extraction propre du commit (`git archive c00e678`), et confirmée dans le dossier de travail avec `npx vitest run --exclude 'tests/game/**'`, qui écarte les tests de T-007 en cours d'écriture (non validés).
+Sortie de `npx vitest run` au commit `7bcd9ce` : **21 fichiers, 231 tests, tous verts**. Mesure faite dans le dossier du projet (aucun fichier modifié hors `docs/`) et sur une extraction propre du commit (`git archive 7bcd9ce`) : même résultat. Le fichier `tests/game/helpers.ts` est un module d'outils partagés, pas un fichier de test : Vitest ne le compte pas.
 
 | Fichier | Tests | Ce qu'il prouve |
 |---|---|---|
 | `tests/smoke.test.ts` | 1 | `SIM_DT` vaut exactement 1/120 s |
+| `tests/game/units.test.ts` | 16 | géométrie (quais, vide de 4 m, poutre 3,30 m, consigne 3 m) ; arrondi de Kp (10 cas) ; seuil noLift calculé ; victoire au 120e pas consécutif ; choc strictement au-dessus de 3,30 m, victoire au pas 1800 prioritaire, NaN ; `place` du bonhomme ; imports limités à `src/game` et `src/sim`, ni aléa, ni horloge, ni DOM |
+| `tests/game/outcomes.test.ts` | 19 | issues de la spec §11 ; pas d'issue exacts ; borne haute 3800/3900 figée (D-11) ; balayage 0 → 8000 ; erreur finale à la victoire ≈ m·g/Kp (1e-3 m) ; marche de 0,327 m à 1500 N/m |
+| `tests/game/state-machine.test.ts` | 15 | état initial ; marche bornée ; zone de la console ; `initialKp` ; bornes et arrondi de Kp ; verrouillage pendant le trajet, l'issue et la pause ; commandes sans objet ; pause sans pas ni saut de temps ; bonhomme à bord ; `restart` (second trajet identique bit à bit) ; état figé après l'issue |
+| `tests/game/frames.test.ts` | 5 | même issue, même pas, même erreur, même trace pour 5 découpages en images (Kp ∈ {1500, 2500, 3800, 3900}) ; image de 0,5 s |
+| `tests/game/events.test.ts` | 5 | chaque événement une seule fois ; première saturation unique ; pas de saturation à 1500 N/m ; `tuningClosed` ; débordement de la file ; événement ajouté pendant la visite |
+| `tests/game/allocation.test.ts` | 2 | instantané unique sur 1000 images ; muter l'échantillon ou l'état du noyau ne change pas l'instantané |
 | `tests/sim/clock.test.ts` | 12 | constantes ; nombre de pas pour des images de 1/30, 1/60, 1/144 s ; à-coup de 0,5 s plafonné à 8 pas ; durées négatives, nulles ou NaN ; `reset` ; pas de dérive sur 1 h en images de 1/144 s ; paramètres invalides |
 | `tests/sim/integrators.test.ts` | 7 | RK4 sur ẋ = −x, x0 = 1, dt = 0,1 s, 10 pas : \|x − e⁻¹\| ≤ 1e-6 ; ordre 4 (erreur divisée par ≈ 16 quand dt est divisé par 2) ; commande constante pendant le pas ; aucune allocation ; mêmes bits sur deux exécutions ; `constrain` non appliqué ; dimensions invalides |
 | `tests/sim/saturation.test.ts` | 7 | écrêtage à ±5000 N et drapeau ; ±Infinity ; NaN propagé avec drapeau faux ; bornes égales ou infinies ; bornes invalides |
@@ -34,13 +40,13 @@ Sortie de `npx vitest run` au commit `c00e678` : **15 fichiers, 169 tests, tous 
 | `tests/i18n/interpolate.test.ts` | 11 | remplacement ; pas de double substitution ; paramètre manquant, hérité, en trop, non textuel ; accolades littérales ; gabarit mal formé ; `I18nError` ; `parseTemplate` |
 | `tests/i18n/translator.test.ts` | 15 | traduction de chaque clé dans chaque langue ; erreurs ; catalogues injectés ; abonnés (notification, désabonnement, doublon, erreur groupée) ; formatage selon la langue |
 
-Sous-totaux : `tests/sim/` 98 tests (9 fichiers), `tests/i18n/` 70 tests (5 fichiers), test fumée 1.
+Sous-totaux : `tests/sim/` 98 tests (9 fichiers), `tests/i18n/` 70 tests (5 fichiers), `tests/game/` 62 tests (6 fichiers), test fumée 1.
 
 ## Oracle analytique (`tests/sim/oracle.test.ts`)
 
 Boucle de l'ascenseur sans saturation (Umax = 1e12 N), comparée aux formules du second ordre recalculées dans le test (aucune valeur attendue en dur). Formules : [physique/ascenseur.md](physique/ascenseur.md#formules-du-régime-linéaire).
 
-| Test | Vérification | Tolérance | Écart mesuré au commit `c00e678` |
+| Test | Vérification | Tolérance | Écart mesuré au commit `7bcd9ce` |
 |---|---|---|---|
 | T1 | e_ss à t = 10 s, dt = 1/120, Kp ∈ {500, 1000, 2500, 4000, 8000} | \|e_sim − m·g/Kp\| ≤ 1e-6 m | max 4,32e-7 m (Kp = 500) |
 | T2 | Mp, dt = 1/1000, Kp ∈ {1000, 2500, 4000} | ≤ 0,5 point de % | max 0,2049 point (Kp = 4000) |
@@ -89,15 +95,41 @@ Détails : [simulation.md](simulation.md#déterminisme).
 npm run test:cov
 ```
 
-Périmètre : `src/sim/**/*.ts` seulement. Seuils (`vitest.config.ts`) : 95 % des lignes et 90 % des branches ; en dessous, la commande échoue. Le module `src/i18n` n'est pas mesuré.
+Périmètre : `src/sim/**/*.ts` seulement. Seuils (`vitest.config.ts`) : 95 % des lignes et 90 % des branches ; en dessous, la commande échoue. `src/i18n` n'est pas mesuré ; `src/game` ne l'est pas par ce script (voir plus bas).
 
-Résultat au commit `c00e678` (code de sortie 0) :
+Résultat au commit `7bcd9ce` (code de sortie 0) :
 
 | Périmètre | Instructions | Branches | Fonctions | Lignes |
 |---|---|---|---|---|
 | `src/sim` (tous fichiers) | 100 % | 100 % | 100 % | 100 % |
 
 `index.ts` et `types.ts` apparaissent à 0 % dans le détail : ils ne contiennent que des réexportations et des types, sans code exécuté. Ils ne font pas baisser le total.
+
+### Couverture de `src/game`
+
+`npm run test:cov` ne mesure pas `src/game`. Pour la mesurer, remplacer le périmètre en ligne de commande :
+
+```sh
+npx vitest run --coverage --coverage.include='src/game/**/*.ts'
+```
+
+Résultat au commit `7bcd9ce` (code de sortie 0) : 100 % des instructions, branches, fonctions et lignes pour `constants.ts`, `events.ts`, `kp.ts`, `level.ts`, `outcome.ts` et `walker.ts` ; `index.ts` à 0 % (réexportations seules). Les seuils de `vitest.config.ts` s'appliquent alors à `src/game`. Le log T-007 consigne aussi 100 %.
+
+## Logique de jeu (`tests/game/`)
+
+Ajoutés par T-007 : 62 tests en 6 fichiers. Ils jouent le niveau par son API publique, comme le fera l'interface : marche jusqu'à la console, réglage de Kp, lancement, images successives jusqu'à l'issue (`tests/game/helpers.ts`, fonction `runTrip`). Règles et tableau des issues : [jeu.md](jeu.md#règles-dissue).
+
+| Vérification | Valeur attendue | Fichier |
+|---|---|---|
+| issues de la spec §11 | 150 → `noLift`, 1500 → `step`, 2500 → `win`, 3500 → `win`, 4500 → `bonk` | `outcomes.test.ts` |
+| pas d'issue exacts | 2500 → 291, 3500 → 278, 3800 → 273, 3900 → 63, 4500 → 58, 150 et 1500 → 1800 | `outcomes.test.ts` |
+| balayage 0 → 8000 par 100 N/m | `0-100:noLift \| 200-1900:step \| 2000-3800:win \| 3900-8000:bonk` | `outcomes.test.ts` |
+| erreur finale à la victoire | \|finalError − m·g/Kp\| ≤ 1e-3 m pour 2000, 2500, 3000, 3800 N/m | `outcomes.test.ts` |
+| indépendance à la cadence d'images | bit à bit identique pour 1/30, 1/60, 1/144 s et deux découpages irréguliers (générateur mulberry32 à graine fixe) | `frames.test.ts` |
+| `restart` | état du réglage restauré ; second trajet identique bit à bit | `state-machine.test.ts` |
+| allocation | même objet instantané sur 1000 images, dans toutes les phases | `allocation.test.ts` |
+
+La spec T-001 §11 demandait « victoire de Kp = 2500 au pas 291 ± 1 » ; le test exige 291 exactement. La recommandation D-11 de T-005 (figer 3800 et 3900 N/m) est appliquée.
 
 ## Validation indépendante MATLAB (T-005)
 
@@ -142,10 +174,6 @@ Le validateur a créé 8 copies du noyau, chacune avec une seule erreur volontai
 Conséquence : M2 montrait qu'aucun test d'oracle ne voyait l'ordre de l'intégrateur. T-004b a ajouté `tests/sim/exact.test.ts`, qui fait échouer Euler, RK2 et RK3. Cette analyse n'a pas été refaite sur la suite actuelle (98 tests du noyau).
 
 ## Prévu
-
-### Logique de jeu — Prévu (T-007)
-
-Issues attendues pour Kp ∈ {150, 1500, 2500, 3500, 4500} N/m : ne décolle pas, marche trop haute, victoire, victoire, choc. Victoire de Kp = 2500 au pas 291 ± 1. `reset` restaure l'état initial. T-005 recommande d'y figer aussi les issues à 2000, 3800 et 3900 N/m (défaut D-11).
 
 ### Bout en bout — Prévu (T-010)
 

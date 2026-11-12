@@ -51,7 +51,7 @@ mission et on consigne la leçon en section 4.
 | T-005 | validateur | Validation indépendante du noyau (oracle exact MATLAB) | VALIDÉ (réserves) | logs/T-005.md |
 | T-004b | réalisateur | Corrections issues de T-005 (D-1, D-2, D-6, D-7) | VALIDÉ | logs/T-004b.md |
 | T-006 | réalisateur | i18n FR/EN | VALIDÉ | logs/T-006.md |
-| T-007 | réalisateur | Logique du niveau 1 | EN COURS | logs/T-007.md |
+| T-007 | réalisateur | Logique du niveau 1 | VALIDÉ | logs/T-007.md |
 | D-004 | rédacteur | Doc du noyau, de l'i18n, de la validation ; errata de spec | EN COURS | logs/D-004.md |
 | D-002 | rédacteur | Doc technique initiale (README, docs/) | VALIDÉ | logs/D-002.md |
 

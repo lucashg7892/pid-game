@@ -1,0 +1,213 @@
+/**
+ * Ce que le rendu montre de l'instantané du niveau (T-009) : phase effective, hauteur de cabine
+ * et position du bonhomme interpolées, attitude du bonhomme, et ancres en pixels écran pour les
+ * textes DOM de l'interface (contrat T-010). Fonctions pures, sans three ni allocation.
+ *
+ * Interpolation (contrat T-007) : cabine à lerp(cabinPrevY, cabinY, alpha) pendant le trajet,
+ * bonhomme à lerp(walkerPrevX, walkerX, alpha) sur le quai. À l'issue, la cabine est figée à
+ * l'état du pas de l'issue (`cabinY`).
+ */
+import {
+  ARRIVAL_LEDGE_HEIGHT,
+  CABIN_CENTER_X,
+  CONSOLE_X,
+  START_LEDGE_HEIGHT,
+  type Facing,
+  type LevelPhase,
+  type LevelSnapshot,
+} from '../game';
+import { worldXToPixel, worldYToPixel, type Frame } from './camera';
+import {
+  CONSOLE_POST_HEIGHT,
+  DIMENSION_X,
+  GAUGE_MAX_X,
+  GAUGE_MAX_Y,
+  GAUGE_MIN_X,
+  HAT_DOME_RADIUS,
+  HEAD_RADIUS,
+  HIP_HEIGHT,
+  NECK_TO_HEAD,
+  TORSO_LENGTH,
+} from './pencil-style';
+import type { WalkerPoseKind } from './walker-pose';
+
+/** Hauteur du haut de la tête (chapeau compris) au-dessus des pieds, debout (m). */
+export const WALKER_HEAD_TOP =
+  HIP_HEIGHT + TORSO_LENGTH + NECK_TO_HEAD + HEAD_RADIUS + HAT_DOME_RADIUS;
+/** Hauteur de l'ancre de la console : dessus du pupitre (m). */
+export const CONSOLE_ANCHOR_Y = CONSOLE_POST_HEIGHT + 0.3;
+
+/** État affiché, réécrit en place par {@link computeDisplay}. */
+export interface LevelDisplay {
+  /** Phase effective : en pause, la phase qui reprendra. */
+  phase: LevelPhase;
+  /** Hauteur affichée du plancher de la cabine (m). */
+  cabinY: number;
+  /** Abscisse affichée des pieds du bonhomme (m). */
+  walkerX: number;
+  /** Hauteur du sol sous les pieds du bonhomme (m). */
+  walkerGround: number;
+  /** Orientation affichée. */
+  facing: Facing;
+  /** Attitude. */
+  pose: WalkerPoseKind;
+  /** Vrai si la courbe et l'erreur sont à dessiner (trajet ou issue). */
+  tripVisible: boolean;
+}
+
+/** Crée un état affiché (à allouer une fois). */
+export function createDisplay(): LevelDisplay {
+  return {
+    phase: 'approach',
+    cabinY: 0,
+    walkerX: 0,
+    walkerGround: 0,
+    facing: 1,
+    pose: 'stand',
+    tripVisible: false,
+  };
+}
+
+/**
+ * Phase effective : en pause, celle qui reprendra.
+ * @param s instantané.
+ */
+export function effectivePhase(s: Readonly<LevelSnapshot>): LevelPhase {
+  return s.phase === 'paused' && s.resumePhase !== null ? s.resumePhase : s.phase;
+}
+
+/**
+ * Remplit `out` d'après l'instantané (ne garde aucune référence à `s`).
+ * @param s instantané du niveau.
+ * @param out état affiché à réécrire.
+ */
+export function computeDisplay(s: Readonly<LevelSnapshot>, out: LevelDisplay): void {
+  const phase = effectivePhase(s);
+  out.phase = phase;
+  out.tripVisible = phase === 'trip' || phase === 'outcome';
+  out.cabinY = phase === 'trip' ? s.cabinPrevY + (s.cabinY - s.cabinPrevY) * s.alpha : s.cabinY;
+  if (s.walkerInCabin) {
+    out.walkerX = CABIN_CENTER_X;
+    out.walkerGround = out.cabinY;
+    out.facing = 1;
+  } else {
+    out.walkerX = s.walkerPrevX + (s.walkerX - s.walkerPrevX) * s.alpha;
+    out.walkerGround = START_LEDGE_HEIGHT;
+    out.facing = s.walkerFacing;
+  }
+  out.pose = choosePose(phase, s);
+}
+
+/**
+ * Attitude du bonhomme pour une phase effective.
+ * @param phase phase effective.
+ * @param s instantané.
+ */
+export function choosePose(phase: LevelPhase, s: Readonly<LevelSnapshot>): WalkerPoseKind {
+  if (phase === 'approach') {
+    return s.walkerMoving ? 'walk' : 'stand';
+  }
+  if (phase === 'tuning') {
+    return 'reach';
+  }
+  if (phase === 'outcome') {
+    switch (s.outcome) {
+      case 'win':
+        return 'cheer';
+      case 'bonk':
+        return 'bonk';
+      case 'step':
+        return 'akimbo';
+      case 'noLift':
+        return 'shrug';
+      case null:
+        return 'stand';
+    }
+  }
+  return 'stand';
+}
+
+/** Point en pixels CSS, depuis le coin haut gauche de la surface de dessin. */
+export interface ScreenPoint {
+  x: number;
+  y: number;
+}
+
+/** Ancres écran pour les textes DOM de l'interface (réécrites en place). */
+export interface LevelAnchors {
+  /** Dessus du pupitre de la console. */
+  readonly console: ScreenPoint;
+  /** Centre du plancher de la cabine (hauteur affichée). */
+  readonly cabin: ScreenPoint;
+  /** Milieu de la cote d'erreur statique (dessinée seulement à la victoire). */
+  readonly errorDimension: ScreenPoint;
+  /** Haut de la tête du bonhomme (chapeau compris). */
+  readonly walkerHead: ScreenPoint;
+  /** Milieu du bord haut de la jauge de force (étiquette « force » / « N »). */
+  readonly forceGauge: ScreenPoint;
+  /** Vrai si la cote d'erreur est dessinée. */
+  errorDimensionVisible: boolean;
+}
+
+/** Crée des ancres (à allouer une fois). */
+export function createAnchors(): LevelAnchors {
+  return {
+    console: { x: 0, y: 0 },
+    cabin: { x: 0, y: 0 },
+    errorDimension: { x: 0, y: 0 },
+    walkerHead: { x: 0, y: 0 },
+    forceGauge: { x: 0, y: 0 },
+    errorDimensionVisible: false,
+  };
+}
+
+function place(
+  point: ScreenPoint,
+  frame: Frame,
+  widthPx: number,
+  heightPx: number,
+  x: number,
+  y: number,
+): void {
+  point.x = worldXToPixel(frame, widthPx, x);
+  point.y = worldYToPixel(frame, heightPx, y);
+}
+
+/**
+ * Calcule les ancres écran (pixels CSS) des éléments que l'interface annote.
+ * @param frame cadrage courant.
+ * @param widthPx largeur de la surface (pixels CSS).
+ * @param heightPx hauteur de la surface (pixels CSS).
+ * @param display état affiché ({@link computeDisplay}).
+ * @param s instantané (pour l'issue).
+ * @param out ancres à réécrire.
+ */
+export function computeAnchors(
+  frame: Frame,
+  widthPx: number,
+  heightPx: number,
+  display: Readonly<LevelDisplay>,
+  s: Readonly<LevelSnapshot>,
+  out: LevelAnchors,
+): void {
+  place(out.console, frame, widthPx, heightPx, CONSOLE_X, CONSOLE_ANCHOR_Y);
+  place(out.cabin, frame, widthPx, heightPx, CABIN_CENTER_X, display.cabinY);
+  place(
+    out.errorDimension,
+    frame,
+    widthPx,
+    heightPx,
+    DIMENSION_X,
+    (display.cabinY + ARRIVAL_LEDGE_HEIGHT) / 2,
+  );
+  place(
+    out.walkerHead,
+    frame,
+    widthPx,
+    heightPx,
+    display.walkerX,
+    display.walkerGround + WALKER_HEAD_TOP,
+  );
+  place(out.forceGauge, frame, widthPx, heightPx, (GAUGE_MIN_X + GAUGE_MAX_X) / 2, GAUGE_MAX_Y);
+  out.errorDimensionVisible = display.phase === 'outcome' && s.outcome === 'win';
+}

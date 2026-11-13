@@ -9,7 +9,9 @@
  *
  * Anti-crénelage : la distance au trait le plus proche est convertie en pixels grâce à `fwidth`
  * (mètres par pixel, dérivée écran) ; un trait plus fin qu'un pixel est dessiné sur un pixel avec
- * une intensité réduite d'autant (énergie conservée). Anti-moiré : chaque famille s'estompe quand
+ * une intensité réduite d'autant (énergie conservée). Sur petit écran seulement (traits de mètre
+ * sous un pixel), chaque trait est posé sur un seul pixel entier (voir `gridLayer`). Anti-moiré :
+ * chaque famille s'estompe quand
  * son pas à l'écran tombe sous {@link GRID_FADE_END_PX} pixels et disparaît sous
  * {@link GRID_FADE_START_PX}.
  */
@@ -27,6 +29,7 @@ import {
   mix,
   positionWorld,
   smoothstep,
+  step,
 } from 'three/tsl';
 import type { Frame } from './camera';
 
@@ -76,6 +79,24 @@ export const GRID_FADE_START_PX = 2.5;
 /** Pas à l'écran (pixels) au-dessus duquel une famille de traits est pleinement visible. */
 export const GRID_FADE_END_PX = 6;
 
+/**
+ * Régime « un seul pixel » : il dépend de l'échelle de la feuille, mesurée par l'épaisseur à
+ * l'écran d'un trait de mètre ({@link GRID_MAJOR_WIDTH}). Au-dessus de {@link GRID_SNAP_END_PX}
+ * pixels (bureau : 1,66 px à 1280 × 720, 1,03 px à 800 × 900), le rendu est exactement celui de
+ * T-008 ; sous {@link GRID_SNAP_START_PX} (portrait 390 px : 0,50 px), toutes les familles sont
+ * posées sur un seul pixel ; fondu continu entre les deux.
+ */
+export const GRID_SNAP_START_PX = 0.7;
+/** Voir {@link GRID_SNAP_START_PX}. */
+export const GRID_SNAP_END_PX = 1;
+/**
+ * Quantification de la position sous-pixel d'un trait (fractions de pixel) avant le choix du
+ * pixel : absorbe les erreurs d'arrondi de la coordonnée monde interpolée et de `fwidth`, pour
+ * que les deux pixels de part et d'autre d'un trait posé PILE sur une frontière voient
+ * exactement −0,5 et +0,5, et que le choix soit le même sur toute la longueur du trait.
+ */
+export const GRID_SNAP_QUANTUM = 16;
+
 /** Taille d'une cellule de grain de papier (m). */
 export const GRAIN_CELL = 0.01;
 /** Amplitude crête à crête du grain (fraction de la luminosité). */
@@ -91,24 +112,38 @@ export const PAPER_OVERSCAN = 0.02;
 
 /**
  * Intensité [0, 1] d'une famille de traits au fragment courant.
- * @param step pas de la famille (m).
+ *
+ * Deux couvertures, mélangées selon l'échelle (voir {@link GRID_SNAP_START_PX}) :
+ * - `smooth` : couverture analytique de T-008 (filtre boîte d'un pixel), inchangée ; seule
+ *   utilisée à l'échelle du bureau (le mélange vaut alors exactement `smooth`) ;
+ * - `snapped` (petit écran) : 1 sur le SEUL pixel dont l'intervalle ]−0,5 ; 0,5] contient le
+ *   trait, 0 ailleurs. Sinon, selon sa phase sous-pixel, un trait tombait tantôt sur un pixel
+ *   plein (bleu-vert), tantôt sur deux pixels à moitié (brunâtre). La position est quantifiée
+ *   au 1/{@link GRID_SNAP_QUANTUM} de pixel avant la comparaison (cas d'égalité déterministe).
+ * @param spacing pas de la famille (m).
  * @param width épaisseur des traits (m).
  * @param minEnergy intensité minimale d'un trait plus fin qu'un pixel.
  */
-function gridLayer(step: number, width: number, minEnergy: number) {
+function gridLayer(spacing: number, width: number, minEnergy: number) {
   const p = positionWorld.xy;
   const metersPerPixel = fwidth(p);
   const pixelSize = max(metersPerPixel.x, metersPerPixel.y);
-  // Distance (m) au trait le plus proche, sur chaque axe.
-  const distance = abs(fract(p.div(step).add(0.5)).sub(0.5)).mul(step);
-  const distancePx = distance.div(metersPerPixel);
+  // Position (pixels) du fragment par rapport au trait le plus proche, sur chaque axe.
+  const signedPx = fract(p.div(spacing).add(0.5)).sub(0.5).mul(spacing).div(metersPerPixel);
+  const distancePx = abs(signedPx);
   const widthPx = float(width).div(pixelSize);
   const drawnPx = max(widthPx, 1);
-  // Recouvrement du pixel par un trait de largeur drawnPx (filtre boîte d'un pixel).
-  const coverage = clamp(drawnPx.mul(0.5).add(0.5).sub(distancePx), 0, 1);
+  // Recouvrement du pixel par un trait de largeur drawnPx (filtre boîte d'un pixel), T-008.
+  const smooth = clamp(drawnPx.mul(0.5).add(0.5).sub(distancePx), 0, 1);
+  // Un seul pixel : position quantifiée q, pixel retenu si −0,5 < q ≤ 0,5.
+  const quantized = floor(signedPx.mul(GRID_SNAP_QUANTUM).add(0.5)).div(GRID_SNAP_QUANTUM);
+  const snapped = step(quantized, 0.5).mul(float(1).sub(step(quantized, -0.5)));
+  const majorWidthPx = float(GRID_MAJOR_WIDTH).div(pixelSize);
+  const thin = float(1).sub(smoothstep(GRID_SNAP_START_PX, GRID_SNAP_END_PX, majorWidthPx));
+  const coverage = mix(smooth, snapped, thin);
   const line = max(coverage.x, coverage.y);
   const energy = clamp(widthPx.div(drawnPx), minEnergy, 1);
-  const density = smoothstep(GRID_FADE_START_PX, GRID_FADE_END_PX, float(step).div(pixelSize));
+  const density = smoothstep(GRID_FADE_START_PX, GRID_FADE_END_PX, float(spacing).div(pixelSize));
   return line.mul(energy).mul(density);
 }
 

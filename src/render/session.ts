@@ -1,6 +1,7 @@
 /**
- * Session de rendu : démarre le renderer, la scène du papier, le suivi de taille et la boucle
- * d'images. Seule entrée dont le point de composition a besoin (il n'importe pas three).
+ * Session de rendu : démarre le renderer, la scène du papier et du niveau au crayon, le suivi de
+ * taille et la boucle d'images. Seule entrée dont le point de composition a besoin (il n'importe
+ * pas three).
  */
 import {
   bootRenderer,
@@ -11,6 +12,10 @@ import {
   disposeRenderer,
   type BootFailureReason,
 } from './bootstrap';
+import type { LevelSnapshot } from '../game';
+import type { SignalRecorder } from '../sim';
+import { computeAnchors, createAnchors, type LevelAnchors } from './level-display';
+import { createLevelView, type LevelView } from './level-view';
 import type { RendererChoice } from './options';
 import { createPaperStage } from './stage';
 
@@ -20,6 +25,26 @@ export interface RenderStats {
   readonly drawCalls: number;
   /** Triangles dessinés. */
   readonly triangles: number;
+}
+
+/** Niveau à dessiner : lu à chaque image, jamais conservé au-delà (contrat T-007). */
+export interface LevelSource {
+  /** Instantané courant (objet réutilisé par le niveau). */
+  readonly snapshot: Readonly<LevelSnapshot>;
+  /** Enregistreur des signaux du trajet. */
+  readonly signals: SignalRecorder;
+}
+
+/** Options de {@link startRendering}. */
+export interface StartOptions {
+  /** Niveau à dessiner ; absent : papier seul. */
+  readonly level?: LevelSource;
+  /**
+   * Rappel appelé à chaque image, avant le dessin, avec le temps d'image en secondes (c'est là
+   * que le point de composition fait avancer le niveau). Renvoie la durée (s) dont avancer
+   * l'horloge visuelle du « boiling » ; défaut : le temps d'image.
+   */
+  readonly onFrame?: (frameSeconds: number) => number;
 }
 
 /** Rendu en cours. */
@@ -32,6 +57,21 @@ export interface RenderSession {
   readonly firstFrame: Promise<RenderStats>;
   /** Compteurs de la dernière image (alloue un objet : à ne pas appeler à chaque image). */
   stats(): RenderStats;
+  /**
+   * Ancres écran (pixels CSS) de la dernière image, pour les textes DOM de l'interface (T-010).
+   * Objet réutilisé, réécrit à chaque image : lire, ne pas conserver.
+   */
+  anchors(): Readonly<LevelAnchors>;
+  /**
+   * Dessine une image tout de suite, hors de la boucle, après avoir avancé l'horloge visuelle de
+   * `visualSeconds` (crochet de test, captures).
+   */
+  renderNow(visualSeconds: number): void;
+  /**
+   * Copie des points de la courbe y(t) de la dernière image (x0, y0, x1, y1… en m) ; vide sans
+   * niveau. Alloue : réservé aux tests.
+   */
+  trace(): number[];
   /** Arrête la boucle et le suivi de taille, libère le renderer. */
   stop(): void;
 }
@@ -42,26 +82,53 @@ export type StartResult =
   | { readonly ok: false; readonly reason: BootFailureReason; readonly detail: string };
 
 /**
- * Démarre le rendu du papier sur `canvas`. Ne lève jamais : un échec du renderer est renvoyé.
+ * Démarre le rendu sur `canvas` : papier, et niveau au crayon si `options.level` est fourni. Ne
+ * lève jamais : un échec du renderer est renvoyé.
  * @param canvas surface de dessin, dimensionnée par CSS.
  * @param choice choix du renderer (voir `parseRendererChoice`).
- * @param onFrame rappel facultatif appelé à chaque image, avant le dessin, avec le temps d'image
- *   en secondes.
+ * @param options niveau à dessiner et rappel par image.
  */
 export async function startRendering(
   canvas: HTMLCanvasElement,
   choice: RendererChoice,
-  onFrame?: (frameSeconds: number) => void,
+  options: StartOptions = {},
 ): Promise<StartResult> {
   const boot = await bootRenderer(canvas, choice);
   if (!boot.ok) {
     return boot;
   }
   const { renderer, backend } = boot;
+  const { level, onFrame } = options;
+  const reducedMotion = prefersReducedMotion();
   const stage = createPaperStage(renderer);
+  const view: LevelView | null = level === undefined ? null : createLevelView(stage.scene);
+  const anchors = createAnchors();
+  let surfaceWidth = 0;
+  let surfaceHeight = 0;
+  let visualSeconds = 0;
   const stopObserving = observeCanvasSize(canvas, renderer, (widthPx, heightPx) => {
+    surfaceWidth = widthPx;
+    surfaceHeight = heightPx;
     stage.resize(widthPx, heightPx);
+    view?.resize(stage.frame);
   });
+
+  /** Repeint le niveau, met à jour les ancres et dessine (aucune allocation de notre part). */
+  const draw = (visualAdvance: number): void => {
+    visualSeconds += visualAdvance;
+    if (view !== null && level !== undefined) {
+      view.paint(level.snapshot, level.signals, visualSeconds, reducedMotion);
+      computeAnchors(
+        stage.frame,
+        surfaceWidth,
+        surfaceHeight,
+        view.painter.display,
+        level.snapshot,
+        anchors,
+      );
+    }
+    stage.render();
+  };
   const info = renderer.info.render;
   const stats = (): RenderStats => ({ drawCalls: info.drawCalls, triangles: info.triangles });
 
@@ -72,8 +139,7 @@ export async function startRendering(
   });
 
   const loop = createFrameLoop(renderer, (frameSeconds) => {
-    onFrame?.(frameSeconds);
-    stage.render();
+    draw(onFrame === undefined ? frameSeconds : onFrame(frameSeconds));
     if (!firstFrameDone) {
       firstFrameDone = true;
       resolveFirstFrame(stats());
@@ -85,12 +151,26 @@ export async function startRendering(
     ok: true,
     session: {
       backend,
-      reducedMotion: prefersReducedMotion(),
+      reducedMotion,
       firstFrame,
       stats,
+      anchors(): Readonly<LevelAnchors> {
+        return anchors;
+      },
+      renderNow(seconds: number): void {
+        draw(seconds);
+      },
+      trace(): number[] {
+        if (view === null) {
+          return [];
+        }
+        const trace = view.painter.trace;
+        return Array.from(trace.points.subarray(0, trace.count * 2));
+      },
       stop(): void {
         loop.stop();
         stopObserving();
+        view?.dispose();
         stage.dispose();
         disposeRenderer(renderer);
       },

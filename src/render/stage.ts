@@ -1,6 +1,6 @@
 /**
  * Scène minimale de T-008 : caméra orthographique cadrée sur la zone de jeu et feuille de papier
- * millimétré. Les éléments crayonnés du niveau s'y ajouteront (T-009).
+ * millimétré. Les traits du niveau au crayon y sont ajoutés par `level-view.ts` (T-009).
  */
 import { OrthographicCamera, Scene, type WebGPURenderer } from 'three/webgpu';
 import { applyFrame, computeFrame, type Frame } from './camera';
@@ -29,6 +29,7 @@ export interface PaperStage {
    * WebGPURenderer ajoute une passe de sortie (1 appel, 1 triangle plein écran `QuadMesh`) qui
    * convertit la cible intermédiaire linéaire (HalfFloat) vers l'espace sRGB du canvas, parce que
    * `outputColorSpace` (sRGB) diffère de l'espace de travail linéaire (`needsFrameBufferTarget`).
+   * Le niveau (T-009) ajoute un appel par lot de traits non vide, 5 au plus.
    */
   render(): void;
   /** Libère géométries et matériaux. */

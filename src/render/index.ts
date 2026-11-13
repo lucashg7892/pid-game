@@ -32,5 +32,34 @@ export {
   type RendererChoice,
 } from './options';
 export * from './paper';
-export { startRendering, type RenderSession, type RenderStats, type StartResult } from './session';
+export {
+  CONSOLE_ANCHOR_Y,
+  WALKER_HEAD_TOP,
+  choosePose,
+  computeAnchors,
+  computeDisplay,
+  createAnchors,
+  createDisplay,
+  effectivePhase,
+  type LevelAnchors,
+  type LevelDisplay,
+  type ScreenPoint,
+} from './level-display';
+export {
+  CURVE_CAPACITY,
+  CURVE_FULL_SPEED_SECONDS,
+  CURVE_MAX_SPEED,
+  CURVE_ORIGIN_X,
+  CURVE_SPAN,
+  curveTimeScale,
+  curveX,
+} from './curve';
+export {
+  startRendering,
+  type LevelSource,
+  type RenderSession,
+  type RenderStats,
+  type StartOptions,
+  type StartResult,
+} from './session';
 export { CAMERA_FAR, CAMERA_NEAR, CAMERA_Z, createPaperStage, type PaperStage } from './stage';

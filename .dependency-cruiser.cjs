@@ -39,9 +39,9 @@ module.exports = {
     {
       name: 'three-only-in-render',
       comment:
-        'three ne peut être importé que dans src/render (et src/main.ts, point de composition).',
+        'three ne peut être importé que dans src/render (réserve E2 de T-002 levée en T-008).',
       severity: 'error',
-      from: { pathNot: '^src/(render/|main\\.ts$)' },
+      from: { pathNot: '^src/render/' },
       to: { path: '(^|/)node_modules/three/' },
     },
     {

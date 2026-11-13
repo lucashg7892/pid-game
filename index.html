@@ -3,10 +3,49 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PID Game</title>
+    <title>Huygens's world</title>
+    <!-- Chemin absolu réécrit par Vite avec la base (/pid-game/favicon.svg) ; évite le 404 /favicon.ico. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        /* Même crème que le papier (src/render/paper.ts) : pas d'éclair blanc au chargement. */
+        background: #f7f0de;
+        color: #2a2724;
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+      }
+      #scene {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+      }
+      #scene[hidden] {
+        display: none;
+      }
+      #fallback {
+        box-sizing: border-box;
+        max-width: 40rem;
+        max-height: 100%;
+        overflow-y: auto;
+        margin: 0 auto;
+        padding: 2rem 1.25rem;
+      }
+      #fallback a {
+        color: #1f4e7a;
+      }
+      #fallback a:focus-visible {
+        outline: 3px solid #1f4e7a;
+        outline-offset: 2px;
+      }
+    </style>
   </head>
   <body>
-    <canvas id="scene" role="img" aria-label="Scène du jeu"></canvas>
+    <canvas id="scene" role="img" aria-label="Huygens's world"></canvas>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

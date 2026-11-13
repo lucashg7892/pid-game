@@ -54,7 +54,7 @@ mission et on consigne la leçon en section 4.
 | T-006 | réalisateur | i18n FR/EN | VALIDÉ | logs/T-006.md |
 | T-007 | réalisateur | Logique du niveau 1 | VALIDÉ | logs/T-007.md |
 | D-004 | rédacteur | Doc du noyau, de l'i18n, de la validation ; errata de spec | VALIDÉ | logs/D-004.md |
-| T-008 | réalisateur | Rendu : démarrage WebGPU/WebGL2, caméra, papier millimétré | EN COURS | logs/T-008.md |
+| T-008 | réalisateur | Rendu : démarrage WebGPU/WebGL2, caméra, papier millimétré | VALIDÉ | logs/T-008.md |
 | D-007 | rédacteur | Doc de la logique du niveau ; tutoriel de lancement local | VALIDÉ (réserve) | logs/D-007.md |
 | D-002 | rédacteur | Doc technique initiale (README, docs/) | VALIDÉ | logs/D-002.md |
 
@@ -67,3 +67,4 @@ mission et on consigne la leçon en section 4.
 - L5 (D-002) : ne pas lancer le rédacteur en parallèle d'un réalisateur : il lit un dépôt en mouvement. Le rédacteur passe après la validation, sur un état figé.
 - L6 (T-006) : dans device_bash, les heredocs convertissent les échappements \\uXXXX en caractères réels ; écrire les fichiers qui en contiennent par script python.
 - L7 (D-004) : l'orchestrateur a committé T-007 pendant que le rédacteur documentait « HEAD » ; donner au rédacteur un hash de commit fixe, et ne pas lui envoyer d'ajout en fin de tâche (message non lu).
+- L8 (T-008) : la VM des agents ne peut pas télécharger de navigateur (réseau filtré). L'e2e est exécuté par l'orchestrateur dans son environnement cloud (Chrome for Testing 153 préinstallé) sur une copie du dépôt ; les agents reçoivent les sorties et corrigent. Un certificat « NON EXÉCUTÉ » honnête vaut mieux qu'un PASS supposé.

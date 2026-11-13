@@ -19,3 +19,10 @@ Liste tenue par l'orchestrateur. Rien ici n'est bloquant pour la v0.1.
 | K13 | Contrastes et `prefers-reduced-motion` non testés en e2e | D-010 | à vérifier |
 | K14 | GitHub Pages impossible tant que le dépôt est privé (compte gratuit) | D17 | décision utilisateur |
 | K15 | Références de jeu à 6 décimales : 4,4e-7 m de marge sous la tolérance de 1e-6 | T-005 (D-10) | mineur |
+| K16 | Perte de contexte GPU non gérée (aucun écouteur `webglcontextlost` / `device.lost`) | T-012 (V-1) | majeur, non bloquant |
+| K17 | Exception après le démarrage du renderer non rattrapée (pas de page de repli) | T-012 (V-2) | mineur |
+| K18 | Géométrie de l'interface recalculée seulement sur `resize` de la fenêtre | T-012 (V-3) | mineur |
+| K19 | Ouvrir l'aide pendant un trajet ne met pas en pause | T-012 (V-4) | mineur |
+| K20 | Saturation (jauge rouge) couverte par des tests unitaires seulement, sans e2e ni capture | T-012 | mineur |
+| K21 | Bouton Pause : libellé et `aria-pressed` changent ensemble ; aide en `role="dialog"` sans `aria-modal` ni piège de focus ; focus non porté sur « Rejouer » à l'issue | T-012 (V-5 à V-7) | mineur |
+| K22 | `package.json` en version 0.0.0 ; `prefers-reduced-motion` lu seulement au démarrage | T-012 (V-8, V-10) | mineur |

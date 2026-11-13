@@ -31,6 +31,8 @@ Un ordre de mission tient en quelques lignes : objectif, fichiers concernés, co
 
 **On demande à l'utilisateur** (via l'orchestrateur) pour : les choix de design, de pédagogie et de lore ; les valeurs de jeu (par exemple la fenêtre de Kp) ; un changement de périmètre ou de spec ; une dépendance nouvelle ; tout ce qui est public ou irréversible (push, dépôt public, Pages, suppression).
 
+**Recherche et revue.** Recherche large dans le code (« où est utilisé X ? ») : agent intégré `Explore`, en lecture seule ; ne pas créer d'agent de recherche. Revue d'un diff ou audit du dépôt entier : toujours le `validateur` (Opus, lecture seule), l'ordre de mission précise l'étendue. Pas d'autre agent sans décision de l'utilisateur.
+
 ## Vérification proportionnée
 
 Le niveau est annoncé au lancement de la tâche. En cas de doute, prendre le niveau du dessus ; un agent peut escalader, l'orchestrateur peut relever.

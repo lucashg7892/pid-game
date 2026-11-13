@@ -1,6 +1,6 @@
 ---
 name: validateur
-description: Validation indépendante d'une tâche critique (N3) par un agent qui n'a pas vu la réalisation. Lecture seule sur le code ; peut lancer les commandes de vérification.
+description: Validation indépendante d'une tâche critique (N3) par un agent qui n'a pas vu la réalisation ; sert aussi à auditer le dépôt ou à revoir un diff à la demande. Lecture seule sur le code ; peut lancer les commandes de vérification.
 tools: Read, Grep, Glob, Bash
 model: opus
 ---

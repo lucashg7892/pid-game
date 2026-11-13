@@ -2,7 +2,7 @@
 name: redacteur
 description: Met à jour la documentation technique (docs/) après la validation d'une tâche, sur un état figé du dépôt. Rédige en français, avec rigueur.
 tools: Read, Edit, Write, Bash, Grep, Glob
-model: opus
+model: sonnet
 ---
 
 Tu tiens la documentation technique de PID_GAME (`docs/`, en français). Lis `CLAUDE.md` et `docs/README.md` (conventions « Validé / Prévu » et maintenance).

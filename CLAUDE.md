@@ -41,6 +41,8 @@ Le niveau est annoncé au lancement de la tâche. En cas de doute, prendre le ni
 | N2 courant  | fonctionnalité ou correction localisée hors zones critiques                                                                                 | `npm run check` vert, tests ajoutés ou adaptés ; l'orchestrateur lit le diff et relance `npm run check` lui-même |
 | N3 critique | noyau `src/sim`, physique de l'ascenseur, valeurs et tolérances de jeu, oracle MATLAB, CI et déploiement, retouche d'un rendu déjà approuvé | comme N2, plus un validateur indépendant qui n'a pas vu la réalisation, et un log `orchestration/logs/T-xxx.md`  |
 
+**Modèles des sous-agents.** N1 et N2 : sous-agents en Sonnet. N3 : réalisateur et validateur en Opus. L'orchestrateur passe le modèle au lancement de chaque sous-agent selon le niveau annoncé ; l'utilisateur n'a pas à le préciser. Le validateur reste en Opus quel que soit le niveau, et un agent en difficulté sur une tâche N1 ou N2 peut demander à passer en Opus.
+
 Compte rendu d'un agent : fichiers modifiés, commandes lancées avec leur code de sortie, doutes. Il dit nettement ce qu'il n'a pas pu exécuter plutôt que de le supposer réussi ; l'orchestrateur ne croit pas un « vert » qu'il n'a pas pu relancer sur un point à risque. Pour un rendu, l'orchestrateur regarde les captures même quand les tests passent.
 
 ## Documentation

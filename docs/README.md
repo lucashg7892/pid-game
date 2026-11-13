@@ -1,6 +1,6 @@
-# Documentation technique de PID Game
+# Documentation technique de Huygens’s world (dépôt `pid-game`)
 
-À quoi sert cette page : servir d'index et expliquer comment lire la documentation. La documentation décrit l'état réel du commit `7bcd9ce` (branche `main`). Elle est rédigée en français.
+À quoi sert cette page : servir d'index et expliquer comment lire la documentation. La documentation décrit l'état réel du commit `566a8a3` (branche `main`) : le niveau 1 est jouable. Elle est rédigée en français.
 
 ## Par où commencer
 
@@ -8,18 +8,22 @@ Pour lancer le projet sur un PC Windows, sans être développeur : [tutoriel-lan
 
 Pour comprendre le noyau en un quart d'heure : [simulation.md](simulation.md) (schéma d'un pas, piège de `LoopSample`), puis [physique/ascenseur.md](physique/ascenseur.md) (formules et valeurs du niveau 1), puis [jeu.md](jeu.md) (phases du niveau et règles d'issue).
 
+Pour comprendre ce qui est affiché : [rendu.md](rendu.md) (dessin au crayon) et [interface.md](interface.md) (textes, touches, accessibilité).
+
 ## Pages
 
 | Page | Contenu |
 |---|---|
-| [architecture.md](architecture.md) | modules, règles de dépendances, garde-fous automatiques |
+| [architecture.md](architecture.md) | modules, règles de dépendances, flux d'une image, garde-fous automatiques |
 | [simulation.md](simulation.md) | noyau de simulation : algorithme d'un pas, exports, horloge, RK4, saturation, déterminisme, procédures d'ajout |
 | [physique/ascenseur.md](physique/ascenseur.md) | modèle de l'ascenseur, formules, valeurs mesurées, fenêtre de réussite, stabilité |
 | [jeu.md](jeu.md) | logique du niveau 1 : phases, commandes, règles d'issue, instantané, événements, géométrie, contrats pour le rendu et l'interface |
-| [i18n-accessibilite.md](i18n-accessibilite.md) | i18n FR/EN (validé) ; accessibilité (Prévu T-010) |
-| [tests.md](tests.md) | inventaire des tests, oracle, tolérances, couverture, validation MATLAB |
+| [rendu.md](rendu.md) | rendu au crayon : démarrage WebGPU/WebGL2, cadrage, papier millimétré, traits, lots et budget, courbe, bonhomme, jauge, mesures |
+| [interface.md](interface.md) | interface du joueur : phases, bandeau d'aide, panneau Kp, table des touches, annonces, disposition, police |
+| [i18n-accessibilite.md](i18n-accessibilite.md) | i18n FR/EN et accessibilité (validés) |
+| [tests.md](tests.md) | inventaire des tests unitaires et e2e, oracle, tolérances, couverture, tests de pixels, validation MATLAB |
 | [developpement.md](developpement.md) | prérequis, installation, scripts npm, conventions de code, déploiement |
-| [tutoriel-lancer-en-local.md](tutoriel-lancer-en-local.md) | pas à pas Windows/PowerShell : copie, installation, lancement, tests, validation MATLAB, dépannage |
+| [tutoriel-lancer-en-local.md](tutoriel-lancer-en-local.md) | pas à pas Windows/PowerShell : copie, installation, lancement, jouer, tests, validation MATLAB, dépannage (dont `npm.cmd`) |
 | [CHANGELOG.md](CHANGELOG.md) | une entrée par tâche validée, correspondance tâche → commit |
 | [validation/T-005-noyau.md](validation/T-005-noyau.md) | rapport de validation indépendante du noyau (rédigé par le validateur, non maintenu ici) |
 | [specs/T-001-tranche-verticale.md](specs/T-001-tranche-verticale.md) | spécification de la tranche verticale v0.1 (rédigée par le concepteur, non maintenue ici) |
@@ -38,19 +42,21 @@ Pour comprendre le noyau en un quart d'heure : [simulation.md](simulation.md) (s
 | [ADR-007](decisions/ADR-007-i18n-maison.md) | i18n maison typée, sans bibliothèque |
 | [ADR-008](decisions/ADR-008-licence-mit.md) | licence MIT |
 | [ADR-009](decisions/ADR-009-machine-a-etats.md) | niveau en machine à états pure, instantané réutilisé et file d'événements |
+| [ADR-010](decisions/ADR-010-rendu-crayon.md) | rendu au crayon par rubans CPU préalloués et matériaux TSL |
+| [ADR-011](decisions/ADR-011-interface-dom.md) | interface en DOM superposé, pilotée par un modèle de vue pur |
+| [ADR-012](decisions/ADR-012-tests-navigateur.md) | tests navigateur hors de la VM des agents, captures de référence |
+
+### Captures
+
+Les images de `img/` sont produites par les tests e2e (T-008 à T-010), dans Chrome headless avec rendu logiciel. Elles servent de référence visuelle : l'orchestrateur les regarde à chaque exécution (leçon L9). Les pages les intègrent par des liens relatifs.
 
 ### Pages prévues
 
-Ces pages n'existent pas encore. Elles viennent du plan de la spec T-001 §10.
-
-| Page | Écrite après |
-|---|---|
-| `rendu.md` | Prévu (T-008, T-009) |
-| partie accessibilité de `i18n-accessibilite.md` | Prévu (T-010) |
+Plus aucune page du plan de la spec T-001 §10 ne manque. Une page sur l'intégration continue et la publication : Prévu (T-011).
 
 ## Titre du jeu
 
-Titre provisoire décidé par l'utilisateur : « Huygens's world », en hommage à Christiaan Huygens (décision D15 du registre). Dans le code, les clés `app.title` valent encore « PID au crayon » / « Pencil PID » et l'onglet du navigateur affiche « PID Game » (`index.html`). Changement Prévu (T-010).
+Titre provisoire décidé par l'utilisateur : « Huygens’s world », en hommage à Christiaan Huygens (décision D15 du registre). Depuis T-010, c'est la valeur de la clé `app.title` en français et en anglais, et le titre de l'onglet (`index.html`). Le dépôt garde le nom `pid-game`.
 
 ## Convention « Validé / Prévu »
 

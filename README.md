@@ -1,23 +1,33 @@
-# PID Game
+# Huygens’s world
 
-Projet de jeu web éducatif destiné à enseigner les bases de l'automatique, jusqu'au contrôleur PID. Prévu : un bonhomme bâton dessiné au crayon traversera un monde de papier millimétré ; chaque obstacle sera un système dont le joueur règle le contrôleur.
+_Dépôt `pid-game` · jeu web éducatif sur l'automatique et le contrôleur PID._
 
-Titre provisoire : « Huygens's world », en hommage à Christiaan Huygens. Le code affiche encore les anciens titres ; le changement est prévu avec l'interface (T-010).
+![Le niveau 1 : la cabine monte, sa hauteur se trace au crayon sur le mur de la cage](docs/img/t010-03-trajet.png)
+
+Un bonhomme bâton dessiné au crayon traverse un monde de papier millimétré ; chaque obstacle est un système dont le joueur règle le contrôleur. Titre provisoire « Huygens’s world », en hommage à Christiaan Huygens.
 
 _English version below._
 
+## Comment jouer
+
+1. Marchez jusqu'à la console avec **→** (ou **D**), puis appuyez sur **E**.
+2. Réglez le gain Kp avec **+** et **−**, puis lancez l'ascenseur avec **E** ou **Entrée**.
+3. Kp trop faible : la cabine s'arrête trop bas ; trop fort : elle heurte la poutre. **R** pour réessayer, **?** pour l'aide.
+
 ## État actuel
 
-**Rien n'est jouable ni affiché.** Le dépôt contient le socle outillé, le noyau de simulation, les textes FR/EN et la logique du niveau 1, validés le 2026-11-12. Aucun de ces éléments n'est encore affiché dans le navigateur : la page est blanche.
+**Le niveau 1 est jouable** dans un navigateur récent (WebGPU ou WebGL2), en français et en anglais. Les tâches T-000 à T-010 sont validées (2026-11-13).
 
 - Validé :
-  - socle : npm, TypeScript, Vite, ESLint, Prettier, dependency-cruiser, Vitest, règles d'architecture (T-002) ;
-  - noyau de simulation `src/sim` : horloge à pas fixe, RK4, saturation, enregistreur, contrôleur P, modèle de l'ascenseur, boucle fermée (T-003, T-004, T-004b) ;
-  - validation indépendante du noyau par un oracle exact MATLAB, hors du site (T-005) ;
-  - i18n FR/EN `src/i18n` : 89 clés par langue, interpolation, formatage des nombres (T-006) ;
-  - logique du niveau 1 `src/game` : phases, réglage de Kp, règles de victoire et d'échec, événements (T-007) ;
-  - 231 tests unitaires verts ; couverture de `src/sim` et de `src/game` à 100 %.
-- Prévu : rendu (T-008, T-009), interface et accessibilité (T-010), CI et GitHub Pages (T-011).
+  - socle outillé : npm, TypeScript, Vite, ESLint, Prettier, dependency-cruiser, Vitest, Playwright (T-002) ;
+  - noyau de simulation `src/sim`, validé contre un oracle exact MATLAB hors du site (T-003 à T-005) ;
+  - textes FR/EN `src/i18n` : 111 clés par langue (T-006, T-010) ;
+  - logique du niveau 1 `src/game` (T-007) ;
+  - rendu au crayon `src/render` : papier millimétré, décor, bonhomme, courbe y(t), jauge de force (T-008, T-009) ;
+  - interface `src/ui` : bandeau d'aide, panneau Kp, issues, clavier, souris, tactile, accessibilité, police manuscrite (T-010) ;
+  - 426 tests unitaires et 28 tests de bout en bout verts (les seconds exécutés par l'orchestrateur, voir [docs/tests.md](docs/tests.md)).
+- Limites : WebGPU réel n'est exercé par aucun test automatique (les tests tournent en WebGL2 logiciel) ; commandes tactiles non essayées sur un vrai écran tactile.
+- Prévu : intégration continue et publication sur GitHub Pages (T-011).
 
 Le détail est dans [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
@@ -27,13 +37,16 @@ Le détail est dans [docs/CHANGELOG.md](docs/CHANGELOG.md).
 - `.nvmrc` contient `22` : avec nvm, vérifiez que la version obtenue est au moins 22.12.
 - npm (testé avec npm 10.9.9 et Node v22.23.4).
 
-## Installation
+## Installation et lancement
 
 Pas à pas sous Windows : [tutoriel « Lancer le projet sur son PC »](docs/tutoriel-lancer-en-local.md).
 
 ```sh
 npm ci
+npm run dev
 ```
+
+Ouvrez l'adresse affichée par Vite (par défaut `http://localhost:5173/pid-game/`). Sous PowerShell, si `npm` est refusé, utilisez `npm.cmd`.
 
 `node_modules/` contient des binaires natifs propres au système. S'il a été installé sous Linux, relancez `npm ci` sous Windows (et inversement).
 
@@ -45,32 +58,40 @@ npm ci
 | `npm run check`    | typecheck, lint, tests puis build ; à lancer avant toute livraison |
 | `npm run test`     | tests unitaires Vitest                                             |
 | `npm run test:cov` | tests unitaires et couverture de `src/sim`                         |
+| `npm run e2e`      | tests de bout en bout (après `npx playwright install chromium`)    |
 | `npm run build`    | build de production dans `dist/` (base `/pid-game/`)               |
 
-Ne lancez pas `npm run e2e` avant T-010 : il n'y a pas encore de test de bout en bout. Liste complète : [docs/developpement.md](docs/developpement.md).
+Liste complète : [docs/developpement.md](docs/developpement.md).
 
 ## Documentation
 
-Index : [docs/README.md](docs/README.md). Pour commencer : [noyau de simulation](docs/simulation.md), [physique de l'ascenseur](docs/physique/ascenseur.md).
+Index : [docs/README.md](docs/README.md). Pour commencer : [interface du joueur](docs/interface.md), [rendu au crayon](docs/rendu.md), [noyau de simulation](docs/simulation.md), [physique de l'ascenseur](docs/physique/ascenseur.md).
 
 ## Licence
 
-MIT. Voir le fichier [LICENSE](LICENSE).
+MIT. Voir le fichier [LICENSE](LICENSE). Police Patrick Hand : SIL Open Font License 1.1 (`public/fonts/OFL.txt`).
 
 ---
 
-# PID Game (English)
+# Huygens’s world (English)
 
-A planned educational web game about control theory, up to the PID controller. Planned: a pencil-drawn stick figure will walk across graph paper; each obstacle will be a system whose controller the player tunes.
+_Repository `pid-game` · an educational web game about control theory and the PID controller._
 
-Working title: "Huygens's world", a tribute to Christiaan Huygens. The code still shows the old titles; the change is planned with the UI (T-010).
+A pencil-drawn stick figure walks across graph paper; each obstacle is a system whose controller the player tunes. Working title "Huygens’s world", a tribute to Christiaan Huygens.
+
+## How to play
+
+1. Walk to the console with **→** (or **D**), then press **E**.
+2. Set the gain Kp with **+** and **−**, then launch the lift with **E** or **Enter**.
+3. Kp too low: the lift stops short; too high: it hits the beam. **R** to try again, **?** for help.
 
 ## Current status
 
-**Nothing is playable or displayed yet.** The repository holds the tooling foundation, the simulation core, the French/English texts and the level 1 logic, validated on 2026-11-12. None of them is shown in the browser yet: the page is blank.
+**Level 1 is playable** in a recent browser (WebGPU or WebGL2), in French and English. Tasks T-000 to T-010 are validated (2026-11-13).
 
-- Validated: tooling (T-002); simulation core `src/sim` with fixed-step clock, RK4, saturation, recorder, P controller, lift model and closed loop (T-003, T-004, T-004b); independent validation of the core against an exact MATLAB oracle, outside the site (T-005); French/English i18n `src/i18n` (T-006); level 1 logic `src/game` (T-007); 231 passing unit tests, 100% coverage of `src/sim` and `src/game`.
-- Planned: rendering (T-008, T-009), UI and accessibility (T-010), CI and GitHub Pages deployment (T-011).
+- Validated: tooling (T-002); simulation core `src/sim`, checked against an exact MATLAB oracle outside the site (T-003 to T-005); French/English texts `src/i18n`, 111 keys per language (T-006, T-010); level 1 logic `src/game` (T-007); pencil rendering `src/render` (T-008, T-009); user interface `src/ui` with keyboard, mouse, touch and accessibility (T-010); 426 unit tests and 28 end-to-end tests passing (the latter run by the coordinator, see [docs/tests.md](docs/tests.md)).
+- Limits: real WebGPU is not exercised by any automated test (tests run on software WebGL2); touch controls not tried on a real touch screen.
+- Planned: CI and GitHub Pages deployment (T-011).
 
 ## Requirements
 
@@ -83,12 +104,12 @@ Step-by-step guide for Windows (in French): [docs/tutoriel-lancer-en-local.md](d
 
 ```sh
 npm ci
-npm run dev       # Vite dev server
+npm run dev       # Vite dev server, then open http://localhost:5173/pid-game/
 npm run check     # typecheck, lint, test, build
 npm run test:cov  # unit tests with coverage of src/sim
 ```
 
-Do not run `npm run e2e` before T-010: there are no end-to-end tests yet.
+On Windows PowerShell, if `npm` is blocked by the execution policy, use `npm.cmd`. End-to-end tests: `npx playwright install chromium`, then `npm run e2e`.
 
 `node_modules/` contains platform-specific binaries: reinstall with `npm ci` when switching between Linux and Windows.
 
@@ -98,4 +119,4 @@ Technical documentation is in French: [docs/README.md](docs/README.md).
 
 ## License
 
-MIT. See the [LICENSE](LICENSE) file.
+MIT. See the [LICENSE](LICENSE) file. Patrick Hand font: SIL Open Font License 1.1.

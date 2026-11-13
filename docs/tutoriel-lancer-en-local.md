@@ -1,8 +1,10 @@
 # Tutoriel : lancer le projet sur son PC (Windows)
 
-À quoi sert cette page : guider pas à pas, sous Windows et dans PowerShell, l'installation d'une copie du projet, son lancement dans le navigateur, les tests et la validation MATLAB. Aucune connaissance en développement n'est supposée. État décrit : commit `7bcd9ce` (2026-11-12).
+À quoi sert cette page : guider pas à pas, sous Windows et dans PowerShell, l'installation d'une copie du projet, son lancement dans le navigateur, une partie du niveau 1, les tests et la validation MATLAB. Aucune connaissance en développement n'est supposée. État décrit : commit `566a8a3` (2026-11-13).
 
-> **Statut des commandes.** Les commandes `git`, `npm` et `vite` de ce tutoriel ont été exécutées sous Linux (machine virtuelle du projet), pas sous Windows. Elles sont marquées « non exécuté sous Windows ». La validation MATLAB (étape 7) a été exécutée sous Windows.
+> **Statut des commandes.** Sous Windows, l'utilisateur a exécuté avec succès le clone, `npm.cmd ci` et `npm.cmd run dev` le 2026-11-13 (décision D16 du registre), puis a joué le niveau. La validation MATLAB (étape 6) a été exécutée sous Windows par le rédacteur. Les autres commandes (`git pull`, `npm run test`, `npm run test:cov`, `npm run check`, réinstallation) ont été exécutées sous Linux seulement et restent marquées « non exécuté sous Windows ».
+>
+> **Si PowerShell refuse `npm`** (« l'exécution de scripts est désactivée sur ce système »), écrivez `npm.cmd` à la place de `npm` dans toutes les commandes : voir le [dépannage](#7-dépannage).
 
 ## Avant de commencer : travaillez dans une copie
 
@@ -42,7 +44,7 @@ npm ci
 - `git clone PID_GAME pid-game-test` copie le dépôt local, avec tous ses commits, y compris ceux qui n'ont pas encore été envoyés sur GitHub. Il ne copie pas les fichiers modifiés mais non encore enregistrés dans un commit.
 - `npm ci` installe exactement les versions de `package-lock.json` dans `pid-game-test\node_modules`. Comptez de quelques secondes à quelques minutes selon la connexion (4 s sous Linux avec un cache déjà rempli). Il peut afficher un message sur des vulnérabilités « moderate » : elles concernent les outils de développement (réserve E7 de T-002), pas le jeu.
 
-Non exécuté sous Windows. Sous Linux : `git clone` d'un dépôt local → code 0, dernier commit `7bcd9ce` ; `npm ci` → code 0.
+Exécuté sous Windows par l'utilisateur le 2026-11-13, avec `npm.cmd ci` (décision D16). Sous Linux : `git clone` d'un dépôt local → code 0 ; `npm ci` → code 0.
 
 **Variante** : cloner depuis GitHub.
 
@@ -71,11 +73,36 @@ Vite affiche quelques lignes, dont l'adresse à ouvrir :
 
 Ouvrez cette adresse dans votre navigateur. Le chemin `/pid-game/` vient de `base: '/pid-game/'` dans `vite.config.ts` (nom du futur site GitHub Pages). Le port est celui affiché par Vite : 5173 par défaut.
 
-**Ce que vous verrez au 2026-11-12 : une page blanche.** C'est normal : aucun rendu n'existe avant la tâche T-008. Le titre de l'onglet est « PID Game ».
-
 Pour arrêter le serveur : revenez dans PowerShell et tapez `Ctrl+C` (confirmez par `O` ou `Y` si Windows le demande).
 
-Non exécuté sous Windows. Sous Linux : sortie ci-dessus, recopiée telle quelle.
+Exécuté sous Windows par l'utilisateur le 2026-11-13, avec `npm.cmd run dev` (décision D16) : le niveau tourne. La sortie ci-dessus a été recopiée sous Linux.
+
+### Ce que vous voyez
+
+L'onglet s'appelle « Huygens’s world ». Une feuille de papier millimétré, un bonhomme bâton au crayon à gauche, une console, une cage d'ascenseur au milieu et un quai en hauteur à droite. En haut : le titre, la valeur de Kp et trois boutons (« ? » pour l'aide, la langue, « Pause »). En bas : un bandeau qui dit quoi faire et avec quelle touche.
+
+![Début du niveau](img/t010-01-aide.png)
+
+### Jouer
+
+1. Maintenez **→** (ou **D**) : le bonhomme marche jusqu'à la console.
+2. Appuyez sur **E** : le panneau de réglage s'ouvre.
+3. Réglez Kp avec **+** et **−** (pas de 100) ou **Page préc.** / **Page suiv.** (pas de 1000). Le jeu commence à 1000 N/m.
+4. Appuyez sur **E** ou **Entrée** : l'ascenseur part. La courbe de sa hauteur se trace sur le mur de la cage.
+5. Lisez l'issue, puis appuyez sur **R** pour réessayer.
+
+Pour réussir, Kp doit être entre 2000 et 3800 N/m : trop faible, la cabine s'arrête trop bas ; trop fort, elle dépasse et heurte la poutre.
+
+| Touche | Action |
+|---|---|
+| ← / → ou Q / D (A / D en QWERTY) | marcher |
+| E, Entrée ou Espace | utiliser la console, puis lancer |
+| + / − | Kp ± 100 N/m |
+| Page préc. / Page suiv. | Kp ± 1000 N/m |
+| R | recommencer |
+| Échap | pause, reprise, fermer l'aide |
+
+Table complète : [interface.md](interface.md#touches). À la souris : cliquez sur la console, puis utilisez le panneau. Pour jouer en anglais : bouton « English », ou ajoutez `?lang=en` à l'adresse.
 
 ## 4. Mettre à jour la copie
 
@@ -95,17 +122,19 @@ git diff --stat "HEAD@{1}" HEAD -- package.json package-lock.json
 
 Si la commande n'affiche rien, ces fichiers n'ont pas changé. Non exécuté sous Windows.
 
-## 5. Ce qui est utile aujourd'hui
+## 5. Vérifier le travail fait
 
-Le jeu ne s'affiche pas encore, mais vous pouvez vérifier le travail fait.
+Ces commandes ne sont pas nécessaires pour jouer. Elles vérifient le code.
 
 | Commande | Durée indicative | Ce qu'elle montre |
 |---|---|---|
-| `npm run test` | ≈ 15 à 20 s | les 231 tests unitaires (21 fichiers) au commit `7bcd9ce` ; la fin doit afficher `Test Files 21 passed (21)` et `Tests 231 passed (231)`. Les lignes `T1`, `REF`, `EXACT` comparent la simulation aux formules et à la solution exacte |
-| `npm run test:cov` | ≈ 25 s | les mêmes tests, puis un tableau de couverture de `src/sim` : 100 % partout. Échoue sous 95 % des lignes |
+| `npm run test` | ≈ 30 s | les 426 tests unitaires (34 fichiers) au commit `566a8a3` ; la fin doit afficher `Test Files 34 passed (34)` et `Tests 426 passed (426)`. Les lignes `T1`, `REF`, `EXACT` comparent la simulation aux formules et à la solution exacte |
+| `npm run test:cov` | ≈ 40 s | les mêmes tests, puis un tableau de couverture de `src/sim` : 100 % partout. Échoue sous 95 % des lignes |
 | `npm run check` | ≈ 1 à 2 min | toute la chaîne : vérification des types, lint, formatage, règles d'architecture, tests, construction du site dans `dist\`. Doit se terminer sans erreur |
 
 Durées mesurées sous Linux ; non exécuté sous Windows. Détail des tests : [tests.md](tests.md).
+
+Les tests de bout en bout (`npm run e2e`, 28 tests dans un vrai navigateur) demandent d'abord `npx playwright install chromium`, qui télécharge un navigateur. Non exécuté sous Windows ; voir [tests.md](tests.md#tests-de-bout-en-bout-playwright).
 
 ## 6. Relancer la validation MATLAB
 
@@ -132,11 +161,35 @@ Exécuté sous Windows le 2026-11-12 dans `PID_GAME` : MATLAB 25.1 (R2025a), « 
 
 | Symptôme | Cause probable | Solution |
 |---|---|---|
+| PowerShell répond « Impossible de charger le fichier C:\Program Files\nodejs\npm.ps1, car l’exécution de scripts est désactivée sur ce système » | la politique d'exécution de PowerShell bloque le script `npm.ps1` | voir ci-dessous (**cas rencontré par l'utilisateur le 2026-11-13**) |
 | `npm ci` refuse de s'installer, ou une erreur parle de `engine` ou de version de Node | Node trop ancien | installer Node LTS (≥ 22.12) puis vérifier `node -v` |
 | `Cannot find module '@rolldown/binding-win32-x64-msvc'` ou erreur de « native binding » au lancement de `npm run dev` | le dossier `node_modules` a été copié depuis un autre système (Linux) | supprimer `node_modules`, puis refaire `npm ci` (voir ci-dessous) |
 | Vite affiche une autre adresse que `5173`, ou `Port 5173 is in use` | un autre programme (souvent un ancien `npm run dev`) utilise déjà le port | ouvrir l'adresse affichée par Vite, ou fermer l'autre fenêtre PowerShell |
-| `npm run e2e` échoue (« No tests found » ou erreur sur `tests/smoke.test.ts`) | les tests de bout en bout n'existent pas encore | **ne pas lancer `npm run e2e` avant la tâche T-010** |
-| page blanche sur `http://localhost:5173/pid-game/` | normal au 2026-11-12 | rien à faire : le rendu arrive avec T-008 |
+| `npm run e2e` échoue en disant que le navigateur est introuvable (message de Playwright non reproduit ici) | le navigateur de Playwright n'est pas installé | lancer `npx playwright install chromium`, puis `npm run e2e` |
+| page de repli « Ton navigateur ne peut pas afficher le jeu » | ni WebGPU ni WebGL2 disponible (navigateur ancien, accélération graphique désactivée) | mettre le navigateur à jour, activer l'accélération matérielle |
+
+### PowerShell refuse `npm`
+
+Sous Windows, `npm` est lancé par un petit script PowerShell (`npm.ps1`). Si la politique d'exécution l'interdit, trois solutions, au choix :
+
+1. **Utiliser `npm.cmd`** (aucun réglage changé) : écrire `npm.cmd` à la place de `npm`. C'est ce que l'utilisateur a fait le 2026-11-13, avec succès :
+
+```powershell
+npm.cmd ci
+npm.cmd run dev
+```
+
+2. **Utiliser l'invite de commandes** `cmd` (menu Démarrer, tapez « cmd ») au lieu de PowerShell : `npm ci` et `npm run dev` y fonctionnent tels quels. Non exécuté.
+
+3. **Autoriser les scripts locaux pour votre compte** (réglage de sécurité de Windows, à décider vous-même) :
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+Ce réglage autorise les scripts écrits sur votre PC et les scripts téléchargés signés, pour votre compte seulement. Non exécuté.
+
+### Réinstaller `node_modules`
 
 Supprimer `node_modules` et réinstaller (depuis `pid-game-test`, jamais dans `PID_GAME`) :
 

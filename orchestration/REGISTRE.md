@@ -55,7 +55,7 @@ mission et on consigne la leçon en section 4.
 | T-006 | réalisateur | i18n FR/EN | VALIDÉ | logs/T-006.md |
 | T-007 | réalisateur | Logique du niveau 1 | VALIDÉ | logs/T-007.md |
 | D-004 | rédacteur | Doc du noyau, de l'i18n, de la validation ; errata de spec | VALIDÉ | logs/D-004.md |
-| D-010 | rédacteur | Doc du rendu et de l'interface ; mises à jour en attente | EN COURS | logs/D-010.md |
+| D-010 | rédacteur | Doc du rendu et de l'interface ; mises à jour en attente | VALIDÉ | logs/D-010.md |
 | T-010 | réalisateur | Interface : panneau Kp, textes, commandes, accessibilité, titre | VALIDÉ | logs/T-010.md |
 | T-009 | réalisateur | Rendu : crayon, décor, bonhomme, ascenseur, courbes | VALIDÉ | logs/T-009.md |
 | T-008 | réalisateur | Rendu : démarrage WebGPU/WebGL2, caméra, papier millimétré | VALIDÉ | logs/T-008.md |
@@ -73,3 +73,4 @@ mission et on consigne la leçon en section 4.
 - L7 (D-004) : l'orchestrateur a committé T-007 pendant que le rédacteur documentait « HEAD » ; donner au rédacteur un hash de commit fixe, et ne pas lui envoyer d'ajout en fin de tâche (message non lu).
 - L8 (T-008) : la VM des agents ne peut pas télécharger de navigateur (réseau filtré). L'e2e est exécuté par l'orchestrateur dans son environnement cloud (Chrome for Testing 153 préinstallé) sur une copie du dépôt ; les agents reçoivent les sorties et corrigent. Un certificat « NON EXÉCUTÉ » honnête vaut mieux qu'un PASS supposé.
 - L9 (T-009) : un test de pixels qui vérifie la position ne vérifie pas l'aspect ; toute retouche d'un rendu déjà approuvé doit être comparée à la capture de référence, et l'orchestrateur regarde les captures même quand tous les tests passent.
+- L10 (D-010) : l'autorisation de suppression dans le dossier connecté expire à chaque nouvelle session ; la redemander avant de lancer un agent, sinon son `npm run check` échoue au build (EPERM sur dist/).

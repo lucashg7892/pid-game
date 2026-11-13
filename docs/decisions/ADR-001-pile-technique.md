@@ -29,7 +29,7 @@ Node ≥ 22.12.0 (exigence de Vitest 5.1.0).
 - Builds reproductibles : `npm ci` installe les mêmes versions partout.
 - Une montée de version est une tâche dédiée, validée par les tests e2e.
 - `npm audit` signale 10 vulnérabilités modérées dans la chaîne de lint (outils de développement seulement) ; à réexaminer à la prochaine montée de version (réserve E7, log T-002).
-- `@vitest/coverage-v8` n'est pas dans la liste de la spec T-001 §2 ; il est présent dans `package.json` pour le script de couverture, Prévu (T-003).
+- `@vitest/coverage-v8` n'est pas dans la liste de la spec T-001 §2 ; il est présent dans `package.json` pour le script de couverture `test:cov`, ajouté en T-003.
 
 ## Statut
 

@@ -1,6 +1,6 @@
 # Logique du niveau 1 (`src/game`)
 
-À quoi sert cette page : expliquer comment le niveau 1 « Le vide » décide de ce qui se passe : phases, commandes du joueur, règles de victoire et d'échec, données transmises au rendu et à l'interface. Elle décrit le commit `7bcd9ce` (logique validée en T-007). La simulation sous-jacente est dans [simulation.md](simulation.md), la physique dans [physique/ascenseur.md](physique/ascenseur.md).
+À quoi sert cette page : expliquer comment le niveau 1 « Le vide » décide de ce qui se passe : phases, commandes du joueur, règles de victoire et d'échec, données transmises au rendu et à l'interface. Elle décrit la logique validée en T-007 (commit `6259ccc`), inchangée au commit `566a8a3`. Ce que le joueur voit et les touches sont dans [interface.md](interface.md) ; le dessin dans [rendu.md](rendu.md). La simulation sous-jacente est dans [simulation.md](simulation.md), la physique dans [physique/ascenseur.md](physique/ascenseur.md).
 
 ## Rôle de `src/game`
 
@@ -14,7 +14,7 @@
 
 Le module est pur et déterministe. Il n'importe que `src/sim` (règle `game-no-render` de dependency-cruiser), n'utilise pas le DOM (`tsconfig.sim.json`), ni l'aléa, ni l'horloge murale. Pour ce dernier point, la règle ESLint du noyau ne couvre pas `src/game` ; c'est un test (`tests/game/units.test.ts`) qui lit les sources et refuse `Math.random`, `Date`, `performance`, `window` et `document`. Les textes et le formatage des nombres ne sont pas ici : ils viennent de `src/i18n`, côté interface.
 
-Le module n'est pas encore branché : `src/main.ts` ne l'importe pas. Rendu et interface : Prévu (T-008 à T-010).
+Depuis T-008 à T-010, `src/main.ts` crée le niveau (`createLevel1()`), l'avance à chaque image (`level.update`), le passe au rendu (`src/render`) et à l'interface (`src/ui`), qui lui envoie les commandes du joueur (voir [architecture.md](architecture.md#flux-dune-image)).
 
 | Fichier | Contenu |
 |---|---|
@@ -83,6 +83,8 @@ Aucune commande ne lève d'exception.
 | `resume()` | ignored | ignored | ignored | ignored | accepted |
 
 Le verrouillage est testé avant la validité : `setKp(NaN)` pendant le trajet renvoie `locked`.
+
+Ce tableau décrit l'API du niveau. Le clavier de l'interface n'appelle pas `interact()` en réglage : E, Entrée et Espace y lancent le trajet, et aucune touche ne referme le panneau sans lancer (voir [interface.md](interface.md#touches-qui-dépendent-de-la-phase)).
 
 `update(frameSeconds)` n'est pas une commande : c'est le battement du niveau, appelé à chaque image avec la durée de l'image en secondes. Il passe par l'horloge à pas fixe du noyau (durée bornée à 0,25 s, 8 pas au plus par image, voir [simulation.md](simulation.md#horloge-à-pas-fixe)) et exécute chaque pas selon la phase. En pause, il n'avance pas l'horloge : à la reprise, il n'y a aucun saut de temps.
 
@@ -180,7 +182,7 @@ Lecture :
 
 ## Événements
 
-Les événements signalent les moments discrets que l'interface doit annoncer une seule fois (région `aria-live`, sons, animations : Prévu T-010). Ils passent par une file circulaire de `EVENT_QUEUE_CAPACITY` = 32 emplacements alloués une fois.
+Les événements signalent les moments discrets que l'interface doit annoncer une seule fois (région `aria-live` de l'interface, voir [interface.md](interface.md#annonces-pour-lecteurs-décran) ; il n'y a pas de son). Ils passent par une file circulaire de `EVENT_QUEUE_CAPACITY` = 32 emplacements alloués une fois.
 
 | Type | Émis quand | Champ `k` |
 |---|---|---|
@@ -257,22 +259,22 @@ La zone de la console va donc de x = −1,75 à −0,25 m. Depuis l'apparition, 
 - `quantizeKp(v)` arrondit au multiple de 100 le plus proche (les demis vers +∞, comme `Math.round`), puis borne à [0 ; 8000]. −0 devient 0. Une valeur non finie donne `null`, que `setKp` traduit en `invalid`. Exemples testés : 49 → 0, 50 → 100, −49 → 0, 1234 → 1200, 7951 → 8000, 8049 → 8000, 1e300 → 8000.
 - Une valeur hors bornes est ramenée à la borne et acceptée.
 - Verrouillage : `locked` en `trip`, `outcome` et `paused` (décision D9 du registre : Kp verrouillé pendant le trajet).
-- `adjustKp(delta)` applique les mêmes règles à `kp + delta` (touches ±100 et ±1000 de la spec §6 : Prévu T-010).
+- `adjustKp(delta)` applique les mêmes règles à `kp + delta`. L'interface l'appelle avec ±100 (touches + et −, boutons du panneau) et ±1000 (Page préc., Page suiv.) ; voir la [table des touches](interface.md#touches).
 - Au lancement, une nouvelle boucle du noyau n'est créée que si Kp a changé depuis le trajet précédent ; sinon la boucle existante est remise à zéro.
 
 **Option `initialKp`** (`Level1Options`) : réservée aux tests et à un futur bac à sable. Elle fixe le Kp de départ **sans** l'arrondir au pas de 100 : c'est la seule façon d'obtenir 150 N/m (test T5 de la spec). Elle doit être finie et dans [0 ; 8000], sinon `createLevel1` lève `RangeError`. Tout réglage ultérieur repasse sur la grille (arbitrage D-a, log T-007). L'autre option, `createLoop`, permet d'injecter une autre boucle fermée (tests).
 
 ## Contrats pour le rendu et l'interface
 
-Contrats fixés par l'orchestrateur (log T-007) pour T-008 à T-010.
+Contrats fixés par l'orchestrateur (log T-007) pour T-008 à T-010, et appliqués par `src/render` et `src/ui`.
 
 1. **Ne rien conserver.** `snapshot` est un objet unique réécrit ; l'objet des événements est un emplacement réutilisé. Lire, copier si besoin, ne jamais garder de référence ni modifier. Le niveau, lui, ne garde aucune référence vers l'échantillon ni l'état du noyau : il copie les nombres (test `allocation.test.ts` : muter l'échantillon après coup ne change pas l'instantané). C'est la règle 2 du [piège de `LoopSample`](simulation.md#le-piège-de-loopsample), appliquée.
 2. **Interpoler.** Afficher la cabine à `lerp(cabinPrevY, cabinY, alpha)` et le bonhomme à `lerp(walkerPrevX, walkerX, alpha)`. Sans cela, l'image saccade quand la cadence d'écran n'est pas un multiple de 120 Hz.
 3. **Courbes.** `level.signals` (capacité 1800) contient r, y, e et uSat **avant** chaque pas, à l'instant k·dt, selon la convention du noyau : pour un trajet terminé au pas n, il contient y(0) à y((n − 1)·dt). La valeur au pas de l'issue est dans `snapshot.cabinY`. L'enregistreur est vidé au lancement et à `restart()`.
-4. **Animations.** L'embarquement du bonhomme et sa sortie après la victoire sont laissés au rendu : la logique le place directement au centre de la cabine au lancement.
+4. **Animations.** L'embarquement du bonhomme et sa sortie après la victoire sont laissés au rendu : la logique le place directement au centre de la cabine au lancement. Au commit `566a8a3`, le rendu ne les anime pas (réserve des logs T-009 et T-010).
 5. **Une seule annonce.** La saturation s'annonce sur l'événement `firstSaturation`, pas sur `snapshot.saturated` (qui change à chaque pas).
 
-Exemple d'usage (illustration ; la vraie boucle d'affichage est Prévu T-008, T-010) :
+Exemple d'usage simplifié. La vraie boucle est dans `src/main.ts`, `src/render/session.ts` et `src/ui/overlay.ts` : l'interface consomme les événements, le rendu interpole.
 
 ```ts
 const level = createLevel1();

@@ -1,8 +1,8 @@
 # Errata de la spécification T-001
 
-À quoi sert cette page : lister les points de la [spécification T-001](T-001-tranche-verticale.md) que les tâches T-004, T-005, T-004b et T-006 ont corrigés ou précisés. La spec elle-même n'est pas modifiée. Quand la spec et le code divergent, le code fait foi.
+À quoi sert cette page : lister les points de la [spécification T-001](T-001-tranche-verticale.md) que les tâches T-004, T-005, T-004b, T-006, T-008, T-009 et T-010 ont corrigés ou précisés. La spec elle-même n'est pas modifiée. Quand la spec et le code divergent, le code fait foi.
 
-Chaque point donne : ce que dit la spec, ce qui est vrai au commit `c00e678`, et la source.
+Chaque point donne : ce que dit la spec, ce qui est vrai (points 1 à 10 : commit `c00e678` ; points 11 à 18 : commit `566a8a3`), et la source.
 
 ## 1. Instant du pic à dt = 1/120 s (coquille)
 
@@ -99,3 +99,52 @@ S'y ajoutent les constantes et fabriques de l'ascenseur (`ELEVATOR_*`, `createEl
 - **Spec §8** : « langue initiale = `?lang=` puis `navigator.language` (préfixe `fr` → FR, sinon EN) ».
 - **Vrai** : `detectLocale` parcourt toute la liste `navigator.languages` et retient la première langue prise en charge (`['de', 'fr']` → `fr`). La comparaison porte sur la sous-étiquette entière, pas sur un préfixe de caractères (`frr` n'est pas du français).
 - **Sources** : `src/i18n/detect.ts`, `src/i18n/catalogs.ts` ; `tests/i18n/detect.test.ts`.
+
+## 11. Cadrage : 17 × 7 m au lieu de « ~12 m × 6,75 m »
+
+- **Spec §7** : « cadrage fixe sur le niveau (~12 m × 6,75 m) avec adaptation au ratio ».
+- **Vrai** : la zone toujours visible fait **17 m × 7 m** : x ∈ [−6,5 ; 10,5] m, y ∈ [−1,5 ; 5,5] m. Le décor seul mesure 16 m (`LEVEL_MAX_X − LEVEL_MIN_X`), que 12 m ne contiennent pas. L'adaptation au ratio garde la même échelle en x et en y ; le surplus montre plus de papier.
+- **Sources** : log T-008 ; `src/render/camera.ts` ; `tests/render/camera.test.ts`. Détails : [rendu.md](../rendu.md#cadrage--zone-de-17--7-m).
+
+## 12. Vue de face, sans plongée 2,5D
+
+- **Spec §7** : « vue légèrement plongeante (2,5D : profondeur 0,5 m pour cabine/quais) ».
+- **Vrai** : la caméra orthographique regarde de face, sans plongée ni profondeur dessinée. Choix accepté en T-008 et T-009.
+- **Sources** : logs T-008 et T-009 ; `src/render/stage.ts`.
+
+## 13. Poutre en deux corbeaux
+
+- **Spec §6** : « poutre crayonnée à 3,30 m au-dessus de la cabine ».
+- **Vrai** : la poutre est dessinée en deux corbeaux hachurés de 0,42 m fixés aux montants de la cage, à 3,30 m. La règle de choc, elle, porte sur toute la largeur (`y > 3,30 m`, `src/game`).
+- **Sources** : log T-009 ; `src/render/pencil-style.ts` (`BEAM_STUB_LENGTH`).
+
+## 14. Échelle de temps de la courbe
+
+- **Spec §7** : « axe t horizontal sur le mur de la cage (échelle 0,4 m/s) ».
+- **Vrai** : échelle à deux régimes : 1,2 m/s tant que le trajet dure au plus 3 s, puis la courbe entière est resserrée pour tenir dans les 3,6 m du plancher (échelle = 3,6 / t_fin, soit 0,24 m/s à 15 s). À 0,4 m/s, 15 s demanderaient 6 m, plus que la cage (4 m).
+- **Sources** : log T-009 ; `src/render/curve.ts` ; `tests/render/curve.test.ts`. Détails : [rendu.md](../rendu.md#courbe-yt).
+
+## 15. E (Entrée, Espace) lance le trajet en phase de réglage
+
+- **Spec §6** : « interagir `E`/`Entrée`/`Espace` » ; le lancement passe par le bouton « Lancer ».
+- **Vrai** : en approche, ces touches utilisent la console ; en réglage, elles **lancent** le trajet. Aucune touche ne referme le panneau sans lancer (l'API `interact()` du niveau le permet, le clavier ne l'utilise pas). Les boutons tactiles font 56 × 56 px (spec : au moins 44 × 44).
+- **Sources** : log T-010 ; `src/ui/keys.ts` ; `tests/ui/keys.test.ts`. Table complète : [interface.md](../interface.md#touches).
+
+## 16. Clés i18n ajoutées
+
+- **Spec §8** : clés de §6 et principe des locales, sans liste des textes d'interface.
+- **Vrai** : 111 clés par langue au commit `566a8a3` (89 en T-006, 22 ajoutées en T-010 : bandeau d'aide `hud.hint.*`, étiquette `hud.kp.value`, `hud.readout.label`, noms des touches `controls.key.*`, `controls.help.close`, `app.rotateHint`).
+- **Sources** : `src/i18n/locales/fr.json` et `en.json` ; log T-010. Liste : [i18n-accessibilite.md](../i18n-accessibilite.md#clés-ajoutées-par-t-010).
+
+## 17. Titre du jeu
+
+- **Spec** : titre de travail « L'ascenseur proportionnel » pour la tranche verticale ; aucun titre de jeu fixé.
+- **Vrai** : titre provisoire « Huygens’s world » (décision D15, hommage à Christiaan Huygens). Clé `app.title` identique en FR et en EN, titre de l'onglet et du README.
+- **Sources** : registre (D15) ; `src/i18n/locales/*.json` ; `index.html`.
+
+## 18. Accessibilité : invite d'orientation en portrait
+
+- **Spec §8** : pas de cas particulier pour les petits écrans en portrait.
+- **Vrai** : sous 700 px de large en portrait, une invite propose de tourner l'appareil (`app.rotateHint`) et l'interface passe en disposition « bandes ». La scène reste entière mais petite (17 m dans la largeur).
+- **Sources** : logs T-009 et T-010 ; `src/ui/ui.css`, `src/ui/layout.ts`.
+

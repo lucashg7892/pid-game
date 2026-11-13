@@ -1,6 +1,6 @@
 # Internationalisation et accessibilité
 
-À quoi sert cette page : décrire le module de traduction FR/EN (`src/i18n`, validé en T-006) et la façon d'ajouter une clé ou une langue. La seconde partie résume l'accessibilité prévue par la spec T-001 §8 ; elle n'est pas encore réalisée.
+À quoi sert cette page : décrire le module de traduction FR/EN (`src/i18n`, validé en T-006 et complété en T-010) et la façon d'ajouter une clé ou une langue. La seconde partie décrit l'accessibilité réalisée et testée en T-010. État au commit `566a8a3`.
 
 ## Partie 1 — i18n (validé, T-006)
 
@@ -8,7 +8,7 @@
 
 Le module est pur : il n'importe que lui-même (règle `i18n-is-pure` de dependency-cruiser) et n'utilise aucune bibliothèque externe ([ADR-007](decisions/ADR-007-i18n-maison.md)). Il ne touche pas au DOM : l'appelant lui passe `location.search` et `navigator.languages`.
 
-Il n'est encore branché nulle part. `src/main.ts` ne l'importe pas : bouton de langue, mise à jour de `<html lang>` et affichage des textes sont Prévu (T-010).
+Il est branché depuis T-010 : `src/main.ts` crée le traducteur avec `detectLocale(location.search, navigator.languages)`, écrit `<html lang>` et le titre du document, et le passe à l'interface (`src/ui`), qui affiche tous les textes et propose le bouton de langue (voir [interface.md](interface.md#langue)).
 
 | Fichier | Rôle |
 |---|---|
@@ -24,7 +24,7 @@ Il n'est encore branché nulle part. `src/main.ts` ne l'importe pas : bouton de 
 ### Structure des locales
 
 - Un fichier JSON plat par langue : `{ "clé": "texte", … }`, sans imbrication.
-- 89 clés par langue, les mêmes dans les deux fichiers (comptage par script au commit `c00e678` ; parité vérifiée par `tests/i18n/catalogs.test.ts`).
+- 111 clés par langue, les mêmes dans les deux fichiers (comptage par script au commit `566a8a3` ; parité vérifiée par `tests/i18n/catalogs.test.ts`). T-006 en avait créé 89 ; T-010 en a ajouté 22 (liste plus bas).
 - Fins de ligne LF, aucune clé dupliquée, aucune valeur vide (tests).
 
 ### Convention de clés
@@ -39,16 +39,45 @@ Exemples : `level1.fail.noLift`, `hud.status.win`. Aucune clé n'est le préfixe
 
 | Préfixe | Usage | Clés |
 |---|---|---|
-| `app.` | titre, chargement, langue, erreurs générales | 9 |
+| `app.` | titre, chargement, langue, erreurs générales, invite de rotation | 10 |
 | `level1.` | textes du niveau 1 : objectif, Kp, échecs, victoire | 25 |
-| `hud.` | courbes, légende, valeurs affichées, messages d'état | 22 |
-| `controls.` | boutons et aide des commandes | 19 |
+| `hud.` | courbes, légende, valeurs affichées, messages d'état, bandeau d'aide, étiquette de Kp | 38 |
+| `controls.` | boutons, aide des commandes, noms des touches | 24 |
 | `a11y.` | noms accessibles et descriptions pour lecteurs d'écran | 7 |
 | `fallback.` | page affichée sans WebGPU ni WebGL2 | 7 |
 
-Un texte identique en FR et en EN est suspect (oubli de traduction). Seules trois clés y ont droit, avec une raison écrite dans le test : `controls.pause`, `controls.action`, `level1.dimension`.
+Un texte identique en FR et en EN est suspect (oubli de traduction). Seules cinq clés y ont droit, avec une raison écrite dans le test : `controls.pause`, `controls.action`, `level1.dimension`, `app.title`, `hud.kp.value`.
 
-Titre du jeu proposé dans `app.title` : « PID au crayon » / « Pencil PID ». Ce titre attend une décision de l'utilisateur (log T-006).
+Titre du jeu : `app.title` vaut « Huygens’s world » dans les deux langues (apostrophe typographique U+2019), titre provisoire décidé par l'utilisateur en hommage à Christiaan Huygens (décision D15). T-006 avait proposé « PID au crayon » / « Pencil PID » ; T-010 l'a remplacé.
+
+### Clés ajoutées par T-010
+
+| Clé | Français | Anglais |
+|---|---|---|
+| `app.rotateHint` | Tourne ton appareil en paysage pour mieux voir la scène. | Turn your device sideways for a bigger view of the scene. |
+| `hud.kp.value` | Kp = {kp} N/m | Kp = {kp} N/m |
+| `hud.hint.label` | Que faire maintenant | What to do now |
+| `hud.hint.item` | {keys} : {action} | {keys}: {action} |
+| `hud.hint.or` | ou | or |
+| `hud.hint.walk` | avancer vers la console | walk to the console |
+| `hud.hint.use` | utiliser la console | use the console |
+| `hud.hint.tune` | régler Kp | set Kp |
+| `hud.hint.tuneBig` | pas de 1000 | steps of 1000 |
+| `hud.hint.launch` | lancer | launch |
+| `hud.hint.locked` | Kp est verrouillé | Kp is locked |
+| `hud.hint.restart` | recommencer | restart |
+| `hud.hint.pause` | mettre en pause | pause |
+| `hud.hint.retry` | réessayer | try again |
+| `hud.hint.resume` | reprendre | resume |
+| `hud.hint.closeHelp` | fermer l’aide | close the help |
+| `hud.readout.label` | Mesures du trajet | Trip readings |
+| `controls.help.close` | Fermer l’aide | Close the help |
+| `controls.key.enter` | Entrée | Enter |
+| `controls.key.escape` | Échap | Esc |
+| `controls.key.pageUp` | Page préc. | Page Up |
+| `controls.key.pageDown` | Page suiv. | Page Down |
+
+Dans `hud.hint.item`, l'espace avant « : » est U+00A0 en français. Aucune clé n'a été supprimée ; seule `app.title` a changé de valeur.
 
 ### Interpolation
 
@@ -73,7 +102,7 @@ Les messages d'erreur citent la clé d'origine quand elle est connue.
 
 - `MessageKey` est dérivé de `fr.json` (`keyof typeof fr`). Une clé absente du français ne compile pas.
 - Le catalogue anglais est typé `Catalog` contre le français : une clé manquante en anglais ne compile pas.
-- `MESSAGE_PARAMS` liste les paramètres de chaque clé qui en a (13 clés). Un test vérifie que cette table correspond exactement aux `{…}` des deux catalogues.
+- `MESSAGE_PARAMS` liste les paramètres de chaque clé qui en a (15 clés : T-010 a ajouté `hud.kp.value` et `hud.hint.item`). Un test vérifie que cette table correspond exactement aux `{…}` des deux catalogues.
 - `t` a deux surcharges :
 
 ```ts
@@ -145,7 +174,7 @@ Détails : une même fonction n'est abonnée qu'une fois ; un abonnement ou dés
 
 ### Exports de `src/i18n/index.ts`
 
-Liste complète au commit `c00e678` : 18 valeurs (dont la classe `I18nError`) et 12 types.
+Liste complète au commit `c00e678`, inchangée à `566a8a3` : 18 valeurs (dont la classe `I18nError`) et 12 types.
 
 | Nom | Nature | Rôle |
 |---|---|---|
@@ -194,26 +223,32 @@ Liste complète au commit `c00e678` : 18 valeurs (dont la classe `I18nError`) et
 Le code suppose aujourd'hui deux langues. Étapes :
 
 1. Ajouter l'étiquette BCP 47 à `SUPPORTED_LOCALES` (`src/i18n/catalogs.ts`).
-2. Créer `src/i18n/locales/<langue>.json` avec les 89 clés, l'importer dans `catalogs.ts`, le typer `Catalog` et l'ajouter à `CATALOGS`.
+2. Créer `src/i18n/locales/<langue>.json` avec les 111 clés, l'importer dans `catalogs.ts`, le typer `Catalog` et l'ajouter à `CATALOGS`.
 3. Revoir `otherLocale` : il renvoie l'autre langue d'une paire. Avec trois langues, la bascule doit devenir un choix.
 4. Revoir `formatQuantity` : le collage de `%` est codé pour l'anglais seulement.
 5. Ajouter les règles typographiques de la langue dans `tests/i18n/catalogs.test.ts` (les tests actuels traitent FR et EN nommément).
 6. Ajouter des cas dans `tests/i18n/detect.test.ts` et `format.test.ts`.
 7. Lancer `npm run check`.
 
-## Partie 2 — Accessibilité : Prévu (T-010)
+## Partie 2 — Accessibilité (validé, T-010)
 
-Rien de ce qui suit n'est réalisé. Résumé de la spec T-001 §8 ; les textes nécessaires existent déjà sous le préfixe `a11y.` et dans `controls.`.
+Réalisée en T-010 (`src/ui`), testée par les scénarios e2e (d), (e) et (f) de `tests/e2e/ui.spec.ts`, en français et en anglais. Les tests e2e sont exécutés par l'orchestrateur, pas par le rédacteur : 28 tests verts à `566a8a3` (log T-010 ; voir [tests.md](tests.md#tests-de-bout-en-bout-playwright)).
 
-| Exigence | Détail prévu |
-|---|---|
-| clavier | tout le niveau jouable sans souris ; ordre de tabulation logique ; focus visible (contour 3 px) |
-| contrastes | textes et contrôles DOM ≥ 4,5:1 (WCAG AA) sur le papier |
-| couleurs | les courbes se distinguent aussi par le motif : plein (y), pointillé (r), hachures (e) |
-| lecteurs d'écran | région `aria-live="polite"` : lancement, saturation (une fois par trajet), issue, valeur de e ; canvas `role="img"` avec `aria-label` traduit |
-| mouvement réduit | avec `prefers-reduced-motion` : pas d'effet « boiling », pas de secousse caméra, transitions instantanées |
-| sans WebGPU ni WebGL2 | page HTML statique traduite (clés `fallback.`), aucune exception non gérée ; test e2e avec `?renderer=none` |
-| langue | bouton de bascule avec attribut `lang` ; `<html lang>` mis à jour (log T-006) |
-| tactile | boutons ◀ ▶ « Action » d'au moins 44 × 44 px CSS (spec §6) |
+| Exigence de la spec §8 | Réalisation | Preuve |
+|---|---|---|
+| clavier : tout le niveau jouable sans souris | marche, console, réglage, lancement, pause, recommencer au clavier ; table des touches dans [interface.md](interface.md#touches) | e2e (a) FR et (b) EN au clavier réel, jusqu'à la victoire et au choc |
+| ordre de tabulation logique, focus visible (contour 3 px) | seuls des contrôles prennent le focus ; le cycle revient au bouton « ? » ; contour `solid 3px` | e2e (d) |
+| noms accessibles | boutons, curseur (`slider`), champ (`spinbutton`), panneau (`group`), canvas (`img`) nommés par les clés traduites | e2e (d), FR et EN |
+| lecteurs d'écran | région `aria-live="polite"` unique : réglage, lancement, première saturation (une fois par trajet), issue avec la valeur de e, pause, reprise, recommencer | e2e (d) ; `tests/ui/announce.test.ts` |
+| aucune touche ne fait défiler la page | toutes les touches du jeu et ↑ ↓ Début Fin Espace Entrée sont interceptées quand le focus est sur la page | e2e (e) |
+| perte de focus | marche arrêtée ; pause automatique pendant un trajet, pas en approche | e2e (f) et (f bis) |
+| couleurs : motif en plus de la teinte | consigne en pointillés, hauteur en trait plein, erreur hachurée ; seul le rouge de la jauge saturée est une couleur | captures ; [rendu.md](rendu.md#courbe-yt) |
+| contrastes ≥ 4,5:1 | texte ≈ 14:1, secondaire ≈ 9:1, rouge ≈ 7:1, déclarés dans `src/ui/ui.css` | **non mesuré par un test** |
+| mouvement réduit | « boiling » figé (`prefers-reduced-motion`), transitions CSS supprimées ; il n'y a pas de secousse de caméra | `tests/render/noise.test.ts`, `level-painter.test.ts` ; non testé en e2e |
+| sans WebGPU ni WebGL2 | page de repli statique traduite, sans exception | e2e `?renderer=none` (FR, EN) |
+| langue | bouton avec l'attribut `lang` de l'autre langue ; `<html lang>` mis à jour ; Kp et phase conservés | e2e (c) |
+| tactile | boutons ◀ ▶ « Action » de 56 × 56 px (spec : ≥ 44 × 44) sur écran à pointeur grossier | **non essayé sur un vrai écran tactile** (log T-010) |
 
-Point à vérifier en T-010 : le rendu de U+202F dans la police manuscrite retenue (log T-006).
+Rendu de U+202F dans la police manuscrite : Patrick Hand couvre la plage U+2000-206F (`unicode-range` du sous-ensemble latin, `src/ui/ui.css`). Le rendu effectif n'a pas été vérifié par un test.
+
+Détails de l'interface : [interface.md](interface.md).

@@ -21,7 +21,7 @@ Messages d'erreur réels : [architecture.md](../architecture.md#les-trois-garde-
 - Le noyau se teste sous Node, sans navigateur.
 - Le temps est fourni de l'extérieur à l'horloge ; un futur aléa passera par un PRNG à graine explicite.
 - `npm run typecheck` et `npm run lint` échouent dès qu'une règle est violée (vérifié par l'orchestrateur, log T-002).
-- Exception temporaire : `src/main.ts` peut importer `three` (réserve E2). Retrait Prévu (T-008).
+- Exception temporaire : `src/main.ts` pouvait importer `three` (réserve E2). Retirée en T-008 : seul `src/render/` importe three.
 
 ## Statut
 

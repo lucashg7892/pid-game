@@ -51,9 +51,9 @@ Valeurs de `ELEVATOR_PARAMS`, `ELEVATOR_MAX_FORCE` et `ELEVATOR_SETPOINT` (code)
 | r | 3,00 | m | consigne : hauteur du quai d'arrivée | code |
 | y0, ẏ0 | 0, 0 | m, m/s | cabine posée au sol | code (`createElevatorLoop`) |
 | dt | 1/120 | s | pas de simulation | code (`SIM_DT`) |
-| Kp | 0 à 8000, pas de 100 | N/m | gain réglé par le joueur | spec §5 ; curseur Prévu (T-010) |
-| h_poutre | 3,30 | m | poutre : y > 3,30 m ⇒ choc | spec §6 ; règle Prévu (T-007) |
-| tolérance de marche | 0,25 | m | marche que le bonhomme peut enjamber | spec §6 ; règle Prévu (T-007) |
+| Kp | 0 à 8000, pas de 100 | N/m | gain réglé par le joueur | spec §5 ; curseur et touches de l'interface (T-010) |
+| h_poutre | 3,30 | m | poutre : y > 3,30 m ⇒ choc | `BEAM_HEIGHT` de `src/game` (T-007) |
+| tolérance de marche | 0,25 | m | marche que le bonhomme peut enjamber | `STEP_TOLERANCE` de `src/game` (T-007) |
 
 Grandeurs dérivées : poids m·g = 490,5 N ; c/m = 8 s⁻¹ ; vitesse limite en chute libre m·g/c = 1,226 m/s.
 
@@ -86,7 +86,7 @@ Au départ, y = 0, donc e = r et le moteur tire avec Kp·r. La cabine décolle s
 Kp·r > m·g   ⇔   Kp > m·g / r = 490,5 / 3 = 163,5 N/m
 ```
 
-Pour le joueur : avec Kp ≤ 163,5 N/m, la cabine reste collée au sol. Avec le curseur prévu (pas de 100 N/m, Prévu T-010), 100 N/m ne décolle pas et 200 N/m décolle.
+Pour le joueur : avec Kp ≤ 163,5 N/m, la cabine reste collée au sol. Avec le curseur du jeu (pas de 100 N/m), 100 N/m ne décolle pas et 200 N/m décolle.
 
 ### Erreur statique
 
@@ -215,7 +215,7 @@ Valeurs de référence (`tests/sim/reference.test.ts`, tolérance 1e-6 m ; sorti
 
 Écart du code à ces valeurs : ≤ 4,80e-7 m. Écart des valeurs à l'oracle exact MATLAB : ≤ 5,6e-7 m (T-005 §A–B).
 
-Issues selon les règles de la spec §6, évaluées par le validateur T-005 sur l'oracle exact et sur le code (0 désaccord sur 80 valeurs de Kp). La logique de jeu qui appliquera ces règles est Prévu (T-007).
+Issues selon les règles de la spec §6, évaluées par le validateur T-005 sur l'oracle exact et sur le code (0 désaccord sur 80 valeurs de Kp). La logique de jeu de T-007 (`src/game`) applique ces règles et retrouve les mêmes issues et les mêmes pas (voir [jeu.md](../jeu.md#issues-de-0-à-8000-nm)).
 
 | Kp (N/m) | issue | pas de l'issue | y_max (m) | marge à la poutre 3,30 − y_max |
 |---|---|---|---|---|
@@ -232,7 +232,7 @@ Issues selon les règles de la spec §6, évaluées par le validateur T-005 sur 
 
 ## Fenêtre de réussite [2000 ; 3800] N/m
 
-- **Borne basse** : 1962 N/m exactement (m·g / 0,25). Avec le curseur prévu au pas de 100 N/m, la première valeur gagnante est 2000 N/m.
+- **Borne basse** : 1962 N/m exactement (m·g / 0,25). Avec le curseur du jeu, au pas de 100 N/m, la première valeur gagnante est 2000 N/m.
 - **Borne haute** : 3875,36 N/m si l'on juge le choc sur les échantillons (3875,28 N/m sur le maximum entre deux échantillons). Avec ce curseur, la dernière valeur gagnante est 3800 N/m.
 - 19 valeurs gagnantes contiguës (T-005 §E). La fenêtre est conservée telle quelle, à ajuster après test de jeu (décision D9 du registre).
 
@@ -265,7 +265,7 @@ Kp_critique = (Φ₂₂ − 1) / (Γ₁·Φ₂₂ − Φ₁₂·Γ₂)
 
 Le code TS bascule entre 97 000 N/m (stable) et 97 200 N/m (instable), en accord avec l'oracle (T-005 §D).
 
-Pour le joueur : le curseur prévu s'arrête à 8000 N/m, douze fois sous la limite. L'instabilité due à l'échantillonnage ne peut pas apparaître dans ce niveau. Pour la montrer un jour, il faudrait un niveau dédié (dt plus grand ou retard).
+Pour le joueur : le curseur s'arrête à 8000 N/m, douze fois sous la limite. L'instabilité due à l'échantillonnage ne peut pas apparaître dans ce niveau. Pour la montrer un jour, il faudrait un niveau dédié (dt plus grand ou retard).
 
 ## Limites du modèle
 
@@ -276,6 +276,6 @@ Pour le joueur : le curseur prévu s'arrête à 8000 N/m, douze fois sous la lim
 | câble rigide, masse constante | pas d'oscillation de câble ; le bonhomme monte avant le départ (spec §5) |
 | capteur parfait, sans bruit ni retard | la mesure est exactement y(k·dt) |
 | contact sol inélastique | pas de rebond : y = 0 et ẏ ≥ 0 |
-| poutre et marche absentes du modèle | ce sont des règles de jeu, pas des contraintes physiques : Prévu (T-007) |
+| poutre et marche absentes du modèle | ce sont des règles de jeu, pas des contraintes physiques : elles sont jugées par `src/game` (T-007), voir [jeu.md](../jeu.md#règles-dissue) |
 | consigne en échelon (0 → 3 m à k = 0) | la cabine démarre à pleine force dès que Kp ≥ 1667 N/m |
 | Kp non borné par le code | au-delà de ≈ 97 079 N/m sans saturation, la boucle diverge ; avec saturation, elle oscille en tout-ou-rien (T-005, D-9). Inaccessible avec le curseur |

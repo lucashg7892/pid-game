@@ -1,35 +1,65 @@
 # Architecture
 
-À quoi sert cette page : présenter les modules du code, qui a le droit d'importer qui, et les garde-fous automatiques qui l'imposent. État au commit `7bcd9ce` (2026-11-12) : noyau de simulation, i18n et logique du niveau 1 validés ; rendu et interface encore à l'état de bouchons ; rien n'est affiché.
+À quoi sert cette page : présenter les modules du code, qui a le droit d'importer qui, le déroulement d'une image et les garde-fous automatiques. État au commit `566a8a3` (2026-11-13) : tous les modules sont validés et le niveau 1 est jouable dans un navigateur.
 
 ## Modules
 
 | Module | Rôle | État |
 |---|---|---|
-| `src/sim/` | noyau de simulation pur : pas fixe, déterministe, sans rendu ni DOM | **validé** (T-003, T-004, T-004b, T-005) : horloge, RK4, saturation, enregistreur, contrôleur P, ascenseur, boucle fermée. Voir [simulation.md](simulation.md) |
-| `src/game/` | logique de niveau : état, victoire et échec, bonhomme | **validé** (T-007) : machine à états du niveau 1, arbitre des issues, marche du bonhomme, événements ; pas encore utilisé par `src/main.ts`. Voir [jeu.md](jeu.md) |
-| `src/i18n/` | textes FR/EN, interpolation, formatage, détection de langue | **validé** (T-006) ; pas encore utilisé par `src/main.ts`. Voir [i18n-accessibilite.md](i18n-accessibilite.md) |
-| `src/render/` | rendu three.js (`three/webgpu`, repli WebGL2) | bouchon : `index.ts` exporte `parseRendererChoice(search)`, qui renvoie `'webgl'` si l'URL contient `?renderer=webgl`, sinon `'auto'`. Contenu Prévu (T-008, T-009) |
-| `src/ui/` | interface DOM accessible : panneau Kp, boutons, messages | Prévu (T-010) ; dossier absent |
-| `src/main.ts` | point de composition : seul fichier qui connaît tous les modules | bouchon, voir ci-dessous |
+| `src/sim/` | noyau de simulation pur : pas fixe, déterministe, sans rendu ni DOM | **validé** (T-003, T-004, T-004b, T-005). Voir [simulation.md](simulation.md) |
+| `src/game/` | logique de niveau : phases, victoire et échec, bonhomme, événements | **validé** (T-007). Voir [jeu.md](jeu.md) |
+| `src/i18n/` | textes FR/EN, interpolation, formatage, détection de langue | **validé** (T-006, clés ajoutées en T-010). Voir [i18n-accessibilite.md](i18n-accessibilite.md) |
+| `src/render/` | rendu three.js (`three/webgpu`, repli WebGL2) : papier, traits de crayon, bonhomme, courbe, jauge | **validé** (T-008, T-009). Voir [rendu.md](rendu.md) |
+| `src/ui/` | interface DOM accessible : bandeau d'aide, panneau Kp, mesures, issues, touches, annonces | **validé** (T-010). Voir [interface.md](interface.md) |
+| `src/main.ts` | point de composition : seul fichier qui connaît tous les modules | **validé** (T-010), voir ci-dessous |
 
-Fichiers des modules validés :
+Fichiers :
 
 ```text
-src/sim/   index.ts  types.ts  clock.ts  integrators.ts  saturation.ts  signals.ts  loop.ts
-           controllers/p.ts  plants/elevator.ts
-src/i18n/  index.ts  catalogs.ts  params.ts  interpolate.ts  format.ts  detect.ts  translator.ts
-           locales/fr.json  locales/en.json
-src/game/  index.ts  constants.ts  kp.ts  outcome.ts  walker.ts  events.ts  level.ts
+src/sim/     index.ts  types.ts  clock.ts  integrators.ts  saturation.ts  signals.ts  loop.ts
+             controllers/p.ts  plants/elevator.ts
+src/i18n/    index.ts  catalogs.ts  params.ts  interpolate.ts  format.ts  detect.ts  translator.ts
+             locales/fr.json  locales/en.json
+src/game/    index.ts  constants.ts  kp.ts  outcome.ts  walker.ts  events.ts  level.ts
+src/render/  index.ts  bootstrap.ts  session.ts  stage.ts  camera.ts  options.ts  paper.ts
+             pencil-style.ts  pencil-material.ts  stroke-batch.ts  noise.ts  patterns.ts
+             walker-pose.ts  curve.ts  gauge.ts  level-display.ts  level-painter.ts  level-view.ts
+src/ui/      index.ts  overlay.ts  view-model.ts  layout.ts  hints.ts  keys.ts  input.ts
+             announce.ts  ui.css
+src/main.ts
+public/      favicon.svg  fonts/ (Patrick Hand, OFL.txt)
 ```
 
-### Ce que fait `src/main.ts` aujourd'hui
+### Ce que fait `src/main.ts`
 
-- Il importe seulement `SIM_DT` du noyau ; il n'importe ni `src/i18n` ni `src/game`.
-- Il cherche le `<canvas id="scene">` de `index.html` et écrit `SIM_DT` dans son attribut `data-sim-dt`.
-- Au premier `pointerdown` sur le canvas, il crée un `WebGPURenderer` (import `three/webgpu`), avec `forceWebGL: true` si l'URL contient `?renderer=webgl`, puis appelle `await renderer.init()`.
-- Il écrit le backend obtenu dans `document.body.dataset.backend` (`'webgl'` ou `'webgpu'`).
-- Rien n'est rendu. Ce comportement n'a pas été exécuté dans un navigateur (réserve E9 du log T-002) : vérification Prévu (T-008).
+1. Crée le traducteur (`detectLocale(location.search, navigator.languages)`), écrit `<html lang>`, le titre du document et le nom accessible du canvas.
+2. Crée le niveau (`createLevel1()`).
+3. Démarre le rendu (`startRendering`) avec le choix lu dans `?renderer=`. En cas d'échec, affiche la page de repli traduite et s'arrête.
+4. Crée l'interface (`createUi`) et branche le clavier (`bindKeyboard`).
+5. À chaque changement de taille, calcule la géométrie de l'écran pour l'interface (`UiGeometry`) à partir du cadrage du rendu, et y joint les ancres de la session (`session.anchors()`) : l'interface reçoit des nombres, sans importer le rendu.
+6. Écrit dans `document.body.dataset` le backend (`backend`), et, après la première image, `drawCalls` et `triangles`.
+
+**Crochet de test** : seulement avec `?e2e=1` dans l'URL, `window.__huygens` expose les commandes du niveau, une copie de l'instantané, une avance déterministe du temps (`advance(secondes)`, par images fixes de 1/60 s) et les compteurs de rendu. Dans ce mode, le temps réel ne fait plus avancer le niveau. Sans `?e2e=1`, `window.__huygens` n'existe pas (test e2e (h) de `level.spec.ts`).
+
+## Flux d'une image
+
+```mermaid
+flowchart TD
+  K["clavier, souris, tactile : bindKeyboard et écouteurs de createUi"] -- "à tout moment" --> L["commandes du niveau : moveRight, setKp, launch..."]
+  RAF["renderer.setAnimationLoop : nouvelle image, durée dt"] --> UI["onFrame : ui.update()"]
+  UI --> UP["onFrame : level.update(dt)"]
+  UP --> P["session : view.paint(snapshot, signals) et computeAnchors"]
+  P --> D["stage.render() : papier, lots de traits, passe de sortie"]
+  L -. "lu à l'image suivante" .-> UI
+```
+
+Ordre réel (`src/main.ts`, `src/render/session.ts`) :
+
+1. Les commandes du joueur arrivent par des écouteurs d'événements, entre deux images. Chaque commande est appliquée tout de suite au niveau, puis l'interface est mise à jour.
+2. À chaque image, la boucle de three appelle `onFrame(dt)` : `main.ts` met d'abord à jour l'interface (`ui.update()`, avec les ancres de l'image précédente : une image de retard, invisible pour des étiquettes), puis fait avancer le niveau (`level.update(dt)`, horloge à pas fixe du noyau).
+3. La session repeint les lots de traits d'après l'instantané (interpolé par `alpha`), recalcule les ancres et dessine.
+
+L'interface est donc mise à jour **avant** le niveau dans une image : les textes reflètent l'état de la fin de l'image précédente.
 
 ## Qui peut importer qui
 
@@ -42,7 +72,7 @@ Tableau tiré de `.dependency-cruiser.cjs` (section `forbidden`). « oui » = au
 | `src/i18n/` | non | non | oui | non | non | non | non |
 | `src/render/` | oui | oui | non | oui | non | oui | oui |
 | `src/ui/` | non | oui | oui | non | oui | non | oui |
-| `src/main.ts` | oui | oui | oui | oui | oui | oui (exemption, voir plus bas) | oui |
+| `src/main.ts` | oui | oui | oui | oui | oui | non | oui |
 
 Règles en vigueur (8) :
 
@@ -53,7 +83,7 @@ Règles en vigueur (8) :
 | `game-no-render` | tout import depuis `src/game/` vers autre chose que `src/game/` ou `src/sim/` |
 | `render-deps` | `src/render/` → `src/ui/` ou `src/i18n/` |
 | `ui-deps` | `src/ui/` → `src/sim/` ou `src/render/` |
-| `three-only-in-render` | import de `three` hors de `src/render/` et de `src/main.ts` |
+| `three-only-in-render` | import de `three` hors de `src/render/` |
 | `no-circular` | toute dépendance circulaire |
 | `not-to-unresolvable` | tout import que l'outil ne sait pas résoudre |
 
@@ -64,10 +94,9 @@ flowchart LR
   main --> game["src/game"]
   main --> i18n["src/i18n"]
   main --> sim["src/sim"]
-  main -. "exemption E2" .-> three(["three"])
   render --> game
   render --> sim
-  render --> three
+  render --> three(["three"])
   ui --> game
   ui --> i18n
   game --> sim
@@ -75,9 +104,9 @@ flowchart LR
 
 Flèche = « peut importer ». `sim` et `i18n` n'importent rien hors d'eux-mêmes.
 
-### Exemption temporaire de `src/main.ts` (réserve E2)
+### Exemption de `src/main.ts` levée (réserve E2)
 
-La règle `three-only-in-render` exclut `src/main.ts` (`pathNot: '^src/(render/|main\\.ts$)'`), car le bouchon actuel importe `three/webgpu` directement. Le log T-002 classe ce point en réserve E2. Prévu (T-008) : l'import passe dans `src/render/` et l'exemption est retirée.
+Jusqu'à T-007, la règle `three-only-in-render` exemptait `src/main.ts`, dont le bouchon importait `three/webgpu` (réserve E2 du log T-002). T-008 a déplacé tout l'usage de three dans `src/render/` et retiré l'exemption : la règle porte maintenant sur `pathNot: '^src/render/'`. Le point de composition n'importe plus three.
 
 ## Les trois garde-fous du noyau pur
 
@@ -107,13 +136,13 @@ x 2 dependency violations (2 errors, 0 warnings). 6 modules, 4 dependencies crui
 
 (Chemin vers `node_modules` raccourci : la copie pointait vers le `node_modules` du projet.)
 
-Sur le dépôt réel, au commit `7bcd9ce` (code de sortie 0, mesure sur une extraction propre `git archive 7bcd9ce`) :
+Sur le dépôt réel, au commit `566a8a3` (code de sortie 0, mesure sur une extraction propre `git archive 566a8a3`) :
 
 ```text
-✔ no dependency violations found (28 modules, 57 dependencies cruised)
+✔ no dependency violations found (55 modules, 143 dependencies cruised)
 ```
 
-Les 28 modules sont les 27 fichiers suivis de `src/` (25 fichiers TypeScript, dont 7 dans `src/game/`, et 2 fichiers JSON de locales) et `three/build/three.webgpu.js`, importé par `src/main.ts`. Au commit `c00e678`, avant T-007, la même commande donnait 21 modules et 40 dépendances. La sortie du test de violation ci-dessus (6 modules) date de la copie du socle T-002.
+Les 55 modules : 53 fichiers de `src/` (`src/render` 18, `src/sim` 9, `src/i18n` 9 dont 2 JSON, `src/ui` 9 dont `ui.css`, `src/game` 7, `src/main.ts`) et 2 fichiers de three (`three/build/three.webgpu.js` et `three/build/three.tsl.js`), importés par `src/render`. Évolution de la même commande : 21 modules à `c00e678`, 28 à `7bcd9ce`, 35 à la fin de T-008 (log T-008), 55 à `566a8a3`. La sortie du test de violation ci-dessus (6 modules) date de la copie du socle T-002.
 
 Limite : la commande analyse seulement `src/`. Les fichiers de `tests/` ne sont pas contrôlés.
 
@@ -155,9 +184,8 @@ La configuration fait foi. Écarts relevés :
 
 - La spec cite 4 règles dependency-cruiser ; la configuration en a 8 (ajout de `i18n-is-pure`, `render-deps`, `ui-deps`, `not-to-unresolvable`).
 - La spec dit `ui → game, i18n` ; la configuration autorise aussi `ui` à importer des paquets npm autres que `three`.
-- La spec dit « tout import de `three` hors `render/` » est interdit ; la configuration exempte `src/main.ts` (réserve E2).
+- La spec dit « tout import de `three` hors `render/` » est interdit : c'est le cas depuis T-008 ; l'exemption de `src/main.ts` (réserve E2) est levée.
 
 ## Prévu
 
-- Flux d'une image : l'horloge à pas fixe existe (voir [simulation.md](simulation.md#horloge-à-pas-fixe)) ; la boucle `requestAnimationFrame` qui l'appelle et l'interpolation du rendu par `alpha` sont Prévu (T-008, T-010), décrites dans la spec T-001 §4.
-- Arborescence complète (`src/ui`, `tests/e2e`, `.github/workflows`) : Prévu (T-008 à T-011).
+- Intégration continue et publication sur GitHub Pages (`.github/workflows/`) : Prévu (T-011).

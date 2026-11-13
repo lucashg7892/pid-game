@@ -4,10 +4,14 @@
 
 ## Correspondance tâche → commit
 
-Sortie de `git log --oneline 7bcd9ce` (11 commits, tous du 2026-11-12).
+Sortie de `git log --oneline 566a8a3` (15 commits).
 
 | Commit | Contenu |
 |---|---|
+| `566a8a3` | T-010 : interface, commandes définitives, accessibilité, police manuscrite, titre « Huygens’s world », e2e |
+| `1af2a29` | T-009 : rendu au crayon du niveau 1, commandes clavier provisoires, e2e |
+| `ed46321` | T-008 : démarrage WebGPU/WebGL2, caméra, papier millimétré, page de repli, e2e |
+| `e3231a4` | D-007 : documentation de la logique du niveau, tutoriel de lancement local, ADR-009 |
 | `7bcd9ce` | D-004 : documentation du noyau, de l'i18n et de la validation ; errata de la spec ; ADR-005 à 008 |
 | `6259ccc` | T-007 : logique du niveau 1 et ses tests ; log T-007 |
 | `c00e678` | registre : logs T-004b et T-006 |
@@ -21,6 +25,46 @@ Sortie de `git log --oneline 7bcd9ce` (11 commits, tous du 2026-11-12).
 | `e627a96` | T-000 : initialisation du dépôt |
 
 Les neuf premiers commits ont été créés après coup, à la suite, à partir de l'état validé : leur ordre ne suit pas exactement l'ordre des validations (T-004b, validée après T-005, est dans `beb6086`). Depuis `6259ccc`, chaque tâche validée a son commit.
+
+## T-010 — Interface, commandes, accessibilité, titre (2026-11-13)
+
+- Ajoute `src/ui/` (modèle de vue, disposition, bandeau d'aide, touches, annonces, DOM superposé, `ui.css`), la police Patrick Hand (`public/fonts/`, OFL 1.1), 22 clés i18n et le titre « Huygens’s world » (D15) ; `src/main.ts` branche l'interface et le clavier. Tests : `tests/ui/` (4 fichiers, 77 tests) et `tests/e2e/ui.spec.ts` (12 tests). Voir [interface.md](interface.md).
+- Déclencheur : essai de l'utilisateur sur son PC Windows (D16) : tout fonctionne, mais sans texte on oublie les touches.
+- Deux passes (T-010, T-010b). Passe 1 : 26 tests e2e sur 28 ; le test d'accessibilité (d) supposait à tort que `blur()` ramène la tabulation au début du document. Passe 2 : test (d) corrigé, panneaux posés à gauche du bonhomme et de la console, légende dépliée au premier trajet seulement.
+- Vérification de l'orchestrateur : `PW_CHROME_PATH=/usr/bin/google-chrome npx playwright test` : 28 tests verts (1,7 min), dont une partie complète au clavier réel en FR (victoire) et en EN (choc) ; captures regardées ; `npm run check` code 0 (426 tests).
+- Commit : `566a8a3`.
+- Statut : validé. Réserves :
+  - portrait 390 px : l'étiquette de Kp est en partie masquée par l'invite de rotation ;
+  - l'erreur négative s'affiche avec un trait d'union ASCII (« -0,03 m ») et non le signe moins ;
+  - aucune touche ne referme le panneau de réglage sans lancer ;
+  - boutons tactiles non essayés sur un vrai écran tactile ;
+  - « aucune allocation par image » de l'UI établi par construction, non mesuré ;
+  - embarquement et sortie du bonhomme non animés ; WebGPU réel constaté seulement par l'utilisateur, backend non relevé.
+
+## T-009 — Rendu au crayon du niveau 1 (2026-11-13)
+
+- Ajoute les traits de crayon (`stroke-batch.ts`, `pencil-style.ts`, `pencil-material.ts`, `noise.ts`, `patterns.ts`), le décor, le bonhomme (`walker-pose.ts`), la courbe (`curve.ts`), la jauge (`gauge.ts`) et le peintre (`level-painter.ts`, `level-view.ts`). Tests : `tests/render/` et `tests/e2e/level.spec.ts`. Voir [rendu.md](rendu.md).
+- Trois passes. T-009 : 6 appels de dessin au lieu de 4. T-009b : `forceSinglePass` (objets transparents `DoubleSide` dessinés deux fois), pose debout, jauge refaite ; mais régression du papier à 1280 × 720 vue sur les captures, non détectée par les tests. T-009c : régime « un seul pixel » limité sous 1 px, position quantifiée, 3 tests d'uniformité des lignes de mètre.
+- Vérification de l'orchestrateur : 16 tests e2e verts (34,6 s) ; captures regardées ; `npm run check` code 0 (349 tests).
+- Commit : `1af2a29`.
+- Statut : validé. Choix acceptés : poutre en deux corbeaux ; échelle de temps à deux régimes ; pas de MSAA ; vue de face. Réserves : WebGPU réel non exercé ; scène minuscule en portrait (traitée en T-010 par l'invite de rotation) ; commandes clavier provisoires (remplacées en T-010).
+- Décision de l'utilisateur pendant la tâche : le style lui plaît, il est conservé.
+
+## T-008 — Démarrage du rendu, caméra, papier millimétré (2026-11-13)
+
+- Ajoute `bootstrap.ts`, `session.ts`, `stage.ts`, `camera.ts`, `options.ts`, `paper.ts`, la page de repli traduite, `public/favicon.svg`, `playwright.config.ts` et `tests/e2e/render.spec.ts`. Retire l'exemption three de `src/main.ts` (réserve E2 levée).
+- Deux passes. Passe 1 : rendu fonctionnel mais 6 tests e2e sur 6 en échec sur la console (favicon absent, avertissements de SwiftShader, message « No available adapters. ») et sur le compte d'appels. Passe 2 (T-008b) : favicon, listes blanches console justifiées, variable `PW_CHROME_PATH`.
+- Vérification de l'orchestrateur : 6 tests e2e verts (9,9 s) dans Chrome for Testing 153 headless ; captures regardées ; `npm run check` code 0 (273 tests, 35 modules).
+- Commit : `ed46321`.
+- Statut : validé. Réserves : WebGPU réel jamais exercé ; cadrage 17 × 7 m au lieu de « ~12 × 6,75 m », vue de face sans plongée ; lien de la page de repli vers un dépôt encore privé.
+- Leçon L8 : la VM des agents ne peut pas télécharger de navigateur ; l'e2e est exécuté par l'orchestrateur.
+
+## D-007 — Documentation de la logique du niveau, tutoriel (2026-11-12)
+
+- Ajoute [jeu.md](jeu.md), [tutoriel-lancer-en-local.md](tutoriel-lancer-en-local.md) et l'ADR-009 ; met à jour architecture, tests, développement, index, simulation, ce journal et le README.
+- Vérification de l'orchestrateur : 10 SHA-256 identiques ; 108 liens relatifs, 0 cassé ; constantes de `src/game` toutes présentes dans `jeu.md`.
+- Commit : `e3231a4`.
+- Statut : validé avec réserve : 4 mentions « Prévu (T-007) » restaient dans `physique/ascenseur.md`, fichier non autorisé pour D-007 ; corrigées en D-010.
 
 ## D-004 — Documentation du noyau, de l'i18n et de la validation (2026-11-12)
 

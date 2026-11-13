@@ -1,6 +1,6 @@
 # Développement
 
-À quoi sert cette page : installer le projet, connaître chaque script npm et les conventions de code. État au commit `7bcd9ce`. Pour un pas-à-pas sous Windows destiné à un non-développeur, voir le [tutoriel de lancement local](tutoriel-lancer-en-local.md).
+À quoi sert cette page : installer le projet, connaître chaque script npm et les conventions de code. État au commit `566a8a3`. Pour un pas-à-pas sous Windows destiné à un non-développeur, voir le [tutoriel de lancement local](tutoriel-lancer-en-local.md).
 
 ## Prérequis
 
@@ -24,7 +24,7 @@ npm ci
 
 `node_modules/` contient des binaires propres au système. Exemple : Vite 8 utilise Rolldown, installé ici sous forme de `@rolldown/binding-linux-x64-gnu`. Le `node_modules/` du dossier `PID_GAME` a été installé sous Linux et sert aux agents de développement : ne relancez pas `npm ci` sous Windows dans ce dossier. Pour travailler sous Windows, utilisez une copie : procédure complète dans le [tutoriel](tutoriel-lancer-en-local.md).
 
-Pour les tests e2e, il faudra aussi installer Chromium pour Playwright : `npx playwright install chromium`. Prévu (T-010).
+Pour les tests e2e, installez aussi Chromium pour Playwright : `npx playwright install chromium`. Si le téléchargement est impossible (réseau filtré) et qu'un Chrome est déjà installé, indiquez son chemin par la variable `PW_CHROME_PATH` (voir plus bas).
 
 ## Scripts npm
 
@@ -41,10 +41,25 @@ Commandes exactes de `package.json` au commit `7bcd9ce` (11 scripts).
 | `npm run test:cov` | `vitest run --coverage` | tests unitaires et couverture de `src/sim` ; échoue sous 95 % des lignes ou 90 % des branches (voir [tests.md](tests.md#couverture)) |
 | `npm run build` | `vite build` | build de production dans `dist/` |
 | `npm run preview` | `vite preview` | sert le contenu de `dist/` |
-| `npm run e2e` | `playwright test` | tests de bout en bout. Prévu (T-010) : pas encore de `playwright.config.ts` ni de test e2e. **Ne pas lancer avant T-010** |
+| `npm run e2e` | `playwright test` | tests de bout en bout (28) dans Chromium, contre le build servi par `vite preview` ; construit le site avant (voir [tests.md](tests.md#tests-de-bout-en-bout-playwright)) |
 | `npm run check` | `npm run typecheck && npm run lint && npm run test && npm run build` | vérification complète avant livraison |
 
-Ne lancez pas `npm run e2e` avant T-010. Sans configuration, Playwright ramasse `tests/smoke.test.ts`, qui est un test Vitest, et échoue (constaté le 2026-11-12 avec `npx playwright test --list` dans une copie du dépôt : code de sortie 1, `TypeError: Cannot read properties of undefined (reading 'config')` à `tests/smoke.test.ts:4`, puis « No tests found »).
+### Tests de bout en bout et `PW_CHROME_PATH`
+
+Depuis T-008, `playwright.config.ts` limite Playwright à `tests/e2e/` (l'ancien échec de D-002, où Playwright ramassait `tests/smoke.test.ts`, est corrigé). `npm run check` ne lance pas les tests e2e.
+
+```sh
+npx playwright install chromium   # une fois, sur un poste avec accès réseau
+npm run e2e
+```
+
+Si la variable d'environnement `PW_CHROME_PATH` est définie et non vide, Playwright utilise cet exécutable au lieu de son Chromium (`launchOptions.executablePath`) :
+
+```sh
+PW_CHROME_PATH=/usr/bin/google-chrome npx playwright test
+```
+
+La VM des agents ne peut pas télécharger de navigateur : les tests e2e y sont écrits mais exécutés par l'orchestrateur dans son environnement, avec cette commande (Chrome for Testing 153, headless, SwiftShader). Voir [ADR-012](decisions/ADR-012-tests-navigateur.md).
 
 Le script `test:cov` a été ajouté par T-003 avec le paquet `@vitest/coverage-v8` 5.1.0 (seule dépendance ajoutée, log T-003). `npm run check` ne le lance pas : lancez-le à part avant de livrer une modification de `src/sim`.
 
@@ -63,25 +78,32 @@ Le script `test:cov` a été ajouté par T-003 avec le paquet `@vitest/coverage-
 
 Cible de compilation : ES2023 (`tsconfig.json` et `build.target` de `vite.config.ts`).
 
-## Arborescence au commit `7bcd9ce`
+## Arborescence au commit `566a8a3`
 
 Liste tirée de `git ls-files`.
 
 ```text
 .dependency-cruiser.cjs  eslint.config.js  index.html  package.json  package-lock.json
-tsconfig.json  tsconfig.sim.json  vite.config.ts  vitest.config.ts  LICENSE  README.md
-.nvmrc  .prettierrc.json  .prettierignore  .gitignore  .gitattributes
-src/main.ts  src/render/index.ts
+tsconfig.json  tsconfig.sim.json  vite.config.ts  vitest.config.ts  playwright.config.ts
+LICENSE  README.md  .nvmrc  .prettierrc.json  .prettierignore  .gitignore  .gitattributes
+public/        favicon.svg ; fonts/ : Patrick Hand (2 fichiers woff2) et OFL.txt
+src/main.ts    point de composition
 src/sim/       noyau de simulation (9 fichiers), voir simulation.md
 src/i18n/      i18n FR/EN (7 fichiers TypeScript + locales/fr.json, locales/en.json)
 src/game/      logique du niveau 1 (7 fichiers), voir jeu.md
+src/render/    rendu au crayon (18 fichiers), voir rendu.md
+src/ui/        interface (8 fichiers TypeScript + ui.css), voir interface.md
 tests/smoke.test.ts  tests/sim/ (9 fichiers)  tests/i18n/ (5 fichiers)
 tests/game/    6 fichiers de test + helpers.ts (outils partagés)
+tests/render/  9 fichiers de test
+tests/ui/      4 fichiers de test + helpers.ts
+tests/e2e/     3 fichiers .spec.ts + console.ts, overlay.ts, png.ts
+docs/img/      16 captures produites par les tests e2e
 validation/    oracle MATLAB de T-005 : matlab/ (9 scripts), data/ (3 CSV), README.md
 docs/  orchestration/
 ```
 
-`dist/`, `node_modules/` et `coverage/` ne sont pas versionnés. Le dépôt git (branche `main`) a 11 commits au commit `7bcd9ce` (`git rev-list --count 7bcd9ce`) ; la correspondance tâche → commit est dans [CHANGELOG.md](CHANGELOG.md#correspondance-tâche--commit). `src/ui/`, `tests/e2e/` et `.github/workflows/` : Prévu (T-010, T-011).
+`dist/`, `node_modules/` et `coverage/` ne sont pas versionnés. Les sorties des tests e2e (`playwright-report/`, `test-results/`) sont aussi ignorées par git. Le dépôt git (branche `main`) a 15 commits au commit `566a8a3` (`git rev-list --count 566a8a3`) ; la correspondance tâche → commit est dans [CHANGELOG.md](CHANGELOG.md#correspondance-tâche--commit). `.github/workflows/` : Prévu (T-011).
 
 ## Licence
 
@@ -93,7 +115,8 @@ Prévu (T-011). Ce qui est déjà en place :
 
 - Dépôt GitHub : <https://github.com/lucashg7892/pid-game> (nom retenu par la décision D11 du registre). Il est **privé** pour l'instant.
 - Remote `origin` du dossier local : `https://github.com/lucashg7892/pid-game.git` (`git remote -v`).
-- `vite.config.ts` fixe `base: '/pid-game/'` : les URL du build sont préfixées par `/pid-game/`.
+- `vite.config.ts` fixe `base: '/pid-game/'` : les URL du build sont préfixées par `/pid-game/`. Les tests e2e tournent déjà contre ce build, sous cette base.
+- La page de repli (sans GPU) pointe vers `https://github.com/lucashg7892/pid-game#readme` : ce lien ne fonctionnera pour le public qu'une fois le dépôt rendu public (réserve du log T-008).
 
 Ce qui reste à faire, Prévu (T-011) :
 
@@ -102,4 +125,9 @@ Ce qui reste à faire, Prévu (T-011) :
 
 ## Taille du bundle
 
-Mesure du socle, non refaite depuis : le log T-002 consigne 219,75 kB gzip pour le JavaScript du build (812,66 kB non compressé, mesure Vite du 2026-11-12 ; le bouchon `main.ts` importe déjà `three/webgpu`). Vite affiche l'avertissement « Some chunks are larger than 500 kB after minification ». Budget visé par la spec T-001 §7 : 400 ko gzip pour le JS initial.
+| Commit | JavaScript | gzip | Source |
+|---|---|---|---|
+| socle T-002 | 812,66 kB | 219,75 kB | log T-002 |
+| `566a8a3` | 885,25 kB | **246,57 kB** | `npx vite build` sur une extraction de `566a8a3` (rédacteur, 2026-11-13) |
+
+Un seul fichier JavaScript, dominé par `three/webgpu`. Feuille de style : 5,86 kB (2,09 kB gzip). Polices : 23 944 et 20 112 octets, chargées à la demande. Vite affiche l'avertissement « Some chunks are larger than 500 kB after minification ». Budget visé par la spec T-001 §7 : 400 ko gzip pour le JS initial, respecté.

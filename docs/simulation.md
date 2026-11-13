@@ -10,9 +10,9 @@ Ce que le noyau fait aujourd'hui :
 
 - il fournit une boucle fermée générique (`createClosedLoop`) qui accepte n'importe quel modèle, contrôleur et intégrateur ;
 - il fournit un modèle (l'ascenseur), un contrôleur (proportionnel) et un intégrateur (RK4) ;
-- il fournit une horloge à pas fixe et un enregistreur de signaux, destinés au rendu des courbes : Prévu (T-008, T-009).
+- il fournit une horloge à pas fixe et un enregistreur de signaux, utilisés par `src/game` et lus par le rendu des courbes (voir [rendu.md](rendu.md#courbe-yt)).
 
-Ce qu'il ne fait pas : il ne décide ni de la victoire ni de l'échec. Ces règles sont dans `src/game/` (validé en T-007, voir [jeu.md](jeu.md#règles-dissue)). Seuls `src/game/` et `src/main.ts` (qui lit `SIM_DT`) importent le noyau ; `src/main.ts` n'utilise pas encore `src/game/`.
+Ce qu'il ne fait pas : il ne décide ni de la victoire ni de l'échec. Ces règles sont dans `src/game/` (validé en T-007, voir [jeu.md](jeu.md#règles-dissue)). Le noyau est importé par `src/game/` (boucle de l'ascenseur, horloge, enregistreur) et par `src/render/` (force maximale du moteur pour la jauge, type `SignalRecorder`) ; `src/main.ts` ne l'importe plus directement depuis T-010.
 
 Unités : SI partout (m, s, kg, N). Le temps est un entier de pas `k` ; `t = k·dt` est calculé par multiplication, jamais accumulé.
 
@@ -103,7 +103,7 @@ Les six derniers types étendent les interfaces de la spec T-001 §4. Ces extens
 
 ## Horloge à pas fixe
 
-Le rendu (Prévu T-008) tournera à la cadence de l'écran (30, 60, 144 images/s…). La simulation, elle, avance toujours par pas de `dt = 1/120` s. L'horloge convertit la durée de chaque image en un nombre entier de pas. Elle ne lit jamais l'heure : l'appelant lui donne la durée de l'image.
+Le rendu (T-008) tourne à la cadence de l'écran (30, 60, 144 images/s…). La simulation, elle, avance toujours par pas de `dt = 1/120` s. L'horloge convertit la durée de chaque image en un nombre entier de pas. Elle ne lit jamais l'heure : l'appelant lui donne la durée de l'image.
 
 Fonctionnement de `advance(frameSeconds)` (fichier `src/sim/clock.ts`) :
 
@@ -111,7 +111,7 @@ Fonctionnement de `advance(frameSeconds)` (fichier `src/sim/clock.ts`) :
 2. L'accumulateur, tenu **en pas** (sans unité), reçoit `frameSeconds / dt`.
 3. Le nombre de pas est la partie entière de `accumulateur + 1e-9`. Ce epsilon absorbe l'erreur d'arrondi : sans lui, 6 images de 1/144 s pourraient donner 4 pas au lieu de 5.
 4. Les pas sont retirés de l'accumulateur. S'il en reste plus de `MAX_STEPS_PER_FRAME` (8), le surplus est jeté ; la fraction de pas restante est conservée.
-5. `alpha` vaut la fraction restante, dans [0, 1). Le rendu s'en servira pour interpoler entre l'état précédent et l'état courant : Prévu (T-008).
+5. `alpha` vaut la fraction restante, dans [0, 1). Le rendu s'en sert pour interpoler entre l'état précédent et l'état courant (voir [rendu.md](rendu.md#interpolation-et-ancres-pour-linterface)).
 
 Exemples mesurés par `tests/sim/clock.test.ts` :
 
@@ -162,7 +162,7 @@ Le cas NaN s'écarte de la formule littérale de la spec (`saturated = uSat !== 
 - `clear()` vide l'enregistreur sans réallouer.
 - `push` et `forEach` n'allouent rien.
 
-L'enregistreur copie des nombres : il ne garde aucune référence vers l'échantillon. Il ne stocke pas ẏ ni uCmd. Capacité prévue pour le jeu : 1800 échantillons (15 s), Prévu (T-009).
+L'enregistreur copie des nombres : il ne garde aucune référence vers l'échantillon. Il ne stocke pas ẏ ni uCmd. Capacité utilisée par le jeu : 1800 échantillons, soit 15 s (`src/game/level.ts`, T-007) ; le rendu y lit la courbe y(t) (T-009).
 
 ## Borne `MAX_SIM_DT` = 1/30 s
 
@@ -170,7 +170,7 @@ L'enregistreur copie des nombres : il ne garde aucune référence vers l'échant
 
 Justification chiffrée (commentaire de `src/sim/clock.ts`, recalculée par le rédacteur avec la forme fermée du bloqueur d'ordre zéro, voir [physique/ascenseur.md](physique/ascenseur.md#stabilité-de-la-boucle-échantillonnée)) :
 
-| Grandeur, à dt = 1/30 s et Kp = 8000 N/m (maximum du curseur prévu) | Valeur |
+| Grandeur, à dt = 1/30 s et Kp = 8000 N/m (maximum du curseur) | Valeur |
 |---|---|
 | Kp critique de la boucle échantillonnée | 25 115 N/m (forme exacte) ; 25 125 N/m avec RK4 (log T-004b) |
 | marge de gain | 3,14 |

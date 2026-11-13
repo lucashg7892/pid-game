@@ -24,29 +24,22 @@ Tenu par l'orchestrateur. Les sous-agents ne modifient jamais ce fichier.
 | D16 | Essai utilisateur (2026-11-13) | Le niveau tourne sur son PC (npm.cmd sous PowerShell). Priorité : afficher les textes et l'aide des touches |
 | D17 | Dépôt | Reste privé pour l'instant : CI active, déploiement Pages préparé mais manuel |
 | D18 | Fin de v0.1 | Aller jusqu'à T-013 avec des vérifications allégées ; défauts mineurs consignés dans `orchestration/DEFAUTS-CONNUS.md` |
+| D19 | Protocole allégé (2026-11-13) | Garder la configuration actuelle (Opus, pas d'Ollama) ; autonomie des agents, vérification proportionnée N1/N2/N3, outils natifs (`CLAUDE.md`, `.claude/`) : [ADR-014](../docs/decisions/ADR-014-protocole-allege.md) |
 
 ## 2. Protocole
 
-Rôles (sous-agents Claude Opus 5.5, jamais cumulés sur une même tâche) :
-concepteur, réalisateur, validateur (n'a pas vu la réalisation), rédacteur de doc.
+Depuis D19 (ADR-014), les règles courantes sont dans `CLAUDE.md` : rôles dans `.claude/agents/`, clôture d'une tâche dans le skill `cloturer-tache`.
 
-Ordre de mission : identifiant T-xxx, objectif, fichiers autorisés, critères
-d'acceptation numérotés (CA-n), commandes de vérification imposées, interdits.
-
-Certificat rendu par l'agent :
-1. fichiers créés/modifiés + SHA-256 ;
-2. commandes exécutées, code de sortie, fin de la sortie brute ;
-3. chaque CA-n : PASS/FAIL + preuve ;
-4. écarts et doutes déclarés.
-
-Vérification par l'orchestrateur : recalcul des hash, relance des commandes.
-Certificat non reproductible = échec. En cas d'échec, on corrige l'ordre de
-mission et on consigne la leçon en section 4.
+- Un ordre de mission tient en quelques lignes : objectif, fichiers concernés, comment savoir que c'est fini.
+- Trois niveaux de vérification annoncés au lancement : N1 léger, N2 courant (`npm run check` relancé par l'orchestrateur), N3 critique (plus validateur indépendant et log).
+- Une ligne au registre par tâche N2 ou N3 ; un log `logs/T-xxx.md` seulement pour N3.
+- Les tâches T-000 à T-013 ont suivi l'ancien protocole (ADR-004 : critères CA-n, certificats avec SHA-256) ; leurs logs restent tels quels.
 
 ## 3. État des tâches
 
 | ID | Rôle | Objet | Statut | Log |
 |----|------|-------|--------|-----|
+| P-001 | orchestrateur | Protocole allégé : `CLAUDE.md`, `.claude/`, ADR-014 | FAIT | — |
 | T-000 | réalisateur | Pilote : git init, .gitignore, .gitattributes | VALIDÉ | logs/T-000.md |
 | T-001 | concepteur | Spec de la tranche verticale | VALIDÉ | logs/T-001.md |
 | T-002 | réalisateur | Socle outillé (npm, TS, Vite, lint, tests) | VALIDÉ (réserves) | logs/T-002.md |
@@ -68,6 +61,8 @@ mission et on consigne la leçon en section 4.
 | D-002 | rédacteur | Doc technique initiale (README, docs/) | VALIDÉ | logs/D-002.md |
 
 ## 4. Leçons sur les consignes
+
+L1, L4, L6, L8 et L10 sont reprises dans la section « Environnement d'exécution » de `CLAUDE.md`.
 
 - L1 (T-000) : toujours préciser aux sous-agents que le dépôt n'est accessible que par `device_bash` (`$HOME/mnt/PID_GAME`), jamais par leurs outils de fichiers locaux.
 - L2 (T-001) : exiger de chaque agent qu'il distingue « lu dans le source » de « exécuté » ; reporter chaque fait non exécuté comme CA de la tâche suivante.

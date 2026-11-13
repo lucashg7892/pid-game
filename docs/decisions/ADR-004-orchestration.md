@@ -22,4 +22,4 @@ L'utilisateur veut que Claude pilote le projet, que les choix de design soient d
 
 ## Statut
 
-Accepté (2026-11-12).
+Accepté (2026-11-12). Remplacé en partie par l'[ADR-014](ADR-014-protocole-allege.md) (2026-11-13) : les rôles, la numérotation et le registre restent ; les certificats et la vérification systématique sont remplacés par une vérification proportionnée.

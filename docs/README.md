@@ -41,7 +41,7 @@ Pour comprendre ce qui est affiché : [rendu.md](rendu.md) (dessin au crayon) et
 | [ADR-001](decisions/ADR-001-pile-technique.md) | pile technique et versions épinglées |
 | [ADR-002](decisions/ADR-002-typescript-6.md) | TypeScript 6.0.3 plutôt que 7.0.2 |
 | [ADR-003](decisions/ADR-003-noyau-pur.md) | noyau de simulation pur et ses trois garde-fous |
-| [ADR-004](decisions/ADR-004-orchestration.md) | travail par orchestrateur, sous-agents et certificats |
+| [ADR-004](decisions/ADR-004-orchestration.md) | travail par orchestrateur, sous-agents et certificats (remplacé en partie par l'ADR-014) |
 | [ADR-005](decisions/ADR-005-rk4-bloqueur.md) | intégration RK4 à dt = 1/120 s avec bloqueur d'ordre zéro |
 | [ADR-006](decisions/ADR-006-oracle-matlab.md) | validation par oracle exact MATLAB, hors du site |
 | [ADR-007](decisions/ADR-007-i18n-maison.md) | i18n maison typée, sans bibliothèque |
@@ -51,6 +51,7 @@ Pour comprendre ce qui est affiché : [rendu.md](rendu.md) (dessin au crayon) et
 | [ADR-011](decisions/ADR-011-interface-dom.md) | interface en DOM superposé, pilotée par un modèle de vue pur |
 | [ADR-012](decisions/ADR-012-tests-navigateur.md) | tests navigateur hors de la VM des agents, captures de référence |
 | [ADR-013](decisions/ADR-013-ci-et-pages-manuel.md) | CI à chaque push, déploiement Pages manuel tant que le dépôt est privé |
+| [ADR-014](decisions/ADR-014-protocole-allege.md) | protocole allégé : autonomie, vérification proportionnée, outils natifs de Claude Code |
 
 ### Captures
 
@@ -73,7 +74,7 @@ Titre provisoire décidé par l'utilisateur : « Huygens’s world », en hommag
 
 ## Maintenance
 
-Le projet avance par tâches numérotées (voir [ADR-004](decisions/ADR-004-orchestration.md)). Après chaque tâche validée, le rédacteur :
+Le projet avance par tâches numérotées (voir [ADR-004](decisions/ADR-004-orchestration.md) et [ADR-014](decisions/ADR-014-protocole-allege.md) ; les règles courantes sont dans `CLAUDE.md`). Après chaque tâche validée qui change un comportement décrit ici, le rédacteur :
 
 1. met à jour les pages touchées par les fichiers modifiés ;
 2. recopie les valeurs mesurées, jamais devinées ;

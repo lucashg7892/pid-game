@@ -22,6 +22,8 @@ Tenu par l'orchestrateur. Les sous-agents ne modifient jamais ce fichier.
 | D14 | MATLAB | Autorisé pour la validation uniquement ; rien de MATLAB dans le site |
 | D15 | Titre | Titre provisoire : « Huygens's world » (hommage à Christiaan Huygens) ; à appliquer aux clés `app.title` |
 | D16 | Essai utilisateur (2026-11-13) | Le niveau tourne sur son PC (npm.cmd sous PowerShell). Priorité : afficher les textes et l'aide des touches |
+| D17 | Dépôt | Reste privé pour l'instant : CI active, déploiement Pages préparé mais manuel |
+| D18 | Fin de v0.1 | Aller jusqu'à T-013 avec des vérifications allégées ; défauts mineurs consignés dans `orchestration/DEFAUTS-CONNUS.md` |
 
 ## 2. Protocole
 
@@ -55,6 +57,7 @@ mission et on consigne la leçon en section 4.
 | T-006 | réalisateur | i18n FR/EN | VALIDÉ | logs/T-006.md |
 | T-007 | réalisateur | Logique du niveau 1 | VALIDÉ | logs/T-007.md |
 | D-004 | rédacteur | Doc du noyau, de l'i18n, de la validation ; errata de spec | VALIDÉ | logs/D-004.md |
+| T-011 | réalisateur | CI et déploiement Pages (manuel) | EN COURS | logs/T-011-013.md |
 | D-010 | rédacteur | Doc du rendu et de l'interface ; mises à jour en attente | VALIDÉ | logs/D-010.md |
 | T-010 | réalisateur | Interface : panneau Kp, textes, commandes, accessibilité, titre | VALIDÉ | logs/T-010.md |
 | T-009 | réalisateur | Rendu : crayon, décor, bonhomme, ascenseur, courbes | VALIDÉ | logs/T-009.md |

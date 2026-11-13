@@ -1,0 +1,63 @@
+# Déploiement de dist/ sur GitHub Pages.
+#
+# Déclenchement MANUEL uniquement (onglet Actions > Deploy > Run workflow) : le dépôt est privé
+# (décision D17) et un compte GitHub gratuit ne publie pas de site Pages depuis un dépôt privé.
+# Une fois le dépôt rendu public et Pages réglé sur « GitHub Actions », pour déployer à chaque push
+# sur main, ajouter sous `on:` (au même niveau que workflow_dispatch) :
+#
+#   push:
+#     branches: [main]
+name: Deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un seul déploiement à la fois ; celui en cours n'est pas interrompu.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v7
+
+      - name: Installer Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Build (base /pid-game/)
+        run: npm run build
+
+      - name: Configurer Pages
+        uses: actions/configure-pages@v6
+
+      - name: Déposer l'artefact Pages
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publier sur GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

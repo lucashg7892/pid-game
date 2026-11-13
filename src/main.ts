@@ -1,22 +1,39 @@
 /**
  * Point de composition (spec T-001 §3) : crée le niveau 1, démarre le rendu (papier et niveau au
- * crayon) et branche des commandes clavier PROVISOIRES (remplacées par l'interface en T-010) ;
- * affiche la page de repli traduite si aucun GPU n'est utilisable. N'importe pas three : tout le
- * rendu vit dans src/render.
+ * crayon), construit l'interface DOM (src/ui : textes, panneaux, commandes clavier, tactiles et
+ * souris, accessibilité) et lui transmet à chaque image la géométrie de l'écran et les ancres du
+ * rendu sous forme de données simples ; affiche la page de repli traduite si aucun GPU n'est
+ * utilisable. N'importe pas three : tout le rendu vit dans src/render.
  *
  * Crochet de test : seulement avec `?e2e=1` dans l'URL, `window.__huygens` expose les commandes
  * du niveau, une copie de l'instantané, une avance déterministe du temps et les compteurs de
  * rendu. Dans ce mode, le temps réel ne fait plus avancer le niveau (ni le « boiling ») : seul
- * `advance` le fait, par images fixes de {@link E2E_FRAME_SECONDS}.
+ * `advance` le fait, par images fixes de {@link E2E_FRAME_SECONDS}, puis met l'interface à jour.
  */
-import { KP_STEP, createLevel1, type CommandResult, type Level1, type LevelSnapshot } from './game';
+import {
+  ARRIVAL_LEDGE_HEIGHT,
+  START_LEDGE_HEIGHT,
+  VOID_MAX_X,
+  VOID_MIN_X,
+  createLevel1,
+  type CommandResult,
+  type Level1,
+  type LevelSnapshot,
+} from './game';
 import { createTranslator, detectLocale, type Translator } from './i18n';
 import {
+  PLAY_ZONE,
+  computeFrame,
   parseRendererChoice,
   startRendering,
+  worldXToPixel,
+  worldYToPixel,
+  type Frame,
+  type LevelAnchors,
   type RenderSession,
   type RenderStats,
 } from './render';
+import { bindKeyboard, createUi, type ScreenRect, type Ui, type UiGeometry } from './ui';
 
 /** Durée d'une image du crochet de test (s). */
 const E2E_FRAME_SECONDS = 1 / 60;
@@ -100,95 +117,50 @@ function isE2e(search: string): boolean {
   return new URLSearchParams(search).get('e2e') === '1';
 }
 
-/**
- * Commandes clavier provisoires (spec §6 ; remplacées en T-010) : ←/→ ou A/D (`code`, donc Q/D
- * en AZERTY) marcher, relâcher = s'arrêter ; E, Entrée ou Espace : interagir à la console, puis
- * lancer quand le réglage est ouvert ; + / − : Kp ± 100 ; R : recommencer ; Échap : pause.
- */
-function bindKeyboard(level: Level1): void {
-  let left = false;
-  let right = false;
-  const walk = (): void => {
-    if (left && !right) {
-      level.moveLeft();
-    } else if (right && !left) {
-      level.moveRight();
-    } else {
-      level.stop();
-    }
+/** Rectangle écran d'un rectangle monde (pixels CSS). */
+function screenRect(
+  frame: Frame,
+  width: number,
+  height: number,
+  rect: { minX: number; maxX: number; minY: number; maxY: number },
+): ScreenRect {
+  return {
+    left: worldXToPixel(frame, width, rect.minX),
+    right: worldXToPixel(frame, width, rect.maxX),
+    top: worldYToPixel(frame, height, rect.maxY),
+    bottom: worldYToPixel(frame, height, rect.minY),
   };
-  window.addEventListener('keydown', (event) => {
-    let handled = true;
-    switch (event.code) {
-      case 'ArrowLeft':
-      case 'KeyA':
-        left = true;
-        walk();
-        break;
-      case 'ArrowRight':
-      case 'KeyD':
-        right = true;
-        walk();
-        break;
-      case 'KeyE':
-      case 'Enter':
-      case 'NumpadEnter':
-      case 'Space':
-        if (!event.repeat) {
-          if (level.snapshot.phase === 'tuning') {
-            level.launch();
-          } else {
-            level.interact();
-          }
-        }
-        break;
-      case 'NumpadAdd':
-        level.adjustKp(KP_STEP);
-        break;
-      case 'NumpadSubtract':
-        level.adjustKp(-KP_STEP);
-        break;
-      case 'KeyR':
-        level.restart();
-        break;
-      case 'Escape':
-        if (level.snapshot.phase === 'paused') {
-          level.resume();
-        } else {
-          level.pause();
-        }
-        break;
-      default:
-        if (event.key === '+' || event.key === '=') {
-          level.adjustKp(KP_STEP);
-        } else if (event.key === '-') {
-          level.adjustKp(-KP_STEP);
-        } else {
-          handled = false;
-        }
-    }
-    if (handled) {
-      event.preventDefault();
-    }
-  });
-  window.addEventListener('keyup', (event) => {
-    if (event.code === 'ArrowLeft' || event.code === 'KeyA') {
-      left = false;
-      walk();
-    } else if (event.code === 'ArrowRight' || event.code === 'KeyD') {
-      right = false;
-      walk();
-    }
-  });
-  window.addEventListener('blur', () => {
-    left = false;
-    right = false;
-    walk();
-  });
+}
+
+/**
+ * Géométrie de l'écran pour l'interface (T-010), d'après le cadrage du rendu : zone de jeu, cage
+ * (colonne x ∈ [0 ; 4] m sur toute la hauteur de la zone de jeu), échelle, quai d'arrivée, et les
+ * ancres de la session (objets réutilisés, réécrits à chaque image : passés tels quels).
+ */
+function uiGeometry(width: number, height: number, anchors: Readonly<LevelAnchors>): UiGeometry {
+  const frame = computeFrame(width, height);
+  return {
+    width,
+    height,
+    scene: screenRect(frame, width, height, PLAY_ZONE),
+    cage: screenRect(frame, width, height, {
+      minX: VOID_MIN_X,
+      maxX: VOID_MAX_X,
+      minY: PLAY_ZONE.minY,
+      maxY: PLAY_ZONE.maxY,
+    }),
+    pixelsPerMeter: frame.pixelsPerMeter,
+    console: anchors.console,
+    walkerHead: anchors.walkerHead,
+    forceGauge: anchors.forceGauge,
+    errorDimension: anchors.errorDimension,
+    arrivalLedgeY: worldYToPixel(frame, height, ARRIVAL_LEDGE_HEIGHT),
+    groundY: worldYToPixel(frame, height, START_LEDGE_HEIGHT),
+  };
 }
 
 /** Installe `window.__huygens` (mode `?e2e=1`). */
-function installTestHook(level: Level1, session: RenderSession): void {
+function installTestHook(level: Level1, session: RenderSession, refreshUi: () => void): void {
   window.__huygens = {
     commands: {
       moveLeft: () => level.moveLeft(),
@@ -210,6 +182,7 @@ function installTestHook(level: Level1, session: RenderSession): void {
         level.update(E2E_FRAME_SECONDS);
       }
       session.renderNow(frames * E2E_FRAME_SECONDS);
+      refreshUi();
     },
     stats: () => session.stats(),
     trace: () => session.trace(),
@@ -219,6 +192,7 @@ function installTestHook(level: Level1, session: RenderSession): void {
 async function main(): Promise<void> {
   const translator = createTranslator(detectLocale(location.search, navigator.languages));
   document.documentElement.lang = translator.locale;
+  document.title = translator.t('app.title');
   const canvas = document.querySelector<HTMLCanvasElement>('#scene');
   if (canvas === null) {
     showFallback(translator, null);
@@ -227,9 +201,14 @@ async function main(): Promise<void> {
   canvas.setAttribute('aria-label', translator.t('a11y.canvas'));
   const level = createLevel1();
   const manualClock = isE2e(location.search);
+  // L'interface est créée après le démarrage du rendu ; la session n'existe pas encore.
+  let refreshUi: () => void = () => undefined;
   const result = await startRendering(canvas, parseRendererChoice(location.search), {
     level,
     onFrame: (frameSeconds) => {
+      // Mise à jour de l'interface avec les ancres de l'image précédente (décalage d'une image,
+      // invisible pour des étiquettes), puis avance du niveau.
+      refreshUi();
       if (manualClock) {
         return 0;
       }
@@ -242,10 +221,36 @@ async function main(): Promise<void> {
     return;
   }
   const { session } = result;
-  bindKeyboard(level);
+  const root = document.createElement('div');
+  root.id = 'ui';
+  document.body.append(root);
+  const ui: Ui = createUi({ root, level, translator, canvas });
+  const anchors = session.anchors();
+  let geometry: UiGeometry | null = null;
+  let geometryWidth = -1;
+  let geometryHeight = -1;
+  const measure = (): void => {
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    if (width !== geometryWidth || height !== geometryHeight) {
+      geometryWidth = width;
+      geometryHeight = height;
+      geometry = uiGeometry(width, height, anchors);
+    }
+  };
+  measure();
+  window.addEventListener('resize', measure);
+  refreshUi = () => {
+    ui.update(geometry ?? undefined);
+  };
+  bindKeyboard(level, ui, window);
   if (manualClock) {
-    installTestHook(level, session);
+    installTestHook(level, session, () => {
+      measure();
+      refreshUi();
+    });
   }
+  refreshUi();
   document.body.dataset['backend'] = session.backend;
   const stats = await session.firstFrame;
   document.body.dataset['drawCalls'] = String(stats.drawCalls);

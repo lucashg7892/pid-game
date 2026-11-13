@@ -1,0 +1,187 @@
+/**
+ * Disposition des panneaux (T-010) : aucune boîte de panneau ne coupe la cage, toutes restent
+ * dans l'écran, pour des fenêtres paysage, portrait et extrêmes ; clic sur la console.
+ */
+import { describe, expect, it } from 'vitest';
+import {
+  ARRIVAL_LEDGE_HEIGHT,
+  CABIN_CENTER_X,
+  CONSOLE_X,
+  START_LEDGE_HEIGHT,
+  VOID_MAX_X,
+  VOID_MIN_X,
+  WALKER_SPAWN_X,
+} from '../../src/game';
+import { PLAY_ZONE, computeFrame, worldXToPixel, worldYToPixel } from '../../src/render/camera';
+import { CONSOLE_ANCHOR_Y, WALKER_HEAD_TOP } from '../../src/render/level-display';
+import { DIMENSION_X, GAUGE_MAX_X, GAUGE_MAX_Y, GAUGE_MIN_X } from '../../src/render/pencil-style';
+import {
+  boxExtent,
+  computeLayout,
+  consoleRect,
+  createLayout,
+  intersects,
+  isConsoleHit,
+  walkerOnLedge,
+  walkerRect,
+  type UiGeometry,
+  type UiLayout,
+} from '../../src/ui/layout';
+
+/** Géométrie comme la calcule main.ts (même cadrage que le rendu). */
+function geometry(width: number, height: number, walkerX = WALKER_SPAWN_X): UiGeometry {
+  const f = computeFrame(width, height);
+  const x = (v: number): number => worldXToPixel(f, width, v);
+  const y = (v: number): number => worldYToPixel(f, height, v);
+  return {
+    width,
+    height,
+    scene: {
+      left: x(PLAY_ZONE.minX),
+      right: x(PLAY_ZONE.maxX),
+      top: y(PLAY_ZONE.maxY),
+      bottom: y(PLAY_ZONE.minY),
+    },
+    cage: {
+      left: x(VOID_MIN_X),
+      right: x(VOID_MAX_X),
+      top: y(PLAY_ZONE.maxY),
+      bottom: y(PLAY_ZONE.minY),
+    },
+    pixelsPerMeter: f.pixelsPerMeter,
+    console: { x: x(CONSOLE_X), y: y(CONSOLE_ANCHOR_Y) },
+    walkerHead: { x: x(walkerX), y: y(WALKER_HEAD_TOP) },
+    forceGauge: { x: x((GAUGE_MIN_X + GAUGE_MAX_X) / 2), y: y(GAUGE_MAX_Y) },
+    errorDimension: { x: x(DIMENSION_X), y: y(2.9) },
+    arrivalLedgeY: y(ARRIVAL_LEDGE_HEIGHT),
+    groundY: y(START_LEDGE_HEIGHT),
+  };
+}
+
+/**
+ * Positions du bonhomme : apparition, milieu du quai, bords et milieu de la zone de la console,
+ * butée droite, dans la cabine.
+ */
+const WALKER_POSITIONS = [WALKER_SPAWN_X, -3, -1.75, -1.6, CONSOLE_X, -0.3, CABIN_CENTER_X];
+
+const PANELS = ['banner', 'bubble', 'panel', 'outcome', 'readout', 'help'] as const;
+
+const SIZES: readonly (readonly [number, number])[] = [
+  [1280, 720],
+  [1281, 721],
+  [1920, 1080],
+  [1366, 768],
+  [1440, 900],
+  [1280, 600],
+  [2560, 720],
+  [1024, 768],
+  [800, 900],
+  [844, 390],
+  [390, 844],
+  [360, 740],
+  [768, 1024],
+];
+
+describe('computeLayout', () => {
+  for (const [w, h] of SIZES) {
+    it(`${String(w)}×${String(h)} : aucun panneau ne coupe la cage, la console ni le bonhomme, ni ne sort de l’écran`, () => {
+      for (const walkerX of WALKER_POSITIONS) {
+        const g = geometry(w, h, walkerX);
+        const layout = computeLayout(g, createLayout());
+        for (const name of PANELS) {
+          const b = layout[name];
+          const extent = boxExtent(b);
+          expect(intersects(extent, g.cage), `${name} ${JSON.stringify(extent)}`).toBe(false);
+          expect(
+            intersects(extent, consoleRect(g)),
+            `${name} / console, x = ${String(walkerX)}`,
+          ).toBe(false);
+          const walker = walkerRect(g);
+          if (walker !== null) {
+            expect(intersects(extent, walker), `${name} / bonhomme, x = ${String(walkerX)}`).toBe(
+              false,
+            );
+          }
+          expect(b.width, `${name} largeur`).toBeGreaterThan(0);
+          expect(extent.left, `${name} gauche`).toBeGreaterThanOrEqual(0);
+          expect(extent.right, `${name} droite`).toBeLessThanOrEqual(w);
+          expect(extent.top, `${name} haut`).toBeGreaterThanOrEqual(0);
+          expect(extent.bottom, `${name} bas`).toBeLessThanOrEqual(h);
+        }
+      }
+    });
+  }
+
+  it('1280×720, bonhomme à la console : réglage à sa gauche, du haut jusqu’au sol', () => {
+    const g = geometry(1280, 720, -1.6);
+    const l: UiLayout = computeLayout(g, createLayout());
+    expect(l.mode).toBe('sides');
+    expect(walkerOnLedge(g)).toBe(true);
+    expect(l.panel.anchor).toBe('bottom');
+    expect(l.panel.edge).toBe(Math.round(g.groundY - 8));
+    expect(l.panel.left + l.panel.width).toBeLessThanOrEqual((walkerRect(g)?.left ?? 0) - 12);
+    expect(l.panel.width).toBeGreaterThanOrEqual(280);
+    // Bonhomme dans la cabine : l'issue est posée à gauche de la console.
+    const cabin = geometry(1280, 720, CABIN_CENTER_X);
+    expect(walkerRect(cabin)).toBeNull();
+    const lc = computeLayout(cabin, createLayout());
+    expect(lc.outcome.left + lc.outcome.width).toBeLessThanOrEqual(consoleRect(cabin).left - 12);
+    expect(l.readout.left).toBeGreaterThan(g.forceGauge.x);
+    expect(l.banner.edge).toBe(712);
+    expect(boxExtent(l.banner).top).toBeGreaterThanOrEqual(g.scene.bottom);
+    expect(l.dimension.x).toBeGreaterThan(g.cage.right);
+  });
+
+  it('390×844 : bandes ; réglage et issue sous la scène, bulle et mesures au-dessus', () => {
+    const g = geometry(390, 844);
+    const l = computeLayout(g, createLayout());
+    expect(l.mode).toBe('bands');
+    expect(boxExtent(l.panel).top).toBeGreaterThan(g.scene.bottom);
+    expect(boxExtent(l.outcome).top).toBeGreaterThan(g.scene.bottom);
+    expect(boxExtent(l.bubble).bottom).toBeLessThan(g.scene.top);
+    expect(boxExtent(l.readout).bottom).toBeLessThan(g.scene.top);
+  });
+
+  it('côté gauche trop étroit à gauche du bonhomme : réglage posé au-dessus de lui', () => {
+    const g = geometry(1280, 720, WALKER_SPAWN_X);
+    const l = computeLayout(g, createLayout());
+    expect(l.panel.edge).toBeLessThanOrEqual(Math.round(g.walkerHead.y - 12));
+    expect(boxExtent(l.panel).bottom).toBeLessThan(g.walkerHead.y);
+  });
+
+  it('écran trop bas pour une bande sous la scène : bandeau en bas à gauche de la cage', () => {
+    const g = geometry(2560, 720);
+    const l = computeLayout(g, createLayout());
+    expect(l.banner.left + l.banner.width).toBeLessThanOrEqual(g.cage.left);
+  });
+
+  it('réécrit la même disposition, sans changer d’objets', () => {
+    const out = createLayout();
+    const banner = out.banner;
+    expect(computeLayout(geometry(1280, 720), out)).toBe(out);
+    expect(out.banner).toBe(banner);
+  });
+
+  it('intersects : bords communs exclus', () => {
+    const a = { left: 0, top: 0, right: 10, bottom: 10 };
+    expect(intersects(a, { left: 10, top: 0, right: 20, bottom: 10 })).toBe(false);
+    expect(intersects(a, { left: 9, top: 9, right: 20, bottom: 20 })).toBe(true);
+    expect(boxExtent({ left: 1, width: 5, anchor: 'bottom', edge: 100, maxHeight: 30 })).toEqual({
+      left: 1,
+      top: 70,
+      right: 6,
+      bottom: 100,
+    });
+  });
+});
+
+describe('isConsoleHit', () => {
+  it('le pupitre et le pied de la console sont cliquables, le vide à côté non', () => {
+    const g = geometry(1280, 720);
+    expect(isConsoleHit(g.console.x, g.console.y, g)).toBe(true);
+    expect(isConsoleHit(g.console.x, g.console.y + 0.9 * g.pixelsPerMeter, g)).toBe(true);
+    expect(isConsoleHit(g.console.x + g.pixelsPerMeter, g.console.y, g)).toBe(false);
+    expect(isConsoleHit(g.console.x, g.console.y - g.pixelsPerMeter, g)).toBe(false);
+    expect(isConsoleHit(0, 0, { ...g, pixelsPerMeter: 0 })).toBe(false);
+  });
+});

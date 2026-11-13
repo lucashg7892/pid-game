@@ -13,6 +13,7 @@ import { computeFrame, worldXToPixel, worldYToPixel, type Frame } from '../../sr
 import { CURVE_ORIGIN_X, CURVE_SPAN } from '../../src/render/curve';
 import { WALKER_HEAD_TOP } from '../../src/render/level-display';
 import { ALLOWED_WEBGL, CONSOLE_FAILURE, watchConsole } from './console';
+import { hideUi } from './overlay';
 import { decodePng, luma, pixelAt, type DecodedPng, type Rgb } from './png';
 
 const WIDTH = 1280;
@@ -44,6 +45,7 @@ async function openGame(page: Page, width = WIDTH, height = HEIGHT): Promise<str
   await page.setViewportSize({ width, height });
   const problems = watchConsole(page, ALLOWED_WEBGL);
   await page.goto('?renderer=webgl&e2e=1&lang=fr');
+  await hideUi(page);
   await page.waitForFunction(() => document.body.dataset['drawCalls'] !== undefined);
   await page.waitForFunction(() => window.__huygens !== undefined);
   return problems;

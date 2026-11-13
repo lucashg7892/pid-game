@@ -5,6 +5,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { computeFrame, worldXToPixel, worldYToPixel, type Frame } from '../../src/render/camera';
+import { hideUi } from './overlay';
 import { decodePng, luma, pixelAt, type DecodedPng, type Rgb } from './png';
 
 /**
@@ -190,6 +191,7 @@ test('WebGL2 imposé : démarre sans erreur console et dessine le papier', async
   await page.setViewportSize({ width: 1280, height: 720 });
   const problems = watchConsole(page, ALLOWED_WEBGL);
   await page.goto('?renderer=webgl&lang=fr');
+  await hideUi(page);
   await waitFirstFrame(page);
   await waitTwoFrames(page);
   expect(await page.evaluate(() => document.body.dataset['backend'])).toBe('webgl');
@@ -225,6 +227,7 @@ test('portrait 390×844 : papier aligné, sans déformation', async ({ page }) =
   await page.setViewportSize({ width: 390, height: 844 });
   const problems = watchConsole(page, ALLOWED_WEBGL);
   await page.goto('?renderer=webgl');
+  await hideUi(page);
   await waitFirstFrame(page);
   await waitTwoFrames(page);
   const png = await page.screenshot({ path: 'docs/img/t008-paper-390x844.png' });
@@ -239,6 +242,7 @@ test('portrait 390×844 : toutes les lignes de mètre ont la même teinte', asyn
   await page.setViewportSize({ width: 390, height: 844 });
   const problems = watchConsole(page, ALLOWED_WEBGL);
   await page.goto('?renderer=webgl');
+  await hideUi(page);
   await waitFirstFrame(page);
   await waitTwoFrames(page);
   const image = decodePng(await page.screenshot());
@@ -378,6 +382,7 @@ for (const [width, height] of [
     await page.setViewportSize({ width, height });
     const problems = watchConsole(page, ALLOWED_WEBGL);
     await page.goto('?renderer=webgl');
+    await hideUi(page);
     await waitFirstFrame(page);
     await waitTwoFrames(page);
     const image = decodePng(await page.screenshot());
@@ -453,6 +458,7 @@ test('redimensionnement 1280×720 → 800×900 : le canvas suit, sans déformati
   await page.setViewportSize({ width: 1280, height: 720 });
   const problems = watchConsole(page, ALLOWED_WEBGL);
   await page.goto('?renderer=webgl');
+  await hideUi(page);
   await waitFirstFrame(page);
   await page.setViewportSize({ width: 800, height: 900 });
   await waitTwoFrames(page);

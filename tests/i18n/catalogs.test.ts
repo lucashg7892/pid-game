@@ -29,6 +29,8 @@ const IDENTICAL_ALLOWED: Readonly<Record<string, string>> = {
   'controls.pause': '« Pause » est le mot usuel des deux langues pour ce bouton.',
   'controls.action': 'la spec §6 nomme le bouton tactile « Action » ; même mot en anglais.',
   'level1.dimension': 'cote mathématique « e = … m » : notation identique, seul {e} varie.',
+  'app.title': 'titre du jeu « Huygens’s world » (décision D15), nom propre non traduit.',
+  'hud.kp.value': 'notation « Kp = … N/m » : symbole et unité SI identiques, seul {kp} varie.',
 };
 
 /** Clés imposées par la spec T-001 §6 (textes clés). */

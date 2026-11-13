@@ -12,6 +12,8 @@ export const MESSAGE_PARAMS = {
   'level1.fail.step': ['e'],
   'level1.dimension': ['e'],
   'level1.formula': ['kp', 'e'],
+  'hud.kp.value': ['kp'],
+  'hud.hint.item': ['keys', 'action'],
   'hud.force.value': ['u'],
   'hud.error.value': ['e'],
   'hud.time.value': ['t'],

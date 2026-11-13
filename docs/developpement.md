@@ -1,6 +1,6 @@
 # Développement
 
-À quoi sert cette page : installer le projet, connaître chaque script npm et les conventions de code. État au commit `566a8a3`. Pour un pas-à-pas sous Windows destiné à un non-développeur, voir le [tutoriel de lancement local](tutoriel-lancer-en-local.md).
+À quoi sert cette page : installer le projet, connaître chaque script npm et les conventions de code. État au commit `566a8a3` pour le code ; intégration continue et déploiement au commit `88ae23c` (T-011). Pour un pas-à-pas sous Windows destiné à un non-développeur, voir le [tutoriel de lancement local](tutoriel-lancer-en-local.md).
 
 ## Prérequis
 
@@ -103,25 +103,34 @@ validation/    oracle MATLAB de T-005 : matlab/ (9 scripts), data/ (3 CSV), READ
 docs/  orchestration/
 ```
 
-`dist/`, `node_modules/` et `coverage/` ne sont pas versionnés. Les sorties des tests e2e (`playwright-report/`, `test-results/`) sont aussi ignorées par git. Le dépôt git (branche `main`) a 15 commits au commit `566a8a3` (`git rev-list --count 566a8a3`) ; la correspondance tâche → commit est dans [CHANGELOG.md](CHANGELOG.md#correspondance-tâche--commit). `.github/workflows/` : Prévu (T-011).
+`dist/`, `node_modules/` et `coverage/` ne sont pas versionnés. Les sorties des tests e2e (`playwright-report/`, `test-results/`) sont aussi ignorées par git. Le dépôt git (branche `main`) a 15 commits au commit `566a8a3` (`git rev-list --count 566a8a3`) ; la correspondance tâche → commit est dans [CHANGELOG.md](CHANGELOG.md#correspondance-tâche--commit). Depuis T-011 (commit `8736af7`), `.github/workflows/` contient `ci.yml` et `deploy.yml` (sections suivantes). Le dépôt a 18 commits au commit `88ae23c` (`git rev-list --count 88ae23c`).
 
 ## Licence
 
 MIT, titulaire lucashg7892 (décision D12 du registre). Texte dans `LICENSE` à la racine. Voir [ADR-008](decisions/ADR-008-licence-mit.md).
 
+## Intégration continue
+
+`.github/workflows/ci.yml` (T-011) : à chaque push sur `main` et à chaque pull request, GitHub Actions installe Node 22, lance `npm ci`, `npm run check`, installe Chromium (`npx playwright install --with-deps chromium`) puis lance `npm run e2e`. En cas d'échec, le rapport Playwright est déposé comme artefact pendant 14 jours. Détails : [tests.md](tests.md#intégration-continue). Au commit `88ae23c`, la CI n'avait encore jamais tourné sur GitHub (log `orchestration/logs/T-011-013.md`) : première exécution au prochain push.
+
 ## Déploiement sur GitHub Pages
 
-Prévu (T-011). Ce qui est déjà en place :
+Le déploiement est **prêt mais manuel** (décision D17 du registre, [ADR-013](decisions/ADR-013-ci-et-pages-manuel.md)). `.github/workflows/deploy.yml` se lance seulement depuis l'onglet Actions (`workflow_dispatch`). Il fait `npm ci`, `npm run build` (base `/pid-game/`), puis publie `dist/` avec `actions/upload-pages-artifact` et `actions/deploy-pages`. Il n'a jamais été lancé au commit `88ae23c`.
+
+Ce qui est en place :
 
 - Dépôt GitHub : <https://github.com/lucashg7892/pid-game> (nom retenu par la décision D11 du registre). Il est **privé** pour l'instant.
 - Remote `origin` du dossier local : `https://github.com/lucashg7892/pid-game.git` (`git remote -v`).
 - `vite.config.ts` fixe `base: '/pid-game/'` : les URL du build sont préfixées par `/pid-game/`. Les tests e2e tournent déjà contre ce build, sous cette base.
 - La page de repli (sans GPU) pointe vers `https://github.com/lucashg7892/pid-game#readme` : ce lien ne fonctionnera pour le public qu'une fois le dépôt rendu public (réserve du log T-008).
 
-Ce qui reste à faire, Prévu (T-011) :
+GitHub Pages n'est pas disponible pour un dépôt privé avec un compte gratuit (défaut connu K14). Pour activer la publication, quand l'utilisateur décidera de rendre le dépôt public :
 
-- workflows `.github/workflows/ci.yml` et `deploy.yml`, publication de `dist/` depuis `main` (spec T-001 §9 et §11) ;
-- rendre le dépôt public avant la publication : GitHub Pages n'est pas disponible pour un dépôt privé avec un compte gratuit (il faudrait une offre payante). Décision de l'utilisateur.
+1. Rendre le dépôt public : Settings > General > Danger Zone > Change visibility.
+2. Dans Settings > Pages, choisir la source « GitHub Actions ».
+3. Lancer Actions > Deploy > Run workflow. Pour publier ensuite à chaque push sur `main`, ajouter sous `on:` de `deploy.yml`, au même niveau que `workflow_dispatch`, le déclencheur `push: branches: [main]` (commentaire en tête du fichier).
+
+Le site sera alors servi sous le chemin `/pid-game/`, qui correspond à la base du build.
 
 ## Taille du bundle
 

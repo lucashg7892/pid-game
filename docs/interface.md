@@ -137,7 +137,7 @@ Quand la fenêtre perd le focus ou que l'onglet est masqué : la marche s'arrêt
 
 ## Aide des commandes « ? »
 
-Le bouton « ? » ouvre une fenêtre d'aide (`role="dialog"`) qui liste les commandes au clavier, à la souris et au tactile (clés `controls.help.`). Échap ou « Fermer l’aide » la referme et rend le focus au bouton « ? ».
+Le bouton « ? » ouvre une fenêtre d'aide (`role="dialog"`) qui liste les commandes au clavier, à la souris et au tactile (clés `controls.help.`). À l'ouverture, le focus va sur « Fermer l’aide ». Échap ou « Fermer l’aide » la referme. Le focus revient au bouton « ? » seulement s'il était dans l'aide au moment de la fermeture ; sinon il reste où il était (`setHelp`, `src/ui/overlay.ts`). Relevé par la validation T-012 (§F, affirmation 7).
 
 ## Langue
 

@@ -1,6 +1,6 @@
 # Documentation technique de Huygens’s world (dépôt `pid-game`)
 
-À quoi sert cette page : servir d'index et expliquer comment lire la documentation. La documentation décrit l'état réel du commit `566a8a3` (branche `main`) : le niveau 1 est jouable. Elle est rédigée en français.
+À quoi sert cette page : servir d'index et expliquer comment lire la documentation. La documentation décrit l'état réel du commit `88ae23c` (branche `main`) : la v0.1 est validée avec réserves, le niveau 1 est jouable. Le code (`src/`, `tests/`, `public/`) n'a pas changé depuis `566a8a3` : les pages qui citent ce commit restent exactes. Elle est rédigée en français.
 
 ## Par où commencer
 
@@ -8,12 +8,16 @@ Pour lancer le projet sur un PC Windows, sans être développeur : [tutoriel-lan
 
 Pour comprendre le noyau en un quart d'heure : [simulation.md](simulation.md) (schéma d'un pas, piège de `LoopSample`), puis [physique/ascenseur.md](physique/ascenseur.md) (formules et valeurs du niveau 1), puis [jeu.md](jeu.md) (phases du niveau et règles d'issue).
 
+Pour un tour d'horizon de la version : [bilan-v0.1.md](bilan-v0.1.md), puis [defauts-connus.md](defauts-connus.md).
+
 Pour comprendre ce qui est affiché : [rendu.md](rendu.md) (dessin au crayon) et [interface.md](interface.md) (textes, touches, accessibilité).
 
 ## Pages
 
 | Page | Contenu |
 |---|---|
+| [bilan-v0.1.md](bilan-v0.1.md) | bilan de la v0.1 : contenu, chiffres clés, méthode, leçons, suite du parcours |
+| [defauts-connus.md](defauts-connus.md) | défauts connus K1 à K22, par thème, avec gravité et piste de correction |
 | [architecture.md](architecture.md) | modules, règles de dépendances, flux d'une image, garde-fous automatiques |
 | [simulation.md](simulation.md) | noyau de simulation : algorithme d'un pas, exports, horloge, RK4, saturation, déterminisme, procédures d'ajout |
 | [physique/ascenseur.md](physique/ascenseur.md) | modèle de l'ascenseur, formules, valeurs mesurées, fenêtre de réussite, stabilité |
@@ -21,11 +25,12 @@ Pour comprendre ce qui est affiché : [rendu.md](rendu.md) (dessin au crayon) et
 | [rendu.md](rendu.md) | rendu au crayon : démarrage WebGPU/WebGL2, cadrage, papier millimétré, traits, lots et budget, courbe, bonhomme, jauge, mesures |
 | [interface.md](interface.md) | interface du joueur : phases, bandeau d'aide, panneau Kp, table des touches, annonces, disposition, police |
 | [i18n-accessibilite.md](i18n-accessibilite.md) | i18n FR/EN et accessibilité (validés) |
-| [tests.md](tests.md) | inventaire des tests unitaires et e2e, oracle, tolérances, couverture, tests de pixels, validation MATLAB |
-| [developpement.md](developpement.md) | prérequis, installation, scripts npm, conventions de code, déploiement |
+| [tests.md](tests.md) | inventaire des tests unitaires et e2e, oracle, tolérances, couverture, tests de pixels, validation MATLAB, intégration continue |
+| [developpement.md](developpement.md) | prérequis, installation, scripts npm, conventions de code, intégration continue, déploiement |
 | [tutoriel-lancer-en-local.md](tutoriel-lancer-en-local.md) | pas à pas Windows/PowerShell : copie, installation, lancement, jouer, tests, validation MATLAB, dépannage (dont `npm.cmd`) |
 | [CHANGELOG.md](CHANGELOG.md) | une entrée par tâche validée, correspondance tâche → commit |
 | [validation/T-005-noyau.md](validation/T-005-noyau.md) | rapport de validation indépendante du noyau (rédigé par le validateur, non maintenu ici) |
+| [validation/T-012-v0.1.md](validation/T-012-v0.1.md) | rapport de validation finale de la v0.1, verdict « validée avec réserves » (rédigé par le validateur, non maintenu ici) |
 | [specs/T-001-tranche-verticale.md](specs/T-001-tranche-verticale.md) | spécification de la tranche verticale v0.1 (rédigée par le concepteur, non maintenue ici) |
 | [specs/T-001-errata.md](specs/T-001-errata.md) | corrections de la spécification établies depuis |
 
@@ -45,6 +50,7 @@ Pour comprendre ce qui est affiché : [rendu.md](rendu.md) (dessin au crayon) et
 | [ADR-010](decisions/ADR-010-rendu-crayon.md) | rendu au crayon par rubans CPU préalloués et matériaux TSL |
 | [ADR-011](decisions/ADR-011-interface-dom.md) | interface en DOM superposé, pilotée par un modèle de vue pur |
 | [ADR-012](decisions/ADR-012-tests-navigateur.md) | tests navigateur hors de la VM des agents, captures de référence |
+| [ADR-013](decisions/ADR-013-ci-et-pages-manuel.md) | CI à chaque push, déploiement Pages manuel tant que le dépôt est privé |
 
 ### Captures
 
@@ -52,7 +58,7 @@ Les images de `img/` sont produites par les tests e2e (T-008 à T-010), dans Chr
 
 ### Pages prévues
 
-Plus aucune page du plan de la spec T-001 §10 ne manque. Une page sur l'intégration continue et la publication : Prévu (T-011).
+Aucune. Toutes les pages du plan de la spec T-001 §10 existent. L'intégration continue et la publication sont décrites dans [developpement.md](developpement.md#intégration-continue) et [tests.md](tests.md#intégration-continue) ; elles ne justifient pas une page à part.
 
 ## Titre du jeu
 

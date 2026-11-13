@@ -186,6 +186,6 @@ La configuration fait foi. Écarts relevés :
 - La spec dit `ui → game, i18n` ; la configuration autorise aussi `ui` à importer des paquets npm autres que `three`.
 - La spec dit « tout import de `three` hors `render/` » est interdit : c'est le cas depuis T-008 ; l'exemption de `src/main.ts` (réserve E2) est levée.
 
-## Prévu
+## Intégration continue et publication
 
-- Intégration continue et publication sur GitHub Pages (`.github/workflows/`) : Prévu (T-011).
+`.github/workflows/ci.yml` lance `npm run check` et les tests e2e à chaque push sur `main` et à chaque pull request : les garde-fous ci-dessus (typecheck, lint, dependency-cruiser) y tournent donc aussi. `.github/workflows/deploy.yml` publie `dist/` sur GitHub Pages, sur déclenchement manuel seulement (T-011, [ADR-013](decisions/ADR-013-ci-et-pages-manuel.md)). Détails : [tests.md](tests.md#intégration-continue) et [developpement.md](developpement.md#déploiement-sur-github-pages).

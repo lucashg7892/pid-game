@@ -57,7 +57,7 @@ mission et on consigne la leçon en section 4.
 | T-006 | réalisateur | i18n FR/EN | VALIDÉ | logs/T-006.md |
 | T-007 | réalisateur | Logique du niveau 1 | VALIDÉ | logs/T-007.md |
 | D-004 | rédacteur | Doc du noyau, de l'i18n, de la validation ; errata de spec | VALIDÉ | logs/D-004.md |
-| T-013 | rédacteur | Doc finale de la v0.1 | EN COURS | logs/T-011-013.md |
+| T-013 | rédacteur | Doc finale de la v0.1 | VALIDÉ | logs/T-011-013.md |
 | T-012 | validateur | Validation finale de la v0.1 | VALIDÉ (réserves) | logs/T-011-013.md |
 | T-011 | réalisateur | CI et déploiement Pages (manuel) | VALIDÉ | logs/T-011-013.md |
 | D-010 | rédacteur | Doc du rendu et de l'interface ; mises à jour en attente | VALIDÉ | logs/D-010.md |

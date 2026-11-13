@@ -16,7 +16,7 @@ _English version below._
 
 ## État actuel
 
-**Le niveau 1 est jouable** dans un navigateur récent (WebGPU ou WebGL2), en français et en anglais. Les tâches T-000 à T-010 sont validées (2026-11-13).
+**Le niveau 1 est jouable** dans un navigateur récent (WebGPU ou WebGL2), en français et en anglais. La v0.1 est **validée avec réserves** le 2026-11-13 (tâches T-000 à T-012 ; rapport [docs/validation/T-012-v0.1.md](docs/validation/T-012-v0.1.md), bilan [docs/bilan-v0.1.md](docs/bilan-v0.1.md)).
 
 - Validé :
   - socle outillé : npm, TypeScript, Vite, ESLint, Prettier, dependency-cruiser, Vitest, Playwright (T-002) ;
@@ -25,9 +25,10 @@ _English version below._
   - logique du niveau 1 `src/game` (T-007) ;
   - rendu au crayon `src/render` : papier millimétré, décor, bonhomme, courbe y(t), jauge de force (T-008, T-009) ;
   - interface `src/ui` : bandeau d'aide, panneau Kp, issues, clavier, souris, tactile, accessibilité, police manuscrite (T-010) ;
-  - 426 tests unitaires et 28 tests de bout en bout verts (les seconds exécutés par l'orchestrateur, voir [docs/tests.md](docs/tests.md)).
-- Limites : WebGPU réel n'est exercé par aucun test automatique (les tests tournent en WebGL2 logiciel) ; commandes tactiles non essayées sur un vrai écran tactile.
-- Prévu : intégration continue et publication sur GitHub Pages (T-011).
+  - 426 tests unitaires et 28 tests de bout en bout verts (les seconds exécutés par l'orchestrateur, voir [docs/tests.md](docs/tests.md)) ;
+  - intégration continue `.github/workflows/ci.yml` : à chaque push sur `main` et à chaque pull request, `npm ci`, `npm run check`, puis les tests e2e dans Chromium (T-011). Au commit `88ae23c`, elle n'avait encore jamais tourné sur GitHub.
+- Publication sur GitHub Pages : prête (`.github/workflows/deploy.yml`) mais manuelle, car le dépôt est privé (décision D17). Les 3 étapes pour l'activer : [docs/developpement.md](docs/developpement.md#déploiement-sur-github-pages).
+- Limites : WebGPU réel n'est exercé par aucun test automatique (les tests tournent en WebGL2 logiciel) ; commandes tactiles non essayées sur un vrai écran tactile ; perte de contexte GPU non gérée. Liste complète : [docs/defauts-connus.md](docs/defauts-connus.md).
 
 Le détail est dans [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
@@ -65,7 +66,7 @@ Liste complète : [docs/developpement.md](docs/developpement.md).
 
 ## Documentation
 
-Index : [docs/README.md](docs/README.md). Pour commencer : [interface du joueur](docs/interface.md), [rendu au crayon](docs/rendu.md), [noyau de simulation](docs/simulation.md), [physique de l'ascenseur](docs/physique/ascenseur.md).
+Index : [docs/README.md](docs/README.md). Bilan de la version : [docs/bilan-v0.1.md](docs/bilan-v0.1.md). Défauts connus : [docs/defauts-connus.md](docs/defauts-connus.md). Pour commencer : [interface du joueur](docs/interface.md), [rendu au crayon](docs/rendu.md), [noyau de simulation](docs/simulation.md), [physique de l'ascenseur](docs/physique/ascenseur.md).
 
 ## Licence
 
@@ -87,11 +88,11 @@ A pencil-drawn stick figure walks across graph paper; each obstacle is a system 
 
 ## Current status
 
-**Level 1 is playable** in a recent browser (WebGPU or WebGL2), in French and English. Tasks T-000 to T-010 are validated (2026-11-13).
+**Level 1 is playable** in a recent browser (WebGPU or WebGL2), in French and English. Version 0.1 was **validated with reservations** on 2026-11-13 (tasks T-000 to T-012; summary in French: [docs/bilan-v0.1.md](docs/bilan-v0.1.md)).
 
-- Validated: tooling (T-002); simulation core `src/sim`, checked against an exact MATLAB oracle outside the site (T-003 to T-005); French/English texts `src/i18n`, 111 keys per language (T-006, T-010); level 1 logic `src/game` (T-007); pencil rendering `src/render` (T-008, T-009); user interface `src/ui` with keyboard, mouse, touch and accessibility (T-010); 426 unit tests and 28 end-to-end tests passing (the latter run by the coordinator, see [docs/tests.md](docs/tests.md)).
-- Limits: real WebGPU is not exercised by any automated test (tests run on software WebGL2); touch controls not tried on a real touch screen.
-- Planned: CI and GitHub Pages deployment (T-011).
+- Validated: tooling (T-002); simulation core `src/sim`, checked against an exact MATLAB oracle outside the site (T-003 to T-005); French/English texts `src/i18n`, 111 keys per language (T-006, T-010); level 1 logic `src/game` (T-007); pencil rendering `src/render` (T-008, T-009); user interface `src/ui` with keyboard, mouse, touch and accessibility (T-010); 426 unit tests and 28 end-to-end tests passing (the latter run by the coordinator, see [docs/tests.md](docs/tests.md)); continuous integration `.github/workflows/ci.yml` runs `npm ci`, `npm run check` and the end-to-end tests in Chromium on every push to `main` and every pull request (T-011). As of commit `88ae23c`, it had not yet run on GitHub.
+- GitHub Pages deployment: ready (`.github/workflows/deploy.yml`) but manual, because the repository is private (decision D17). To enable it: make the repository public, set Settings > Pages > Source to "GitHub Actions", then run Actions > Deploy > Run workflow.
+- Limits: real WebGPU is not exercised by any automated test (tests run on software WebGL2); touch controls not tried on a real touch screen; GPU context loss is not handled. Full list of known issues (in French): [docs/defauts-connus.md](docs/defauts-connus.md).
 
 ## Requirements
 

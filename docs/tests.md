@@ -1,6 +1,6 @@
 # Tests
 
-À quoi sert cette page : dire quels tests existent au commit `566a8a3`, ce que chacun prouve, avec quelles tolérances, comment lancer les tests de bout en bout et comment relancer la validation indépendante. Seule la CI reste à venir (fin de page).
+À quoi sert cette page : dire quels tests existent au commit `566a8a3`, ce que chacun prouve, avec quelles tolérances, comment lancer les tests de bout en bout et comment relancer la validation indépendante. La fin de page décrit l'intégration continue (T-011).
 
 ## Lancer les tests
 
@@ -257,8 +257,15 @@ Les tests d'aspect ont été ajoutés après l'incident de T-009b : les tests de
 - Commandes tactiles non testées sur un écran tactile ; contrastes non mesurés ; mouvement réduit non testé en e2e.
 - « Aucune allocation par image » : établi par construction et par l'identité des tableaux, sans mesure du tas.
 
-## Prévu
+## Intégration continue
 
-### Intégration continue — Prévu (T-011)
+Le workflow `.github/workflows/ci.yml` (T-011, commit `8736af7`) lance les tests sur GitHub Actions. Décision : [ADR-013](decisions/ADR-013-ci-et-pages-manuel.md).
 
-Node 22, `npm ci`, `npm run check`, `npm run e2e`. Il faudra un Chromium dans l'environnement de CI.
+- Déclencheurs : chaque push sur `main` et chaque pull request. Une nouvelle exécution sur la même branche ou la même PR annule la précédente.
+- Machine : `ubuntu-latest`, 30 min au plus, droits en lecture seule.
+- Étapes : récupération du dépôt ; Node 22 avec cache npm ; `npm ci` ; `npm run check` (typecheck, lint, tests unitaires, build) ; `npx playwright install --with-deps chromium` ; `npm run e2e`.
+- En cas d'échec, les dossiers `playwright-report/` et `test-results/` sont déposés comme artefact `playwright-results`, gardé 14 jours.
+
+La CI ne lance pas la validation MATLAB ([ADR-006](decisions/ADR-006-oracle-matlab.md)).
+
+**Au commit `88ae23c`, la CI n'avait encore jamais tourné sur GitHub** : sa première exécution aura lieu au prochain push de l'utilisateur (log `orchestration/logs/T-011-013.md`). Le fichier a été contrôlé hors ligne : YAML valide, `actionlint` 1.7.12 sans message (même log). Ce sera aussi la première exécution des tests e2e avec le Chromium de Playwright plutôt que Chrome for Testing.

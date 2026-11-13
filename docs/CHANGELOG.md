@@ -4,10 +4,13 @@
 
 ## Correspondance tâche → commit
 
-Sortie de `git log --oneline 566a8a3` (15 commits).
+Sortie de `git log --oneline 88ae23c` (18 commits). Le commit de T-013 est à venir.
 
 | Commit | Contenu |
 |---|---|
+| `88ae23c` | T-012 : validation finale indépendante de la v0.1 (validée avec réserves) ; défauts connus K16 à K22 |
+| `8736af7` | T-011 : CI GitHub Actions (check + e2e) et déploiement Pages manuel ; liste des défauts connus |
+| `bf0624d` | D-010 : documentation du rendu et de l'interface, tutoriel mis à jour (`npm.cmd`), ADR-010 à 012, errata |
 | `566a8a3` | T-010 : interface, commandes définitives, accessibilité, police manuscrite, titre « Huygens’s world », e2e |
 | `1af2a29` | T-009 : rendu au crayon du niveau 1, commandes clavier provisoires, e2e |
 | `ed46321` | T-008 : démarrage WebGPU/WebGL2, caméra, papier millimétré, page de repli, e2e |
@@ -25,6 +28,41 @@ Sortie de `git log --oneline 566a8a3` (15 commits).
 | `e627a96` | T-000 : initialisation du dépôt |
 
 Les neuf premiers commits ont été créés après coup, à la suite, à partir de l'état validé : leur ordre ne suit pas exactement l'ordre des validations (T-004b, validée après T-005, est dans `beb6086`). Depuis `6259ccc`, chaque tâche validée a son commit.
+
+## Versions
+
+- **v0.1 — validée avec réserves le 2026-11-13** (rapport [validation/T-012-v0.1.md](validation/T-012-v0.1.md), bilan [bilan-v0.1.md](bilan-v0.1.md)). Le champ `version` de `package.json` vaut encore `0.0.0` (défaut connu K22).
+
+## T-013 — Documentation finale de la v0.1 (2026-11-13)
+
+- Ajoute [bilan-v0.1.md](bilan-v0.1.md), [defauts-connus.md](defauts-connus.md) et [ADR-013](decisions/ADR-013-ci-et-pages-manuel.md) ; met à jour `README.md` (FR et EN), l'index, `developpement.md`, `tests.md`, `architecture.md` et ce journal : la CI n'est plus annoncée comme à venir, le déploiement Pages est décrit avec ses 3 étapes d'activation.
+- Corrige `interface.md` : le focus ne revient au bouton « ? » que s'il était dans l'aide (affirmation 7 de T-012, vérifiée dans `src/ui/overlay.ts`).
+- État documenté : commit `88ae23c`. Rédacteur seul, aucun code modifié.
+- Commit : à venir.
+
+## T-012 — Validation finale indépendante de la v0.1 (2026-11-13)
+
+- Ajoute le rapport [validation/T-012-v0.1.md](validation/T-012-v0.1.md). Verdict : **v0.1 validée avec réserves**. Commit examiné : `8736af7`.
+- Relancé par le validateur : `npm run check`, `npm run test:cov`, `npm run lint:arch` (codes 0, 426 tests, `src/sim` couvert à 100 %) ; 28 tests e2e listés, non exécutés (VM sans navigateur) ; MATLAB « T005 : FIN SANS ERREUR », marges inchangées (+5,842 / −1,865 mm), 0 désaccord sur 80 issues ; 8 attaques Vitest sur la logique de jeu, toutes conformes ; 10 affirmations de la doc vérifiées, 9 vraies.
+- Constats : aucun bloquant ; 1 majeur (perte de contexte GPU), 4 mineurs, 5 remarques, consignés en K16 à K22 ([defauts-connus.md](defauts-connus.md)).
+- Vérification de l'orchestrateur : hash du rapport identique au certificat ; pas de relance (décision D18). Les 28 e2e verts datent de `566a8a3` ; `src/` et `tests/` n'ont pas changé depuis.
+- Commit : `88ae23c`.
+- Statut : validé avec réserves. Réserves : objectif O3 partiel (CI jamais exécutée sur GitHub, Pages non publié) ; saturation sans preuve de bout en bout ; e2e non relancés par le validateur.
+
+## T-011 — Intégration continue et déploiement Pages manuel (2026-11-13)
+
+- Ajoute `.github/workflows/ci.yml` (push sur `main` et pull requests : `npm run check` puis e2e Chromium) et `.github/workflows/deploy.yml` (publication de `dist/` sur Pages, déclenchement manuel). Voir [tests.md](tests.md#intégration-continue) et [developpement.md](developpement.md#déploiement-sur-github-pages).
+- Vérification de l'agent : YAML valide, `actionlint` 1.7.12 sans message, `npm run check` code 0, préfixe `/pid-game/` présent dans `dist/`.
+- Vérification de l'orchestrateur : 2 SHA-256 identiques ; version v7 de `actions/checkout` confirmée par `git ls-remote`.
+- Commit : `8736af7`.
+- Statut : validé. Non exécuté : les workflows eux-mêmes (première exécution au prochain push). Le dépôt reste privé (décision D17), d'où le déploiement manuel ([ADR-013](decisions/ADR-013-ci-et-pages-manuel.md)).
+
+## D-010 — Documentation du rendu et de l'interface (2026-11-13)
+
+- Ajoute [rendu.md](rendu.md), [interface.md](interface.md) et les ADR-010 à 012 ; met à jour 15 pages, dont le tutoriel (`npm.cmd` sous PowerShell) et les errata. État documenté : commit `566a8a3`.
+- Vérification de l'orchestrateur : 6 SHA-256 identiques ; 176 liens relatifs dont 11 images, 0 cassé ; `npm run check` code 0 (426 tests).
+- Commit : `bf0624d`.
+- Statut : validé. Réserve de l'agent : son build a échoué par EPERM sur `dist/` (autorisation de suppression expirée, leçon L10), pas un défaut du projet. Points signalés, devenus K10, K12 et K13.
 
 ## T-010 — Interface, commandes, accessibilité, titre (2026-11-13)
 

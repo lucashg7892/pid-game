@@ -26,6 +26,12 @@ export {
   type WorldRect,
 } from './camera';
 export {
+  createFailureGuard,
+  type FailureGuard,
+  type RenderFailure,
+  type RenderFailureKind,
+} from './failure';
+export {
   MAX_PIXEL_RATIO,
   capPixelRatio,
   parseRendererChoice,

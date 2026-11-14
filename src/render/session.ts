@@ -12,6 +12,7 @@ import {
   disposeRenderer,
   type BootFailureReason,
 } from './bootstrap';
+import { createFailureGuard, type RenderFailure } from './failure';
 import type { LevelSnapshot } from '../game';
 import type { SignalRecorder } from '../sim';
 import { computeAnchors, createAnchors, type LevelAnchors } from './level-display';
@@ -45,6 +46,11 @@ export interface StartOptions {
    * l'horloge visuelle du « boiling » ; défaut : le temps d'image.
    */
   readonly onFrame?: (frameSeconds: number) => number;
+  /**
+   * Appelé une seule fois si le rendu échoue après son démarrage (perte du contexte GPU ou
+   * exception dans `onFrame` ou le dessin) ; la session est déjà arrêtée et le renderer libéré.
+   */
+  readonly onFailure?: (failure: RenderFailure) => void;
 }
 
 /** Rendu en cours. */
@@ -138,13 +144,40 @@ export async function startRendering(
     resolveFirstFrame = resolve;
   });
 
-  const loop = createFrameLoop(renderer, (frameSeconds) => {
-    draw(onFrame === undefined ? frameSeconds : onFrame(frameSeconds));
-    if (!firstFrameDone) {
-      firstFrameDone = true;
-      resolveFirstFrame(stats());
-    }
+  let stopped = false;
+  let stopSession: () => void = () => undefined;
+  const failureGuard = createFailureGuard((failure) => {
+    stopSession();
+    options.onFailure?.(failure);
   });
+  // Perte de contexte WebGL (`webglcontextlost`) ou de périphérique WebGPU (`device.lost`) : three
+  // les relaie tous deux ici ; sans ce rappel il ne ferait que journaliser et laisser un canvas figé.
+  renderer.onDeviceLost = (info) => {
+    failureGuard.fail('context-lost', `${info.api}: ${info.message}`);
+  };
+
+  const loop = createFrameLoop(
+    renderer,
+    failureGuard.guard((frameSeconds) => {
+      draw(onFrame === undefined ? frameSeconds : onFrame(frameSeconds));
+      if (!firstFrameDone) {
+        firstFrameDone = true;
+        resolveFirstFrame(stats());
+      }
+    }),
+  );
+  const guardedDraw = failureGuard.guard(draw);
+  stopSession = (): void => {
+    if (stopped) {
+      return;
+    }
+    stopped = true;
+    loop.stop();
+    stopObserving();
+    view?.dispose();
+    stage.dispose();
+    disposeRenderer(renderer);
+  };
   loop.start();
 
   return {
@@ -158,7 +191,7 @@ export async function startRendering(
         return anchors;
       },
       renderNow(seconds: number): void {
-        draw(seconds);
+        guardedDraw(seconds);
       },
       trace(): number[] {
         if (view === null) {
@@ -168,11 +201,7 @@ export async function startRendering(
         return Array.from(trace.points.subarray(0, trace.count * 2));
       },
       stop(): void {
-        loop.stop();
-        stopObserving();
-        view?.dispose();
-        stage.dispose();
-        disposeRenderer(renderer);
+        stopSession();
       },
     },
   };

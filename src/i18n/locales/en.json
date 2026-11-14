@@ -109,5 +109,9 @@
   "fallback.tip.update": "Update your browser (a recent version of Chrome, Edge, Firefox or Safari).",
   "fallback.tip.acceleration": "Check that hardware acceleration is turned on in your browser settings.",
   "fallback.tip.device": "Otherwise, try another device.",
-  "fallback.docs": "Learn more about the project"
+  "fallback.docs": "Learn more about the project",
+  "fallback.lost.title": "The display was interrupted",
+  "fallback.lost.explanation": "The browser lost its connection to the graphics card, so the game can no longer draw its scene. Reload the page to start again: your progress in the level will be lost.",
+  "fallback.error.title": "The game ran into a problem",
+  "fallback.error.explanation": "An unexpected error stopped the game. Reload the page to start again: your progress in the level will be lost."
 }

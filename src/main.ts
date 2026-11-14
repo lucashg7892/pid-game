@@ -30,6 +30,8 @@ import {
   worldYToPixel,
   type Frame,
   type LevelAnchors,
+  type RenderFailure,
+  type RenderFailureKind,
   type RenderSession,
   type RenderStats,
 } from './render';
@@ -67,6 +69,8 @@ export interface HuygensTestHook {
   stats(): RenderStats;
   /** Points de la courbe y(t) de la dernière image (x0, y0, x1, y1… en m). */
   trace(): number[];
+  /** Provoque une exception à la prochaine image (essai de la page de repli d'erreur). */
+  crashNextFrame(): void;
 }
 
 declare global {
@@ -79,11 +83,48 @@ declare global {
 /** Page de documentation du projet, citée par la page de repli. */
 const DOCS_URL = 'https://github.com/lucashg7892/pid-game#readme';
 
+/** Cause de la page de repli : pas de GPU au départ, ou échec du rendu en cours de route. */
+type FallbackKind = 'unsupported' | RenderFailureKind;
+
+/**
+ * Page de repli pour un échec en cours de route (perte du contexte GPU, exception) : un titre,
+ * l'explication et l'invitation à recharger, et le lien vers la documentation.
+ */
+function showFailurePage(translator: Translator, kind: RenderFailureKind): void {
+  const page = document.createElement('main');
+  page.id = 'fallback';
+  page.dataset['kind'] = kind;
+  const title = document.createElement('h1');
+  const explanation = document.createElement('p');
+  if (kind === 'context-lost') {
+    title.textContent = translator.t('fallback.lost.title');
+    explanation.textContent = translator.t('fallback.lost.explanation');
+  } else {
+    title.textContent = translator.t('fallback.error.title');
+    explanation.textContent = translator.t('fallback.error.explanation');
+  }
+  const docs = document.createElement('p');
+  const link = document.createElement('a');
+  link.href = DOCS_URL;
+  link.textContent = translator.t('fallback.docs');
+  docs.append(link);
+  page.append(title, explanation, docs);
+  document.body.append(page);
+}
+
 /** Remplace le contenu de la page par la page de repli traduite (DOM statique, sans GPU). */
-function showFallback(translator: Translator, canvas: HTMLCanvasElement | null): void {
+function showFallback(
+  translator: Translator,
+  canvas: HTMLCanvasElement | null,
+  kind: FallbackKind = 'unsupported',
+): void {
   document.body.dataset['backend'] = 'none';
   if (canvas !== null) {
     canvas.hidden = true;
+  }
+  if (kind !== 'unsupported') {
+    showFailurePage(translator, kind);
+    return;
   }
   const page = document.createElement('main');
   page.id = 'fallback';
@@ -160,7 +201,12 @@ function uiGeometry(width: number, height: number, anchors: Readonly<LevelAnchor
 }
 
 /** Installe `window.__huygens` (mode `?e2e=1`). */
-function installTestHook(level: Level1, session: RenderSession, refreshUi: () => void): void {
+function installTestHook(
+  level: Level1,
+  session: RenderSession,
+  refreshUi: () => void,
+  crashNextFrame: () => void,
+): void {
   window.__huygens = {
     commands: {
       moveLeft: () => level.moveLeft(),
@@ -186,6 +232,7 @@ function installTestHook(level: Level1, session: RenderSession, refreshUi: () =>
     },
     stats: () => session.stats(),
     trace: () => session.trace(),
+    crashNextFrame,
   };
 }
 
@@ -203,9 +250,33 @@ async function main(): Promise<void> {
   const manualClock = isE2e(location.search);
   // L'interface est créée après le démarrage du rendu ; la session n'existe pas encore.
   let refreshUi: () => void = () => undefined;
+  let crashNextFrame = false;
+  // Nettoyage de l'interface, enrichi au fil de la construction ; appelé une seule fois en cas
+  // d'échec, avant la page de repli (pas de boutons morts devant elle).
+  const cleanups: Array<() => void> = [];
+  let failed = false;
+  const handleFailure = (failure: RenderFailure): void => {
+    if (failed) {
+      return;
+    }
+    failed = true;
+    console.error(`Huygens’s world : ${failure.kind} : ${failure.detail}`);
+    refreshUi = () => undefined;
+    for (const cleanup of cleanups) {
+      try {
+        cleanup();
+      } catch {
+        // Le nettoyage ne doit jamais empêcher la page de repli.
+      }
+    }
+    showFallback(translator, canvas, failure.kind);
+  };
   const result = await startRendering(canvas, parseRendererChoice(location.search), {
     level,
     onFrame: (frameSeconds) => {
+      if (crashNextFrame) {
+        throw new Error('panne simulée (?e2e=1)');
+      }
       // Mise à jour de l'interface avec les ancres de l'image précédente (décalage d'une image,
       // invisible pour des étiquettes), puis avance du niveau.
       refreshUi();
@@ -215,46 +286,69 @@ async function main(): Promise<void> {
       level.update(frameSeconds);
       return frameSeconds;
     },
+    onFailure: handleFailure,
   });
   if (!result.ok) {
     showFallback(translator, canvas);
     return;
   }
   const { session } = result;
-  const root = document.createElement('div');
-  root.id = 'ui';
-  document.body.append(root);
-  const ui: Ui = createUi({ root, level, translator, canvas });
-  const anchors = session.anchors();
-  let geometry: UiGeometry | null = null;
-  let geometryWidth = -1;
-  let geometryHeight = -1;
-  const measure = (): void => {
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
-    if (width !== geometryWidth || height !== geometryHeight) {
-      geometryWidth = width;
-      geometryHeight = height;
-      geometry = uiGeometry(width, height, anchors);
+  try {
+    const root = document.createElement('div');
+    root.id = 'ui';
+    document.body.append(root);
+    cleanups.push(() => {
+      root.remove();
+    });
+    const ui: Ui = createUi({ root, level, translator, canvas });
+    const anchors = session.anchors();
+    let geometry: UiGeometry | null = null;
+    let geometryWidth = -1;
+    let geometryHeight = -1;
+    const measure = (): void => {
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      if (width !== geometryWidth || height !== geometryHeight) {
+        geometryWidth = width;
+        geometryHeight = height;
+        geometry = uiGeometry(width, height, anchors);
+      }
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    cleanups.push(() => {
+      window.removeEventListener('resize', measure);
+    });
+    refreshUi = () => {
+      ui.update(geometry ?? undefined);
+    };
+    cleanups.push(bindKeyboard(level, ui, window));
+    if (manualClock) {
+      installTestHook(
+        level,
+        session,
+        () => {
+          measure();
+          refreshUi();
+        },
+        () => {
+          crashNextFrame = true;
+        },
+      );
     }
-  };
-  measure();
-  window.addEventListener('resize', measure);
-  refreshUi = () => {
-    ui.update(geometry ?? undefined);
-  };
-  bindKeyboard(level, ui, window);
-  if (manualClock) {
-    installTestHook(level, session, () => {
-      measure();
-      refreshUi();
+    refreshUi();
+    document.body.dataset['backend'] = session.backend;
+    const stats = await session.firstFrame;
+    document.body.dataset['drawCalls'] = String(stats.drawCalls);
+    document.body.dataset['triangles'] = String(stats.triangles);
+  } catch (error: unknown) {
+    // Exception après le démarrage du renderer, hors boucle d'images (création de l'interface...).
+    session.stop();
+    handleFailure({
+      kind: 'error',
+      detail: error instanceof Error ? error.message : String(error),
     });
   }
-  refreshUi();
-  document.body.dataset['backend'] = session.backend;
-  const stats = await session.firstFrame;
-  document.body.dataset['drawCalls'] = String(stats.drawCalls);
-  document.body.dataset['triangles'] = String(stats.triangles);
 }
 
 void main();

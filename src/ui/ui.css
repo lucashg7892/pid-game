@@ -379,6 +379,11 @@
 }
 
 /* Aide des commandes. */
+.ui-help {
+  /* Au-dessus des mesures du trajet, que l'aide peut recouvrir (pause pendant un trajet). */
+  z-index: 2;
+}
+
 .ui-help ul {
   margin: 0.2em 0 0.5em;
   padding-left: 1.1em;

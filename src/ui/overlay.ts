@@ -12,6 +12,7 @@ import { KP_MAX, KP_MIN, KP_STEP, type GameEvent, type Level1 } from '../game';
 import type { Translator } from '../i18n';
 import { announcementFor } from './announce';
 import type { HintLine } from './hints';
+import { helpPauseDecision, trapFocusIndex } from './help';
 import {
   computeLayout,
   createLayout,
@@ -192,6 +193,8 @@ export function createUi(options: UiOptions): Ui {
   const layout = createLayout();
   let geometry: Readonly<UiGeometry> | null = null;
   let helpOpen = false;
+  let pausedByHelp = false;
+  let helpOpener: HTMLElement | null = null;
 
   root.classList.add('ui');
 
@@ -219,7 +222,6 @@ export function createUi(options: UiOptions): Ui {
   const pauseButton = el('button', 'ui-btn ui-pause', tools);
   pauseButton.type = 'button';
   const pauseText = new TextSlot(pauseButton);
-  const pausePressed = new AttrSlot(pauseButton, 'aria-pressed');
 
   const rotate = new TextSlot(el('p', 'ui-rotate ui-paper', root));
 
@@ -227,6 +229,7 @@ export function createUi(options: UiOptions): Ui {
   const help = el('section', 'ui-paper ui-help', root);
   help.id = 'ui-help';
   help.setAttribute('role', 'dialog');
+  help.setAttribute('aria-modal', 'true');
   help.setAttribute('aria-labelledby', 'ui-help-title');
   help.hidden = true;
   const helpTitleNode = el('h2', '', help);
@@ -374,6 +377,7 @@ export function createUi(options: UiOptions): Ui {
   let shownKp = Number.NaN;
   let previousPhase = '';
   let previousPaused = false;
+  let previousOutcome = false;
 
   const announce = (text: string): void => {
     const line = document.createElement('p');
@@ -414,7 +418,6 @@ export function createUi(options: UiOptions): Ui {
     langAttr.set(vm.otherLocale);
     langDescSlot.set(t.languageDescription);
     pauseText.set(vm.paused ? t.resume : t.pause);
-    pausePressed.set(vm.paused ? 'true' : 'false');
     rotate.set(t.rotateHint);
     canvasLabel.set(t.canvasLabel);
     liveLabel.set(t.liveLabel);
@@ -525,7 +528,10 @@ export function createUi(options: UiOptions): Ui {
     }
     if (!vm.outcomeVisible) {
       releaseFocus(outcome);
+    } else if (!previousOutcome) {
+      outcomeButton.focus({ preventScroll: true });
     }
+    previousOutcome = vm.outcomeVisible;
     previousPhase = phase;
     previousPaused = vm.paused;
   };
@@ -548,24 +554,46 @@ export function createUi(options: UiOptions): Ui {
       geometry = g;
     }
     level.drainEvents(onEvent);
+    if (pausedByHelp && level.snapshot.phase !== 'paused') {
+      pausedByHelp = false;
+    }
     apply(builder.build(level.snapshot, ui));
     if (geometry !== null) {
       place(geometry);
     }
   };
 
+  /** Vrai si l'élément ne peut pas recevoir le focus (désactivé ou masqué). */
+  const isDisabled = (node: HTMLElement): boolean =>
+    (node instanceof HTMLButtonElement || node instanceof HTMLInputElement) && node.disabled
+      ? true
+      : node.closest('[hidden]') !== null;
+
   const setHelp = (open: boolean): void => {
     if (open === helpOpen) {
       return;
     }
     // Lu avant la mise à jour : masquer l'aide fait perdre le focus qu'elle contient.
-    const focusInside = help.contains(document.activeElement);
+    const active = document.activeElement;
+    const focusInside = help.contains(active);
+    const decision = helpPauseDecision(open, level.snapshot.phase, pausedByHelp);
+    pausedByHelp = decision.pausedByHelp;
+    if (decision.action === 'pause') {
+      level.pause();
+    } else if (decision.action === 'resume') {
+      level.resume();
+    }
     helpOpen = open;
+    if (open) {
+      helpOpener = active instanceof HTMLElement && active !== document.body ? active : null;
+    }
     update();
     if (open) {
       helpClose.focus({ preventScroll: true });
-    } else if (focusInside) {
-      helpButton.focus({ preventScroll: true });
+    } else if (focusInside || active === document.body) {
+      const back = helpOpener?.isConnected === true && !isDisabled(helpOpener) ? helpOpener : null;
+      (back ?? helpButton).focus({ preventScroll: true });
+      helpOpener = null;
     }
   };
 
@@ -587,6 +615,19 @@ export function createUi(options: UiOptions): Ui {
   });
   helpClose.addEventListener('click', () => {
     setHelp(false);
+  });
+  // Piège de focus : Tab et Maj+Tab restent dans l'aide tant qu'elle est ouverte.
+  document.addEventListener('keydown', (event) => {
+    if (!helpOpen || event.key !== 'Tab') {
+      return;
+    }
+    const controls = Array.from(help.querySelectorAll<HTMLElement>('button'));
+    const index = controls.findIndex((node) => node === document.activeElement);
+    const next = trapFocusIndex(index, controls.length, event.shiftKey);
+    if (next !== null) {
+      event.preventDefault();
+      controls[next]?.focus({ preventScroll: true });
+    }
   });
   langButton.addEventListener('click', () => {
     tr.setLocale(builder.model.otherLocale);

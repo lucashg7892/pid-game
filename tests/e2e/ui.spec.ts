@@ -573,3 +573,105 @@ for (const [width, height] of [
     expect(problems, CONSOLE_FAILURE).toEqual([]);
   });
 }
+
+test('(j) aide ouverte pendant un trajet : pause, reprise à la fermeture (bouton et Échap)', async ({
+  page,
+}) => {
+  const problems = await open(page, '?renderer=webgl&e2e=1&lang=fr');
+  await run(page, [...TO_CONSOLE, ['setKp', 2500], ['launch'], ['advance', 0.5]]);
+  const showHelp = page.getByRole('button', { name: FR('controls.help.show') });
+  const dialog = page.getByRole('dialog', { name: FR('controls.help.title') });
+  const close = dialog.getByRole('button', { name: FR('controls.help.close') });
+
+  await showHelp.click();
+  await expect(dialog).toBeVisible();
+  const paused = await run(page, []);
+  expect(paused.phase).toBe('paused');
+  expect(paused.resumePhase).toBe('trip');
+  await close.click();
+  await expect(dialog).toBeHidden();
+  expect((await run(page, [])).phase).toBe('trip');
+
+  await showHelp.click();
+  expect((await run(page, [])).phase).toBe('paused');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  expect((await run(page, [])).phase).toBe('trip');
+  await expect(showHelp).toBeFocused();
+  expect(problems, CONSOLE_FAILURE).toEqual([]);
+});
+
+test('(k) pause du joueur puis aide : la fermeture de l’aide ne reprend pas', async ({ page }) => {
+  const problems = await open(page, '?renderer=webgl&e2e=1&lang=fr');
+  await run(page, [...TO_CONSOLE, ['setKp', 2500], ['launch'], ['advance', 0.5]]);
+  await page.getByRole('button', { name: FR('controls.pause') }).click();
+  expect((await run(page, [])).phase).toBe('paused');
+  await page.getByRole('button', { name: FR('controls.help.show') }).click();
+  await page.getByRole('button', { name: FR('controls.help.close') }).click();
+  const s = await run(page, []);
+  expect(s.phase).toBe('paused');
+  expect(s.resumePhase).toBe('trip');
+  expect(problems, CONSOLE_FAILURE).toEqual([]);
+});
+
+test('(l) hors trajet, l’aide ne change pas la phase', async ({ page }) => {
+  const problems = await open(page, '?renderer=webgl&e2e=1&lang=fr');
+  await page.getByRole('button', { name: FR('controls.help.show') }).click();
+  expect((await run(page, [])).phase).toBe('approach');
+  await page.keyboard.press('Escape');
+  expect((await run(page, [])).phase).toBe('approach');
+  expect(problems, CONSOLE_FAILURE).toEqual([]);
+});
+
+test('(m) aide modale : focus dedans, Tab piégé, focus rendu à l’ouvreur', async ({ page }) => {
+  const problems = await open(page, '?renderer=webgl&e2e=1&lang=fr');
+  const showHelp = page.getByRole('button', { name: FR('controls.help.show') });
+  const dialog = page.getByRole('dialog', { name: FR('controls.help.title') });
+  const close = dialog.getByRole('button', { name: FR('controls.help.close') });
+  await expect(page.locator('#ui .ui-help')).toHaveAttribute('aria-modal', 'true');
+
+  await showHelp.focus();
+  await page.keyboard.press('Enter');
+  await expect(dialog).toBeVisible();
+  await expect(close).toBeFocused();
+  for (const key of ['Tab', 'Tab', 'Shift+Tab', 'Shift+Tab']) {
+    await page.keyboard.press(key);
+    await expect(close).toBeFocused();
+  }
+  // Focus sorti de l'aide : Tab y revient.
+  await page.evaluate(() => {
+    (document.activeElement as HTMLElement).blur();
+  });
+  await page.keyboard.press('Tab');
+  await expect(close).toBeFocused();
+
+  await close.click();
+  await expect(dialog).toBeHidden();
+  await expect(showHelp).toBeFocused();
+
+  expect(problems, CONSOLE_FAILURE).toEqual([]);
+});
+
+test('(n) bouton Pause sans aria-pressed ; focus sur « Rejouer » à l’issue', async ({ page }) => {
+  const problems = await open(page, '?renderer=webgl&e2e=1&lang=fr');
+  const pause = page.locator('#ui .ui-pause');
+  await expect(pause).not.toHaveAttribute('aria-pressed', /.*/);
+  await pause.click();
+  await expect(pause).toHaveText(FR('controls.resume'));
+  await expect(pause).not.toHaveAttribute('aria-pressed', /.*/);
+  await pause.click();
+  await expect(pause).toHaveText(FR('controls.pause'));
+
+  const replay = page.locator('#ui .ui-outcome button');
+  const win = await run(page, [...TO_CONSOLE, ['setKp', 2500], ['launch'], ['advance', 4.0]]);
+  expect(win.phase).toBe('outcome');
+  await expect(replay).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(replay).toBeHidden();
+  expect((await run(page, [])).phase).toBe('tuning');
+
+  const bonk = await run(page, [['setKp', 4500], ['launch'], ['advance', 1.0]]);
+  expect(bonk.phase).toBe('outcome');
+  await expect(replay).toBeFocused();
+  expect(problems, CONSOLE_FAILURE).toEqual([]);
+});

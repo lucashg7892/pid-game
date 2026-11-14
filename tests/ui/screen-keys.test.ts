@@ -36,7 +36,7 @@ function intent(
   code: string,
   screen: ScreenId,
   focusIndex: number,
-  mods: Partial<Pick<ScreenKeyInput, 'ctrlKey' | 'altKey' | 'metaKey'>> = {},
+  mods: Partial<Pick<ScreenKeyInput, 'ctrlKey' | 'altKey' | 'metaKey' | 'repeat'>> = {},
 ): ScreenKeyIntent {
   return screenKeyToIntent({
     code,
@@ -46,6 +46,7 @@ function intent(
     ctrlKey: false,
     altKey: false,
     metaKey: false,
+    repeat: false,
     ...mods,
   });
 }
@@ -90,6 +91,21 @@ describe('screenKeyToIntent : cas notables', () => {
         expect(intent(code, screen, 1), `${screen} ${code}`).toBe('none');
       }
     }
+  });
+
+  it('Entrée ou Espace avec repeat (A-01) : bloquées sur le titre et le menu, rien au niveau', () => {
+    for (const screen of ['title', 'menu'] as const) {
+      for (const code of ['Enter', 'NumpadEnter', 'Space']) {
+        for (const focusIndex of FOCUS_INDEXES) {
+          expect(intent(code, screen, focusIndex, { repeat: true }), `${screen} ${code}`).toBe(
+            'block',
+          );
+        }
+      }
+    }
+    expect(intent('Enter', 'level', 0, { repeat: true })).toBe('none');
+    // Échap répétée au menu : toujours « back » (le garde `repeat` est dans screens.ts).
+    expect(intent('Escape', 'menu', 0, { repeat: true })).toBe('back');
   });
 
   it('flèches du menu : pas de bouclage, aux deux extrémités la page ne défile pas', () => {

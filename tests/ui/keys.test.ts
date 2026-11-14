@@ -179,6 +179,28 @@ describe('keyToIntent : règles transverses', () => {
     expect(intent(PLUS, 'tuning', 'none', { repeat: true })).toBe('kpUp');
   });
 
+  it('Échap maintenue (A-03) : la répétition ne produit aucune intention, aide ouverte ou non', () => {
+    for (const phase of PHASES) {
+      for (const focus of FOCUSES) {
+        for (const helpOpen of [false, true]) {
+          expect(intent(ESCAPE, phase, focus, { repeat: true, helpOpen })).toBe('block');
+        }
+      }
+    }
+    expect(intent(ESCAPE, 'approach')).toBe('pause');
+  });
+
+  it('Entrée ou Espace maintenue sur un bouton (A-01) : pas de clic synthétisé, première frappe native', () => {
+    for (const key of [ENTER, NUMPAD_ENTER, SPACE]) {
+      for (const phase of PHASES) {
+        for (const helpOpen of [false, true]) {
+          expect(intent(key, phase, 'button', { repeat: true, helpOpen })).toBe('block');
+          expect(intent(key, phase, 'button', { helpOpen })).toBe('none');
+        }
+      }
+    }
+  });
+
   it('aide ouverte : Échap la ferme, sans pause, quelle que soit la phase et le focus', () => {
     for (const phase of PHASES) {
       for (const focus of FOCUSES) {

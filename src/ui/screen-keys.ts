@@ -25,6 +25,8 @@ export interface ScreenKeyInput {
   readonly focusIndex: number;
   /** Nombre de contrôles focalisables du menu (« Retour » compris). */
   readonly focusCount: number;
+  /** Répétition automatique d'une touche maintenue. */
+  readonly repeat: boolean;
   /** Touche Ctrl enfoncée. */
   readonly ctrlKey: boolean;
   /** Touche Alt enfoncée. */
@@ -47,10 +49,18 @@ export type ScreenKeyIntent =
  * @param input champs de l'événement clavier et contexte.
  */
 export function screenKeyToIntent(input: ScreenKeyInput): ScreenKeyIntent {
-  if (input.ctrlKey || input.altKey || input.metaKey || input.screen !== 'menu') {
+  const { code, focusIndex, focusCount } = input;
+  if (input.ctrlKey || input.altKey || input.metaKey) {
     return 'none';
   }
-  const { code, focusIndex, focusCount } = input;
+  // Entrée maintenue : le navigateur synthétiserait un clic à chaque répétition et la frappe
+  // traverserait deux écrans (A-01). La première frappe reste native.
+  if (input.repeat && (code === 'Enter' || code === 'NumpadEnter' || code === 'Space')) {
+    return input.screen === 'level' ? 'none' : 'block';
+  }
+  if (input.screen !== 'menu') {
+    return 'none';
+  }
   if (code === 'Escape') {
     return 'back';
   }

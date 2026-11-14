@@ -68,6 +68,7 @@ Depuis D19 (ADR-014), les règles courantes sont dans `CLAUDE.md` : rôles dans 
 | T-025 | orchestrateur | K35 : régénération des 10 captures périmées de `docs/img` (e2e, tri manuel) | FAIT (N1) | — |
 | V-v0.2-A, V-v0.2-B | validateur (Opus, lecture seule) | Chasse aux bugs v0.2 (9819bf7..f2680d1) : A = cycle de vie, ressources, écouteurs, redimensionnement ; B = état des niveaux, logique du niveau 2, entrées, textes, accessibilité ; rapports `docs/validation/V-v0.2-A-cycle-de-vie.md` et `V-v0.2-B-etat-textes-logique.md` : 3 majeurs (A-01, A-02, B-01), 16 mineurs, aucun bloquant | FAIT | docs/validation/ |
 | T-026 | réalisateur | Correctif B-01 (majeur) : aide ouverte, plus aucune commande de jeu au clavier ; tests unitaire et e2e de régression | VALIDÉ (N2) | — |
+| T-027 | réalisateur | Correctifs A-01 (majeur : double activation qui saute un écran, garde `event.detail > 1` et `repeat`) et A-03 (Échap maintenue) ; tests unitaires et e2e de régression | VALIDÉ (N2) | — |
 | T-000 | réalisateur | Pilote : git init, .gitignore, .gitattributes | VALIDÉ | logs/T-000.md |
 | T-001 | concepteur | Spec de la tranche verticale | VALIDÉ | logs/T-001.md |
 | T-002 | réalisateur | Socle outillé (npm, TS, Vite, lint, tests) | VALIDÉ (réserves) | logs/T-002.md |

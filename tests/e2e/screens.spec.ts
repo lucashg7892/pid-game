@@ -408,3 +408,110 @@ for (const [width, height] of [
     expect(problems, CONSOLE_FAILURE).toEqual([]);
   });
 }
+
+/** Centre horizontal et point à 8 px sous le bord haut d'un bouton (là où le deuxième clic tombe). */
+async function topPoint(button: Locator): Promise<{ x: number; y: number }> {
+  const box = await button.boundingBox();
+  if (box === null) throw new Error('bouton sans boîte');
+  return { x: box.x + box.width / 2, y: box.y + 8 };
+}
+
+test.describe('(j) une intention = un écran (A-01)', () => {
+  const FR = T.fr;
+  const play = (page: Page): Locator =>
+    page.getByRole('button', { name: FR('title.play'), exact: true });
+  const menuTitle = (page: Page): Locator => page.getByRole('main', { name: FR('menu.title') });
+
+  test('double-clic en haut de « Jouer » : le menu s’affiche, aucun niveau', async ({ page }) => {
+    const problems = await open(page, 'e2e=1&screen=title&lang=fr');
+    const { x, y } = await topPoint(play(page));
+    await page.mouse.dblclick(x, y);
+    await expect(menuTitle(page)).toBeVisible();
+    await settle(page);
+    expect(await screenOf(page)).toBe('menu');
+    await expect(page.locator('#ui')).toHaveCount(0);
+    expect(problems, CONSOLE_FAILURE).toEqual([]);
+  });
+
+  test('Entrée maintenue sur « Jouer » (répétition) : le menu, pas le niveau', async ({ page }) => {
+    await open(page, 'e2e=1&screen=title&lang=fr');
+    await expect(play(page)).toBeFocused();
+    await page.keyboard.down('Enter');
+    await page.keyboard.down('Enter');
+    await page.keyboard.down('Enter');
+    await page.keyboard.up('Enter');
+    await expect(menuTitle(page)).toBeVisible();
+    await settle(page);
+    expect(await screenOf(page)).toBe('menu');
+  });
+
+  test('Espace et Entrée sans répétition, clic souris unique, clic synthétique : fonctionnent', async ({
+    page,
+  }) => {
+    await open(page, 'e2e=1&screen=title&lang=fr');
+    await page.keyboard.press('Space');
+    await expect(menuTitle(page)).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(play(page)).toBeVisible();
+    await play(page).click();
+    await expect(menuTitle(page)).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(play(page)).toBeVisible();
+    // Sans pointerdown (lecteur d'écran, crochet de test) : accepté.
+    await play(page).evaluate((node: HTMLElement) => {
+      node.click();
+    });
+    await expect(menuTitle(page)).toBeVisible();
+    expect(await screenOf(page)).toBe('menu');
+  });
+
+  test('double-clic sur « Retour » : le titre, langue inchangée', async ({ page }) => {
+    await open(page, 'e2e=1&screen=menu&lang=fr');
+    const back = page.getByRole('button', { name: FR('menu.back'), exact: true });
+    const { x, y } = await topPoint(back);
+    await page.mouse.dblclick(x, y);
+    await expect(play(page)).toBeVisible();
+    await settle(page);
+    expect(await screenOf(page)).toBe('title');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+  });
+
+  test('Entrée maintenue sur « Menu » en pause : le menu, pas un niveau neuf', async ({ page }) => {
+    await open(page, 'e2e=1&screen=level1&lang=fr');
+    await run(page, [['pause']]);
+    const menu = page.locator('#ui .ui-tools .ui-menu');
+    await menu.focus();
+    await page.keyboard.down('Enter');
+    await page.keyboard.down('Enter');
+    await page.keyboard.up('Enter');
+    await expect(menuTitle(page)).toBeVisible();
+    await settle(page);
+    expect(await screenOf(page)).toBe('menu');
+  });
+
+  test('Échap maintenue dans un niveau : un seul basculement', async ({ page }) => {
+    await open(page, 'e2e=1&screen=level1&lang=fr');
+    await page.keyboard.down('Escape');
+    expect((await run(page, [])).phase).toBe('paused');
+    for (let i = 0; i < 3; i += 1) await page.keyboard.down('Escape');
+    expect((await run(page, [])).phase).toBe('paused');
+    await page.keyboard.up('Escape');
+    await page.keyboard.press('Escape');
+    expect((await run(page, [])).phase).toBe('approach');
+  });
+});
+
+test.describe('(k) double tape tactile sur « Jouer » (A-01)', () => {
+  test.use({ hasTouch: true });
+  test('le menu s’affiche, aucun niveau', async ({ page }) => {
+    await open(page, 'e2e=1&screen=title&lang=fr', 844, 390);
+    const { x, y } = await topPoint(
+      page.getByRole('button', { name: T.fr('title.play'), exact: true }),
+    );
+    await page.touchscreen.tap(x, y);
+    await page.touchscreen.tap(x, y);
+    await expect(page.getByRole('main', { name: T.fr('menu.title') })).toBeVisible();
+    await settle(page);
+    expect(await screenOf(page)).toBe('menu');
+  });
+});

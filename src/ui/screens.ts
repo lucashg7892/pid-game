@@ -14,6 +14,26 @@ import './screens.css';
 /** Délai avant d'écrire l'annonce (ms) : une région vide d'abord, pour que le texte soit lu. */
 const ANNOUNCE_DELAY_MS = 100;
 
+/** Champs communs de l'événement clavier pour {@link screenKeyToIntent}. */
+function keyFields(event: KeyboardEvent): {
+  code: string;
+  repeat: boolean;
+  ctrlKey: boolean;
+  altKey: boolean;
+  metaKey: boolean;
+} {
+  return {
+    code: event.code,
+    repeat: event.repeat,
+    ctrlKey: event.ctrlKey,
+    altKey: event.altKey,
+    metaKey: event.metaKey,
+  };
+}
+
+/** Pas de liste de contrôles (écran titre). */
+const NO_FOCUS = { focusIndex: -1, focusCount: 0 } as const;
+
 /** Écran monté. */
 export interface Screen {
   /** Retire l'écran du document ; sans effet si déjà appelée. */
@@ -58,6 +78,20 @@ class Disposables {
     target.addEventListener(type, handler);
     this.cleanups.push(() => {
       target.removeEventListener(type, handler);
+    });
+  }
+
+  /**
+   * Clic de navigation : ignoré s'il est le deuxième d'un double-clic ou d'un double tape
+   * (`detail` > 1), car il tomberait sur l'écran qui vient de remplacer celui du premier clic
+   * (A-01). Un clic clavier ou synthétique (`element.click()`, lecteur d'écran) a `detail` 0.
+   */
+  onNavigate(target: HTMLElement, handler: () => void): void {
+    this.on(target, 'click', (event) => {
+      if (event.detail > 1) {
+        return;
+      }
+      handler();
     });
   }
 
@@ -161,9 +195,15 @@ export function createTitleScreen(options: TitleScreenOptions): Screen {
   render(first);
   announce(first.announce);
 
-  disposables.on(play, 'click', onPlay);
-  disposables.on(lang, 'click', () => {
+  disposables.onNavigate(play, onPlay);
+  disposables.onNavigate(lang, () => {
     tr.setLocale(otherLocale(tr.locale));
+  });
+  disposables.onDocumentKey((event) => {
+    const intent = screenKeyToIntent({ ...keyFields(event), screen: 'title', ...NO_FOCUS });
+    if (intent === 'block') {
+      event.preventDefault();
+    }
   });
   disposables.add(
     tr.subscribe(() => {
@@ -204,14 +244,14 @@ export function createMenuScreen(options: MenuScreenOptions): Screen {
     const button = el('button', 'ui-btn ui-screen-btn ui-screen-level', item);
     button.type = 'button';
     button.disabled = !level.playable;
-    disposables.on(button, 'click', () => {
+    disposables.onNavigate(button, () => {
       onOpen(level.id);
     });
     return button;
   });
   const back = el('button', 'ui-btn ui-screen-btn ui-screen-back', card);
   back.type = 'button';
-  disposables.on(back, 'click', onBack);
+  disposables.onNavigate(back, onBack);
   const announce = announcer(main, disposables);
 
   const render = (view: MenuView): void => {
@@ -240,13 +280,10 @@ export function createMenuScreen(options: MenuScreenOptions): Screen {
   disposables.onDocumentKey((event) => {
     const controls = focusables();
     const intent = screenKeyToIntent({
-      code: event.code,
+      ...keyFields(event),
       screen: 'menu',
       focusIndex: controls.findIndex((b) => b === document.activeElement),
       focusCount: controls.length,
-      ctrlKey: event.ctrlKey,
-      altKey: event.altKey,
-      metaKey: event.metaKey,
     });
     if (intent === 'none') {
       return;

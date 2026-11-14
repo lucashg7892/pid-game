@@ -178,6 +178,9 @@ export function keyToIntent(input: KeyInput): KeyIntent {
     return 'none';
   }
   if (code === 'Escape') {
+    if (input.repeat) {
+      return 'block';
+    }
     if (input.helpOpen) {
       return 'closeHelp';
     }
@@ -185,6 +188,12 @@ export function keyToIntent(input: KeyInput): KeyIntent {
       return 'closeTuning';
     }
     return phase === 'paused' ? 'resume' : 'pause';
+  }
+  const isActivation = code === 'Enter' || code === 'NumpadEnter' || code === 'Space';
+  // Entrée maintenue sur un bouton (« Menu », « Rejouer »…) : pas de clic synthétisé à chaque
+  // répétition (A-01).
+  if (isActivation && focus === 'button' && input.repeat) {
+    return 'block';
   }
   if (commandsBlocked(input.helpOpen)) {
     return blockedIntentOf(code, key, focus);

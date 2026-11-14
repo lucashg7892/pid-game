@@ -340,4 +340,12 @@ describe('Kp toujours présent, langue et mémoïsation', () => {
     expect(staticTexts(tr('fr')).languageButton).toBe('English');
     expect(staticTexts(tr('en')).languageButton).toBe('Français');
   });
+
+  it('bouton de retour au menu : « Menu » dans les deux langues, distinct de « Pause »', () => {
+    for (const locale of ['fr', 'en'] as const) {
+      const texts = staticTexts(tr(locale));
+      expect(texts.menu).toBe('Menu');
+      expect(texts.menu).not.toBe(texts.resume);
+    }
+  });
 });

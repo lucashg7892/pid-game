@@ -40,6 +40,11 @@ async function open(page: Page, query: string, width = 1280, height = 720): Prom
   const problems = watchConsole(page, ALLOWED_WEBGL);
   await page.goto(query);
   await page.waitForFunction(() => document.body.dataset['drawCalls'] !== undefined);
+  if (!query.includes('e2e=1')) {
+    // Sans le crochet, le jeu démarre sur le titre : « Jouer », puis le niveau 1.
+    await page.locator('#screens .ui-primary').click();
+    await page.locator('#screens .ui-screen-level').click();
+  }
   await expect(page.locator('#ui .ui-banner')).toBeVisible();
   return problems;
 }
@@ -173,6 +178,8 @@ async function checkPanelsAvoidCage(
     '.ui-readout',
     '.ui-outcome',
     '.ui-help',
+    '.ui-tools .ui-menu',
+    '.ui-outcome .ui-menu',
   ]) {
     const node = page.locator(`#ui ${selector}`);
     if (!(await node.isVisible())) continue;
@@ -595,7 +602,8 @@ for (const [width, height] of [
       ['approche, mi-quai', [['moveRight'], ['advance', 1.7]]],
       ['réglage, bonhomme en butée droite', [['advance', 2.6], ['stop'], ['interact']]],
       ['trajet', [['setKp', 2500], ['launch'], ['advance', 1]]],
-      ['victoire', [['advance', 3]]],
+      ['trajet en pause (bouton « Menu » visible)', [['pause']]],
+      ['victoire (bouton « Menu » dans l’issue)', [['resume'], ['advance', 3]]],
     ];
     let walkerX: number | null = null;
     for (const [name, steps] of states) {
@@ -701,7 +709,7 @@ test('(n) bouton Pause sans aria-pressed ; focus sur « Rejouer » à l’issue'
   await pause.click();
   await expect(pause).toHaveText(FR('controls.pause'));
 
-  const replay = page.locator('#ui .ui-outcome button');
+  const replay = page.locator('#ui .ui-outcome button.ui-primary');
   const win = await run(page, [...TO_CONSOLE, ['setKp', 2500], ['launch'], ['advance', 4.0]]);
   expect(win.phase).toBe('outcome');
   await expect(replay).toBeFocused();

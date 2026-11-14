@@ -90,6 +90,7 @@
   "controls.moveLeft": "Aller à gauche",
   "controls.moveRight": "Aller à droite",
   "controls.action": "Action",
+  "controls.menu": "Menu",
   "controls.kpDecrease": "Diminuer Kp de 100",
   "controls.kpIncrease": "Augmenter Kp de 100",
   "controls.help.title": "Commandes",

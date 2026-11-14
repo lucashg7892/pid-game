@@ -190,7 +190,7 @@ async function canvasBox(page: Page): Promise<{ width: number; height: number }>
 test('WebGL2 imposé : démarre sans erreur console et dessine le papier', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   const problems = watchConsole(page, ALLOWED_WEBGL);
-  await page.goto('?renderer=webgl&lang=fr');
+  await page.goto('?renderer=webgl&e2e=1&lang=fr');
   await hideUi(page);
   await waitFirstFrame(page);
   await waitTwoFrames(page);

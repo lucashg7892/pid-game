@@ -90,6 +90,7 @@
   "controls.moveLeft": "Move left",
   "controls.moveRight": "Move right",
   "controls.action": "Action",
+  "controls.menu": "Menu",
   "controls.kpDecrease": "Decrease Kp by 100",
   "controls.kpIncrease": "Increase Kp by 100",
   "controls.help.title": "Controls",

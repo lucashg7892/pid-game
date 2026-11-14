@@ -6,9 +6,10 @@
 import type { Page } from '@playwright/test';
 
 /**
- * Masque l'interface superposée (`#ui`) de la page courante, y compris si elle est créée après.
+ * Masque l'interface superposée (`#ui`) et les écrans titre et menu (`#screens`) de la page
+ * courante, y compris s'ils sont créés après.
  * @param page page Playwright, déjà chargée.
  */
 export async function hideUi(page: Page): Promise<void> {
-  await page.addStyleTag({ content: '#ui { visibility: hidden !important; }' });
+  await page.addStyleTag({ content: '#ui, #screens { visibility: hidden !important; }' });
 }

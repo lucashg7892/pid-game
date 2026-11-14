@@ -33,6 +33,11 @@ export interface UiOptions {
   readonly translator: Translator;
   /** Canvas de la scène (libellé accessible, clic sur la console). */
   readonly canvas: HTMLCanvasElement;
+  /**
+   * Retour au menu des niveaux, sans confirmation. Le bouton « Menu » n'existe que si cette
+   * action est fournie ; il est visible en pause et dans le panneau d'issue.
+   */
+  readonly onMenu?: () => void;
 }
 
 /** Interface en cours. */
@@ -193,7 +198,7 @@ function renderHint(container: HTMLElement, line: HintLine): void {
  * @param options conteneur, niveau, traducteur et canvas.
  */
 export function createUi(options: UiOptions): Ui {
-  const { root, level, translator: tr, canvas } = options;
+  const { root, level, translator: tr, canvas, onMenu } = options;
   const builder = createViewModelBuilder(tr);
   const layout = createLayout();
   let geometry: Readonly<UiGeometry> | null = null;
@@ -224,6 +229,9 @@ export function createUi(options: UiOptions): Ui {
   const langDesc = el('span', 'ui-sr', tools);
   langDesc.id = 'ui-lang-desc';
   const langDescSlot = new TextSlot(langDesc);
+  const menuButton = el('button', 'ui-btn ui-menu', tools);
+  menuButton.type = 'button';
+  const menuText = new TextSlot(menuButton);
   const pauseButton = el('button', 'ui-btn ui-pause', tools);
   pauseButton.type = 'button';
   const pauseText = new TextSlot(pauseButton);
@@ -360,6 +368,9 @@ export function createUi(options: UiOptions): Ui {
   const outcomeButton = el('button', 'ui-btn ui-primary', outcome);
   outcomeButton.type = 'button';
   const outcomeButtonText = new TextSlot(outcomeButton);
+  const outcomeMenu = el('button', 'ui-btn ui-menu', outcome);
+  outcomeMenu.type = 'button';
+  const outcomeMenuText = new TextSlot(outcomeMenu);
   const outcomeBox = new BoxSlot(outcome);
   const dimensionNode = el('p', 'ui-dimension num', root);
   const dimension = new TextSlot(dimensionNode);
@@ -403,6 +414,7 @@ export function createUi(options: UiOptions): Ui {
   let previousPaused = false;
   let previousOutcome = false;
   let gaugeTitleVisible = true;
+  let topPaused = false;
 
   const announce = (text: string): void => {
     const line = document.createElement('p');
@@ -441,6 +453,14 @@ export function createUi(options: UiOptions): Ui {
     langAttr.set(vm.otherLocale);
     langDescSlot.set(t.languageDescription);
     pauseText.set(vm.paused ? t.resume : t.pause);
+    menuText.set(t.menu);
+    outcomeMenuText.set(t.menu);
+    show(menuButton, onMenu !== undefined && vm.paused);
+    if (vm.paused !== topPaused) {
+      topPaused = vm.paused;
+      top.classList.toggle('is-paused', vm.paused);
+    }
+    show(outcomeMenu, onMenu !== undefined);
     rotate.set(t.rotateHint);
     canvasLabel.set(t.canvasLabel);
     liveLabel.set(t.liveLabel);
@@ -681,6 +701,13 @@ export function createUi(options: UiOptions): Ui {
   pauseButton.addEventListener('click', () => {
     run(() => (level.snapshot.phase === 'paused' ? level.resume() : level.pause()));
   });
+  const leaveToMenu = (): void => {
+    if (!commandsBlocked(helpOpen)) {
+      onMenu?.();
+    }
+  };
+  menuButton.addEventListener('click', leaveToMenu);
+  outcomeMenu.addEventListener('click', leaveToMenu);
   minus.addEventListener('click', () => {
     run(() => level.adjustKp(-KP_STEP));
   });

@@ -400,6 +400,10 @@
   margin-top: 0.4em;
 }
 
+.ui-outcome .ui-menu {
+  margin-left: 0.5em;
+}
+
 /* Aide des commandes. */
 .ui-help {
   /* Au-dessus des mesures du trajet, que l'aide peut recouvrir (pause pendant un trajet). */
@@ -466,6 +470,18 @@
 @media (orientation: portrait) and (max-width: 700px) {
   .ui-rotate {
     display: block;
+  }
+}
+
+/* Portrait étroit, en pause : les quatre boutons (?, langue, Menu, Reprendre) prennent toute la
+   largeur ; le titre et l'étiquette de Kp (rappelés par le panneau) cèdent la place. */
+@media (orientation: portrait) and (max-width: 700px) {
+  .ui-top.is-paused .ui-brand {
+    display: none;
+  }
+
+  .ui-top.is-paused .ui-tools {
+    margin-left: auto;
   }
 }
 

@@ -44,6 +44,8 @@ export interface StaticTexts {
   readonly pause: string;
   /** Bouton reprise. */
   readonly resume: string;
+  /** Bouton « Menu » (retour au menu des niveaux). */
+  readonly menu: string;
   /** Nom du panneau Kp. */
   readonly panelLabel: string;
   /** Titre du panneau Kp. */
@@ -208,6 +210,7 @@ export function staticTexts(tr: Translator): StaticTexts {
     helpClose: tr.t('controls.help.close'),
     pause: tr.t('controls.pause'),
     resume: tr.t('controls.resume'),
+    menu: tr.t('controls.menu'),
     panelLabel: tr.t('a11y.kpPanel'),
     kpLabel: tr.t('level1.kp.label'),
     kpField: tr.t('level1.kp.field'),

@@ -1,14 +1,17 @@
 /**
- * Point de composition (spec T-001 §3) : crée le niveau 1, démarre le rendu (papier et niveau au
- * crayon), construit l'interface DOM (src/ui : textes, panneaux, commandes clavier, tactiles et
- * souris, accessibilité) et lui transmet à chaque image la géométrie de l'écran et les ancres du
- * rendu sous forme de données simples ; affiche la page de repli traduite si aucun GPU n'est
- * utilisable. N'importe pas three : tout le rendu vit dans src/render.
+ * Point de composition (spec T-001 §3, T-017 §3.3) : démarre le rendu une seule fois (papier seul),
+ * puis, d'après la machine d'application (src/app), monte l'écran courant et démonte le précédent :
+ * titre et menu (src/ui), ou un niveau 1 neuf (rendu au crayon, interface DOM, clavier, géométrie
+ * de l'écran et ancres du rendu transmises sous forme de données simples). Affiche la page de
+ * repli traduite si aucun GPU n'est utilisable, sans passer par le titre. N'importe pas three :
+ * tout le rendu vit dans src/render.
  *
- * Crochet de test : seulement avec `?e2e=1` dans l'URL, `window.__huygens` expose les commandes
- * du niveau, une copie de l'instantané, une avance déterministe du temps et les compteurs de
- * rendu. Dans ce mode, le temps réel ne fait plus avancer le niveau (ni le « boiling ») : seul
- * `advance` le fait, par images fixes de {@link E2E_FRAME_SECONDS}, puis met l'interface à jour.
+ * Crochet de test : seulement avec `?e2e=1` dans l'URL, `window.__huygens` expose la machine
+ * d'application, les commandes du niveau courant, une copie de l'instantané, une avance
+ * déterministe du temps et les compteurs de rendu. Dans ce mode, le temps réel ne fait plus
+ * avancer le niveau (ni le « boiling ») : seul `advance` le fait, par images fixes de
+ * {@link E2E_FRAME_SECONDS}, puis met l'interface à jour. `&screen=title|menu|level1` (défaut
+ * `level1`) choisit l'écran de départ ; ignoré sans `e2e=1`.
  */
 import {
   ARRIVAL_LEDGE_HEIGHT,
@@ -20,6 +23,7 @@ import {
   type Level1,
   type LevelSnapshot,
 } from './game';
+import { LEVELS, createAppMachine, type AppMachine, type AppResult, type AppState } from './app';
 import { createTranslator, detectLocale, type Translator } from './i18n';
 import {
   PLAY_ZONE,
@@ -35,7 +39,15 @@ import {
   type RenderSession,
   type RenderStats,
 } from './render';
-import { bindKeyboard, createUi, type ScreenRect, type Ui, type UiGeometry } from './ui';
+import {
+  bindKeyboard,
+  createMenuScreen,
+  createTitleScreen,
+  createUi,
+  type ScreenRect,
+  type Ui,
+  type UiGeometry,
+} from './ui';
 
 /** Durée d'une image du crochet de test (s). */
 const E2E_FRAME_SECONDS = 1 / 60;
@@ -54,11 +66,23 @@ export interface HuygensCommands {
   resume(): CommandResult;
 }
 
+/** Machine d'application exposée au crochet de test. */
+export interface HuygensApp {
+  /** Copie de l'état courant. */
+  state(): AppState;
+  play(): AppResult;
+  openLevel(id: string): AppResult;
+  back(): AppResult;
+  leaveLevel(): AppResult;
+}
+
 /** Crochet de test (`?e2e=1` seulement). */
 export interface HuygensTestHook {
-  /** Commandes du niveau. */
+  /** Machine d'application (écran courant et transitions). */
+  readonly app: HuygensApp;
+  /** Commandes du niveau courant (`'ignored'` hors niveau). */
   readonly commands: HuygensCommands;
-  /** Copie simple (JSON) de l'instantané courant. */
+  /** Copie simple (JSON) de l'instantané courant ; lève une erreur hors niveau. */
   snapshot(): LevelSnapshot;
   /**
    * Avance le niveau de `seconds` (arrondi à l'image) par images fixes de 1/60 s, sans attendre
@@ -162,6 +186,12 @@ function isE2e(search: string): boolean {
   return new URLSearchParams(search).get('e2e') === '1';
 }
 
+/** Écran de départ du mode test (`screen=title|menu|level1`, défaut `level1`). */
+function e2eStartScreen(search: string): 'title' | 'menu' | 'level1' {
+  const value = new URLSearchParams(search).get('screen');
+  return value === 'title' || value === 'menu' ? value : 'level1';
+}
+
 /** Rectangle écran d'un rectangle monde (pixels CSS). */
 function screenRect(
   frame: Frame,
@@ -206,35 +236,65 @@ function uiGeometry(width: number, height: number, anchors: Readonly<LevelAnchor
   };
 }
 
+/** Niveau courant et ses points d'accès, partagés avec la boucle de rendu et le crochet de test. */
+interface CurrentLevel {
+  readonly level: Level1;
+  /** Met l'interface du niveau à jour (géométrie comprise). */
+  readonly refreshUi: () => void;
+  /** Recalcule la géométrie si la taille du canvas a changé. */
+  readonly measure: () => void;
+}
+
 /** Installe `window.__huygens` (mode `?e2e=1`). */
 function installTestHook(
-  level: Level1,
+  machine: AppMachine,
   session: RenderSession,
-  refreshUi: () => void,
+  current: () => CurrentLevel | null,
   crashNextFrame: () => void,
 ): void {
+  const command = (run: (level: Level1) => CommandResult): CommandResult => {
+    const c = current();
+    return c === null ? 'ignored' : run(c.level);
+  };
   window.__huygens = {
-    commands: {
-      moveLeft: () => level.moveLeft(),
-      moveRight: () => level.moveRight(),
-      stop: () => level.stop(),
-      interact: () => level.interact(),
-      setKp: (value: number) => level.setKp(value),
-      adjustKp: (delta: number) => level.adjustKp(delta),
-      launch: () => level.launch(),
-      restart: () => level.restart(),
-      pause: () => level.pause(),
-      resume: () => level.resume(),
+    app: {
+      state: () => ({ ...machine.state }),
+      play: () => machine.play(),
+      openLevel: (id: string) => machine.openLevel(id),
+      back: () => machine.back(),
+      leaveLevel: () => machine.leaveLevel(),
     },
-    snapshot: () => JSON.parse(JSON.stringify(level.snapshot)) as LevelSnapshot,
+    commands: {
+      moveLeft: () => command((l) => l.moveLeft()),
+      moveRight: () => command((l) => l.moveRight()),
+      stop: () => command((l) => l.stop()),
+      interact: () => command((l) => l.interact()),
+      setKp: (value: number) => command((l) => l.setKp(value)),
+      adjustKp: (delta: number) => command((l) => l.adjustKp(delta)),
+      launch: () => command((l) => l.launch()),
+      restart: () => command((l) => l.restart()),
+      pause: () => command((l) => l.pause()),
+      resume: () => command((l) => l.resume()),
+    },
+    snapshot(): LevelSnapshot {
+      const c = current();
+      if (c === null) {
+        throw new Error('aucun niveau en cours');
+      }
+      return JSON.parse(JSON.stringify(c.level.snapshot)) as LevelSnapshot;
+    },
     advance(seconds: number): void {
+      const c = current();
       const frames =
         Number.isFinite(seconds) && seconds > 0 ? Math.round(seconds / E2E_FRAME_SECONDS) : 0;
       for (let i = 0; i < frames; i += 1) {
-        level.update(E2E_FRAME_SECONDS);
+        c?.level.update(E2E_FRAME_SECONDS);
       }
       session.renderNow(frames * E2E_FRAME_SECONDS);
-      refreshUi();
+      if (c !== null) {
+        c.measure();
+        c.refreshUi();
+      }
     },
     stats: () => session.stats(),
     trace: () => session.trace(),
@@ -242,7 +302,10 @@ function installTestHook(
       session.detachLevel();
     },
     attachLevel: () => {
-      session.attachLevel(level);
+      const c = current();
+      if (c !== null) {
+        session.attachLevel(c.level);
+      }
     },
     crashNextFrame,
   };
@@ -262,14 +325,22 @@ async function main(): Promise<void> {
     return;
   }
   canvas.setAttribute('aria-label', translator.t('a11y.canvas'));
-  const level = createLevel1();
-  const manualClock = isE2e(location.search);
-  // L'interface est créée après le démarrage du rendu ; la session n'existe pas encore.
-  let refreshUi: () => void = () => undefined;
+  const e2e = isE2e(location.search);
+  let current: CurrentLevel | null = null;
   let crashNextFrame = false;
-  // Nettoyage de l'interface, enrichi au fil de la construction ; appelé une seule fois en cas
-  // d'échec, avant la page de repli (pas de boutons morts devant elle).
-  const cleanups: Array<() => void> = [];
+  // Démontage de l'écran courant ; appelé à chaque changement d'écran et en cas d'échec, avant la
+  // page de repli (pas de boutons morts devant elle).
+  let unmount: () => void = () => undefined;
+  const unmountCurrent = (): void => {
+    const run = unmount;
+    unmount = () => undefined;
+    current = null;
+    try {
+      run();
+    } catch {
+      // Le nettoyage ne doit jamais empêcher l'écran suivant ni la page de repli.
+    }
+  };
   let failed = false;
   const handleFailure = (failure: RenderFailure): void => {
     if (failed) {
@@ -277,29 +348,25 @@ async function main(): Promise<void> {
     }
     failed = true;
     console.error(`Huygens’s world : ${failure.kind} : ${failure.detail}`);
-    refreshUi = () => undefined;
-    for (const cleanup of cleanups) {
-      try {
-        cleanup();
-      } catch {
-        // Le nettoyage ne doit jamais empêcher la page de repli.
-      }
-    }
+    unmountCurrent();
     showFallback(translator, canvas, failure.kind);
   };
   const result = await startRendering(canvas, parseRendererChoice(location.search), {
-    level,
     onFrame: (frameSeconds) => {
       if (crashNextFrame) {
         throw new Error('panne simulée (?e2e=1)');
       }
-      // Mise à jour de l'interface avec les ancres de l'image précédente (décalage d'une image,
-      // invisible pour des étiquettes), puis avance du niveau.
-      refreshUi();
-      if (manualClock) {
+      const c = current;
+      if (c === null) {
         return 0;
       }
-      level.update(frameSeconds);
+      // Mise à jour de l'interface avec les ancres de l'image précédente (décalage d'une image,
+      // invisible pour des étiquettes), puis avance du niveau.
+      c.refreshUi();
+      if (e2e) {
+        return 0;
+      }
+      c.level.update(frameSeconds);
       return frameSeconds;
     },
     onFailure: handleFailure,
@@ -309,53 +376,176 @@ async function main(): Promise<void> {
     return;
   }
   const { session } = result;
-  try {
+
+  /** Conteneur d'un écran, ajouté au document. */
+  const container = (id: string): HTMLDivElement => {
     const root = document.createElement('div');
-    root.id = 'ui';
+    root.id = id;
     document.body.append(root);
-    cleanups.push(() => {
+    return root;
+  };
+
+  const machine = createAppMachine(LEVELS);
+  let lastLevelId: string | undefined;
+
+  const mountTitle = (): (() => void) => {
+    canvas.setAttribute('aria-hidden', 'true');
+    const root = container('screens');
+    const screen = createTitleScreen({
+      root,
+      translator,
+      onPlay: () => {
+        machine.play();
+      },
+    });
+    return () => {
+      screen.destroy();
       root.remove();
+    };
+  };
+
+  const mountMenu = (): (() => void) => {
+    canvas.setAttribute('aria-hidden', 'true');
+    const root = container('screens');
+    const screen = createMenuScreen({
+      root,
+      translator,
+      levels: LEVELS,
+      onOpen: (id) => {
+        machine.openLevel(id);
+      },
+      onBack: () => {
+        machine.back();
+      },
+      ...(lastLevelId === undefined ? {} : { focusLevelId: lastLevelId }),
     });
-    const ui: Ui = createUi({ root, level, translator, canvas });
-    cleanups.push(() => {
-      ui.destroy();
-    });
-    const anchors = session.anchors();
-    let geometry: UiGeometry | null = null;
-    let geometryWidth = -1;
-    let geometryHeight = -1;
-    const measure = (): void => {
-      const width = canvas.clientWidth;
-      const height = canvas.clientHeight;
-      if (width !== geometryWidth || height !== geometryHeight) {
-        geometryWidth = width;
-        geometryHeight = height;
-        geometry = uiGeometry(width, height, anchors);
+    return () => {
+      screen.destroy();
+      root.remove();
+    };
+  };
+
+  /** Monte un niveau 1 neuf : rendu, interface, clavier, géométrie. */
+  const mountLevel = (): (() => void) => {
+    const cleanups: Array<() => void> = [];
+    const unmountLevel = (): void => {
+      for (const cleanup of cleanups.splice(0).reverse()) {
+        try {
+          cleanup();
+        } catch {
+          // Chaque retrait est indépendant des autres.
+        }
       }
     };
-    measure();
-    window.addEventListener('resize', measure);
-    cleanups.push(() => {
-      window.removeEventListener('resize', measure);
-    });
-    refreshUi = () => {
-      ui.update(geometry ?? undefined);
-    };
-    cleanups.push(bindKeyboard(level, ui, window));
-    if (manualClock) {
-      installTestHook(
+    try {
+      const level = createLevel1();
+      session.attachLevel(level);
+      cleanups.push(() => {
+        session.detachLevel();
+      });
+      const root = container('ui');
+      cleanups.push(() => {
+        root.remove();
+      });
+      const ui: Ui = createUi({
+        root,
         level,
-        session,
-        () => {
-          measure();
-          refreshUi();
+        translator,
+        canvas,
+        onMenu: () => {
+          machine.leaveLevel();
         },
+      });
+      cleanups.push(() => {
+        ui.destroy();
+      });
+      const anchors = session.anchors();
+      let geometry: UiGeometry | null = null;
+      let geometryWidth = -1;
+      let geometryHeight = -1;
+      const measure = (): void => {
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        if (width !== geometryWidth || height !== geometryHeight) {
+          geometryWidth = width;
+          geometryHeight = height;
+          geometry = uiGeometry(width, height, anchors);
+        }
+      };
+      measure();
+      window.addEventListener('resize', measure);
+      cleanups.push(() => {
+        window.removeEventListener('resize', measure);
+      });
+      // K18 : la taille du canvas peut changer sans `resize` de la fenêtre.
+      const observer = new ResizeObserver(measure);
+      observer.observe(canvas);
+      cleanups.push(() => {
+        observer.disconnect();
+      });
+      const refreshUi = (): void => {
+        ui.update(geometry ?? undefined);
+      };
+      cleanups.push(bindKeyboard(level, ui, window));
+      current = { level, refreshUi, measure };
+      refreshUi();
+    } catch (error: unknown) {
+      unmountLevel();
+      throw error;
+    }
+    return unmountLevel;
+  };
+
+  /** Monte l'écran de l'état donné. */
+  const show = (state: Readonly<AppState>): void => {
+    switch (state.screen) {
+      case 'title':
+        unmount = mountTitle();
+        return;
+      case 'menu':
+        unmount = mountMenu();
+        return;
+      case 'level':
+        lastLevelId = state.levelId ?? undefined;
+        unmount = mountLevel();
+        return;
+    }
+  };
+
+  try {
+    if (e2e) {
+      const start = e2eStartScreen(location.search);
+      if (start !== 'title') {
+        machine.play();
+      }
+      if (start === 'level1') {
+        machine.openLevel('level1');
+      }
+      installTestHook(
+        machine,
+        session,
+        () => current,
         () => {
           crashNextFrame = true;
         },
       );
     }
-    refreshUi();
+    show(machine.state);
+    machine.subscribe((state) => {
+      if (failed) {
+        return;
+      }
+      try {
+        unmountCurrent();
+        show(state);
+      } catch (error: unknown) {
+        session.stop();
+        handleFailure({
+          kind: 'error',
+          detail: error instanceof Error ? error.message : String(error),
+        });
+      }
+    });
     document.body.dataset['backend'] = session.backend;
     const stats = await session.firstFrame;
     document.body.dataset['drawCalls'] = String(stats.drawCalls);

@@ -88,7 +88,7 @@
   "controls.help.interact": "E, Enter or Space: use the console",
   "controls.help.kp": "+ / −: Kp ± 100; Page Up / Page Down: Kp ± 1000",
   "controls.help.restart": "R: restart",
-  "controls.help.pause": "Esc: pause",
+  "controls.help.pause": "Esc: close the Kp panel, or pause",
   "controls.help.touch": "Touch screen: ◀ ▶ to walk, Action to use the console, the slider to set Kp.",
   "controls.help.mouse": "Mouse: click the console to use it.",
   "controls.help.close": "Close the help",

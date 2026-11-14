@@ -88,7 +88,7 @@
   "controls.help.interact": "E, Entrée ou Espace : utiliser la console",
   "controls.help.kp": "+ / − : Kp ± 100 ; Page préc. / Page suiv. : Kp ± 1000",
   "controls.help.restart": "R : recommencer",
-  "controls.help.pause": "Échap : pause",
+  "controls.help.pause": "Échap : fermer le réglage de Kp, ou pause",
   "controls.help.touch": "Écran tactile : ◀ ▶ pour marcher, Action pour utiliser la console, le curseur pour régler Kp.",
   "controls.help.mouse": "Souris : clique sur la console pour l’utiliser.",
   "controls.help.close": "Fermer l’aide",

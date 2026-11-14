@@ -110,7 +110,11 @@ describe('keyToIntent : table touche × phase × focus', () => {
     ['Page préc.', PAGE_UP, (_p, f) => (f === 'number' ? 'none' : 'kpUpBig')],
     ['Page suiv.', PAGE_DOWN, (_p, f) => (f === 'number' ? 'none' : 'kpDownBig')],
     ['R', KEY_R, (_p, f) => (f === 'number' ? 'none' : 'restart')],
-    ['Échap', ESCAPE, (p) => (p === 'paused' ? 'resume' : 'pause')],
+    [
+      'Échap',
+      ESCAPE,
+      (p) => (p === 'paused' ? 'resume' : p === 'tuning' ? 'closeTuning' : 'pause'),
+    ],
     ['↑', ARROW_UP, (_p, f) => (f === 'none' ? 'block' : 'none')],
     ['↓', ARROW_DOWN, (_p, f) => (f === 'none' ? 'block' : 'none')],
     ['Début', HOME, (_p, f) => (f === 'none' ? 'block' : 'none')],
@@ -182,6 +186,15 @@ describe('keyToIntent : règles transverses', () => {
       }
     }
     expect(intent(KEY_E, 'tuning', 'none', { helpOpen: true })).toBe('launch');
+  });
+
+  it('réglage ouvert, aide fermée : Échap referme le panneau sans lancer ni pause', () => {
+    for (const focus of FOCUSES) {
+      expect(intent(ESCAPE, 'tuning', focus)).toBe('closeTuning');
+      expect(intent(ESCAPE, 'tuning', focus, { helpOpen: true })).toBe('closeHelp');
+    }
+    expect(intent(ESCAPE, 'approach')).toBe('pause');
+    expect(intent(ESCAPE, 'trip')).toBe('pause');
   });
 
   it('aucune touche du jeu ne laisse le défilement natif quand le focus est sur le document', () => {

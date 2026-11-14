@@ -107,6 +107,9 @@ export function bindKeyboard(level: Level1, ui: Ui, target: Window): () => void 
       case 'resume':
         level.resume();
         break;
+      case 'closeTuning':
+        level.interact();
+        break;
       case 'closeHelp':
         ui.setHelp(false);
         return;

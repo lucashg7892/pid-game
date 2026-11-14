@@ -419,9 +419,10 @@
   }
 }
 
-/* Invite d'orientation : petit écran en portrait seulement. */
+/* Invite d'orientation : petit écran en portrait seulement. Elle se pose sous la barre du haut
+   (76 px en portrait étroit, TOP_BAR_PORTRAIT dans layout.ts), Kp compris. */
 .ui-rotate {
-  top: 56px;
+  top: 80px;
   right: 12px;
   left: 12px;
   display: none;

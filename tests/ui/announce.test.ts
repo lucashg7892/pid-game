@@ -40,7 +40,7 @@ describe('annonces', () => {
     );
     const bonk = finished(4500);
     expect(drain(bonk, 'en').at(-1)).toBe(
-      `Failed: the lift went above 3.30${NB}m and hit the beam. Error: -0.31${NB}m`,
+      `Failed: the lift went above 3.30${NB}m and hit the beam. Error: −0.31${NB}m`,
     );
     const noLift = finished(100);
     expect(drain(noLift, 'fr').at(-1)).toBe(

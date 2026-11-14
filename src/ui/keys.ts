@@ -68,7 +68,8 @@ export type KeyIntent =
   | 'restart'
   | 'pause'
   | 'resume'
-  | 'closeHelp';
+  | 'closeHelp'
+  | 'closeTuning';
 
 /** Écart de Kp d'une touche + ou − (N/m). */
 export const KP_SMALL_STEP = 100;
@@ -161,6 +162,9 @@ export function keyToIntent(input: KeyInput): KeyIntent {
   if (code === 'Escape') {
     if (input.helpOpen) {
       return 'closeHelp';
+    }
+    if (phase === 'tuning') {
+      return 'closeTuning';
     }
     return phase === 'paused' ? 'resume' : 'pause';
   }

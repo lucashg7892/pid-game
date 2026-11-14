@@ -32,10 +32,12 @@ describe('CA-4 : nombres', () => {
     expect(formatNumber('en', 12345.678)).toBe('12,345.68');
   });
 
-  it('négatifs : signe moins U+002D', () => {
-    expect(formatNumber('fr', -1.5)).toBe('-1,5');
-    expect(formatNumber('en', -0.33)).toBe('-0.33');
-    expect(formatNumber('fr', -5000)).toBe('-5000');
+  it('négatifs : vrai signe moins U+2212, jamais le trait d’union ASCII', () => {
+    expect(formatNumber('fr', -1.5)).toBe('−1,5');
+    expect(formatNumber('en', -0.33)).toBe('−0.33');
+    expect(formatNumber('fr', -5000)).toBe('−5000');
+    expect(formatNumber('en', -12345.6)).not.toContain('-');
+    expect(formatNumber('fr', -1.5).codePointAt(0)).toBe(0x2212);
   });
 
   it('zéro négatif et négatif arrondi à zéro : « 0 », jamais « -0 »', () => {
@@ -92,7 +94,7 @@ describe('CA-4 : grandeurs avec unité', () => {
   });
 
   it('négatifs, zéro négatif et décimales avec unité', () => {
-    expect(formatQuantity('fr', -0.327, 'm')).toBe('-0,33\u00A0m');
+    expect(formatQuantity('fr', -0.327, 'm')).toBe('\u22120,33\u00A0m');
     expect(formatQuantity('en', -0, 'm')).toBe('0\u00A0m');
     expect(formatQuantity('fr', -0.0001, 'm', { minimumFractionDigits: 2 })).toBe('0,00\u00A0m');
     expect(

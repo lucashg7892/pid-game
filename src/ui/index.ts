@@ -40,6 +40,7 @@ export {
   MIN_SIDE,
   ROTATE_BAR,
   TOP_BAR,
+  TOP_BAR_PORTRAIT,
   WALKER_HALF_WIDTH,
   boxExtent,
   computeLayout,

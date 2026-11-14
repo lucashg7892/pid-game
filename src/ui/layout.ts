@@ -93,8 +93,13 @@ export interface UiLayout {
 export const MARGIN = 12;
 /** Hauteur réservée à la barre du haut (titre, Kp, boutons) (px). */
 export const TOP_BAR = 56;
+/**
+ * Hauteur de la barre du haut en portrait étroit (px) : le titre et l'étiquette de Kp passent
+ * sur deux lignes (mesuré : 76 px à 390 px de large). Le paysage garde {@link TOP_BAR}.
+ */
+export const TOP_BAR_PORTRAIT = 76;
 /** Hauteur réservée à l'invite d'orientation sous la barre du haut, en portrait (px). */
-export const ROTATE_BAR = 44;
+export const ROTATE_BAR = 48;
 /** Hauteur réservée au bandeau d'aide (px). */
 export const BANNER_RESERVE = 76;
 /** Largeur minimale d'un côté pour y poser des panneaux (px). */
@@ -319,7 +324,7 @@ export function computeLayout(g: UiGeometry, out: UiLayout): UiLayout {
     }
   } else {
     const full = width - 2 * MARGIN;
-    const topBand = TOP_BAR + ROTATE_BAR;
+    const topBand = TOP_BAR_PORTRAIT + ROTATE_BAR;
     const bandTop = scene.top - MARGIN - topBand;
     const below = scene.bottom + MARGIN;
     const belowRoom = bannerTop - MARGIN - below;

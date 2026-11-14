@@ -7,7 +7,8 @@
  *   sont groupés (`5000`, mais `12 345` / `12,345`), selon l'usage SI et français ; en
  *   français, l'espace de groupement est celle d'ICU, U+202F (espace fine insécable) ;
  * - signe : `signDisplay: 'negative'`, donc `-0` et un négatif arrondi à zéro s'affichent `0` ;
- *   le signe moins est celui d'ICU (U+002D dans les deux langues avec Node 22) ;
+ *   le signe moins d'ICU (U+002D) est remplacé par le vrai signe moins {@link MINUS} (U+2212),
+ *   dans les deux langues ;
  * - nombre et unité sont séparés par {@link NBSP} (U+00A0, espace insécable), sauf `%` en
  *   anglais, collé au nombre (`12%`) ; en français, `12 %` avec U+00A0.
  */
@@ -15,6 +16,9 @@ import type { Locale } from './catalogs';
 
 /** Espace insécable U+00A0, entre un nombre et son unité, et avant « : » en français. */
 export const NBSP = '\u00A0';
+
+/** Signe moins typographique U+2212, devant les nombres négatifs. */
+export const MINUS = '−';
 
 /** Espace fine insécable U+202F, avant « ; », « ! » et « ? » en français. */
 export const NNBSP = '\u202F';
@@ -79,7 +83,7 @@ export function formatNumber(
       `maximumFractionDigits (${String(max)}) < minimumFractionDigits (${String(min)})`,
     );
   }
-  return formatterFor(locale, min, max).format(value);
+  return formatterFor(locale, min, max).format(value).replace('-', MINUS);
 }
 
 /**

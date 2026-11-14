@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { LevelPhase } from '../../src/game';
-import { helpPauseDecision, trapFocusIndex } from '../../src/ui/help';
+import { commandsBlocked, helpPauseDecision, trapFocusIndex } from '../../src/ui/help';
 
 const PHASES: readonly LevelPhase[] = ['approach', 'tuning', 'trip', 'outcome', 'paused'];
 
@@ -58,5 +58,12 @@ describe('trapFocusIndex', () => {
 
   it('ne fait rien sans contrôle', () => {
     expect(trapFocusIndex(-1, 0, false)).toBeNull();
+  });
+});
+
+describe('commandsBlocked (K24)', () => {
+  it("suspend les commandes du niveau tant que l'aide est ouverte", () => {
+    expect(commandsBlocked(true)).toBe(true);
+    expect(commandsBlocked(false)).toBe(false);
   });
 });

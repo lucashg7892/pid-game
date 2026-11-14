@@ -69,6 +69,10 @@ export interface HuygensTestHook {
   stats(): RenderStats;
   /** Points de la courbe y(t) de la dernière image (x0, y0, x1, y1… en m). */
   trace(): number[];
+  /** Détache le niveau de la session de rendu (papier seul) ; essai du cycle de vie de la vue. */
+  detachLevel(): void;
+  /** Rattache le niveau à la session de rendu. */
+  attachLevel(): void;
   /** Provoque une exception à la prochaine image (essai de la page de repli d'erreur). */
   crashNextFrame(): void;
 }
@@ -234,14 +238,24 @@ function installTestHook(
     },
     stats: () => session.stats(),
     trace: () => session.trace(),
+    detachLevel: () => {
+      session.detachLevel();
+    },
+    attachLevel: () => {
+      session.attachLevel(level);
+    },
     crashNextFrame,
   };
 }
 
 async function main(): Promise<void> {
   const translator = createTranslator(detectLocale(location.search, navigator.languages));
-  document.documentElement.lang = translator.locale;
-  document.title = translator.t('app.title');
+  const syncDocumentLanguage = (): void => {
+    document.documentElement.lang = translator.locale;
+    document.title = translator.t('app.title');
+  };
+  syncDocumentLanguage();
+  translator.subscribe(syncDocumentLanguage);
   const canvas = document.querySelector<HTMLCanvasElement>('#scene');
   if (canvas === null) {
     showFallback(translator, null);
@@ -303,6 +317,9 @@ async function main(): Promise<void> {
       root.remove();
     });
     const ui: Ui = createUi({ root, level, translator, canvas });
+    cleanups.push(() => {
+      ui.destroy();
+    });
     const anchors = session.anchors();
     let geometry: UiGeometry | null = null;
     let geometryWidth = -1;

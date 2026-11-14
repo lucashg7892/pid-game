@@ -4,5 +4,5 @@
     "lib": ["ES2023"],
     "types": []
   },
-  "include": ["src/sim/**/*.ts", "src/game/**/*.ts"]
+  "include": ["src/sim/**/*.ts", "src/game/**/*.ts", "src/app/**/*.ts"]
 }

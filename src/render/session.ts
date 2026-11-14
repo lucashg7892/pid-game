@@ -38,7 +38,7 @@ export interface LevelSource {
 
 /** Options de {@link startRendering}. */
 export interface StartOptions {
-  /** Niveau à dessiner ; absent : papier seul. */
+  /** Niveau à dessiner dès le départ ; absent : papier seul (voir `attachLevel`). */
   readonly level?: LevelSource;
   /**
    * Rappel appelé à chaque image, avant le dessin, avec le temps d'image en secondes (c'est là
@@ -78,6 +78,13 @@ export interface RenderSession {
    * niveau. Alloue : réservé aux tests.
    */
   trace(): number[];
+  /**
+   * Attache un niveau : crée sa vue et la dessine à chaque image (papier seul auparavant). Un
+   * niveau déjà attaché est détaché d'abord. Sans effet après `stop`.
+   */
+  attachLevel(level: LevelSource): void;
+  /** Détache le niveau et libère sa vue ; la session revient au papier seul. Sans effet sinon. */
+  detachLevel(): void;
   /** Arrête la boucle et le suivi de taille, libère le renderer. */
   stop(): void;
 }
@@ -104,14 +111,35 @@ export async function startRendering(
     return boot;
   }
   const { renderer, backend } = boot;
-  const { level, onFrame } = options;
+  const { onFrame } = options;
   const reducedMotion = prefersReducedMotion();
   const stage = createPaperStage(renderer);
-  const view: LevelView | null = level === undefined ? null : createLevelView(stage.scene);
   const anchors = createAnchors();
   let surfaceWidth = 0;
   let surfaceHeight = 0;
   let visualSeconds = 0;
+  let stopped = false;
+  let level: LevelSource | null = null;
+  let view: LevelView | null = null;
+  const detach = (): void => {
+    view?.dispose();
+    view = null;
+    level = null;
+  };
+  const attach = (source: LevelSource): void => {
+    if (stopped) {
+      return;
+    }
+    detach();
+    level = source;
+    view = createLevelView(stage.scene);
+    if (surfaceWidth > 0) {
+      view.resize(stage.frame);
+    }
+  };
+  if (options.level !== undefined) {
+    attach(options.level);
+  }
   const stopObserving = observeCanvasSize(canvas, renderer, (widthPx, heightPx) => {
     surfaceWidth = widthPx;
     surfaceHeight = heightPx;
@@ -122,7 +150,7 @@ export async function startRendering(
   /** Repeint le niveau, met à jour les ancres et dessine (aucune allocation de notre part). */
   const draw = (visualAdvance: number): void => {
     visualSeconds += visualAdvance;
-    if (view !== null && level !== undefined) {
+    if (view !== null && level !== null) {
       view.paint(level.snapshot, level.signals, visualSeconds, reducedMotion);
       computeAnchors(
         stage.frame,
@@ -144,7 +172,6 @@ export async function startRendering(
     resolveFirstFrame = resolve;
   });
 
-  let stopped = false;
   let stopSession: () => void = () => undefined;
   const failureGuard = createFailureGuard((failure) => {
     stopSession();
@@ -174,7 +201,7 @@ export async function startRendering(
     stopped = true;
     loop.stop();
     stopObserving();
-    view?.dispose();
+    detach();
     stage.dispose();
     disposeRenderer(renderer);
   };
@@ -200,6 +227,8 @@ export async function startRendering(
         const trace = view.painter.trace;
         return Array.from(trace.points.subarray(0, trace.count * 2));
       },
+      attachLevel: attach,
+      detachLevel: detach,
       stop(): void {
         stopSession();
       },

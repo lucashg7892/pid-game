@@ -16,6 +16,13 @@ module.exports = {
       to: { pathNot: '^src/i18n/' },
     },
     {
+      name: 'app-is-pure',
+      comment: 'src/app ne dépend que de src/app (machine d’écrans pure, spec T-017).',
+      severity: 'error',
+      from: { path: '^src/app/' },
+      to: { pathNot: '^src/app/' },
+    },
+    {
       name: 'game-no-render',
       comment: 'src/game ne dépend que de src/game et src/sim.',
       severity: 'error',
@@ -24,10 +31,10 @@ module.exports = {
     },
     {
       name: 'render-deps',
-      comment: 'src/render peut importer src/sim, src/game et three, pas ui ni i18n.',
+      comment: 'src/render peut importer src/sim, src/game et three, pas ui, i18n ni app.',
       severity: 'error',
       from: { path: '^src/render/' },
-      to: { path: '^src/(ui|i18n)/' },
+      to: { path: '^src/(ui|i18n|app)/' },
     },
     {
       name: 'ui-deps',

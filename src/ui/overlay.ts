@@ -12,7 +12,7 @@ import { KP_MAX, KP_MIN, KP_STEP, type GameEvent, type Level1 } from '../game';
 import type { Translator } from '../i18n';
 import { announcementFor } from './announce';
 import type { HintLine } from './hints';
-import { helpPauseDecision, trapFocusIndex } from './help';
+import { commandsBlocked, helpPauseDecision, trapFocusIndex } from './help';
 import {
   computeLayout,
   createLayout,
@@ -49,6 +49,11 @@ export interface Ui {
    * @param open vrai pour ouvrir.
    */
   setHelp(open: boolean): void;
+  /**
+   * Démonte l'interface : retire les écouteurs du document, du canvas et du traducteur, vide le
+   * conteneur et masque le canvas aux lecteurs d'écran. Sans effet si déjà appelée.
+   */
+  destroy(): void;
 }
 
 /** Nombre d'annonces gardées dans la région `aria-live`. */
@@ -389,6 +394,8 @@ export function createUi(options: UiOptions): Ui {
   live.setAttribute('role', 'status');
   const liveLabel = new AttrSlot(live, 'aria-label');
 
+  // Dans un niveau, le canvas porte le nom du niveau (il est masqué hors niveau, spec T-017 §3.4).
+  canvas.removeAttribute('aria-hidden');
   const canvasLabel = new AttrSlot(canvas, 'aria-label');
   let shownLocale = '';
   let shownKp = Number.NaN;
@@ -424,8 +431,6 @@ export function createUi(options: UiOptions): Ui {
     const t = vm.texts;
     if (vm.locale !== shownLocale) {
       shownLocale = vm.locale;
-      document.documentElement.lang = vm.locale;
-      document.title = t.title;
       helpLines = [];
     }
     title.set(t.title);
@@ -578,7 +583,11 @@ export function createUi(options: UiOptions): Ui {
     show(gaugeWeightNode, true);
   };
 
+  let destroyed = false;
   const update = (g?: Readonly<UiGeometry>): void => {
+    if (destroyed) {
+      return;
+    }
     if (g !== undefined) {
       geometry = g;
     }
@@ -632,10 +641,14 @@ export function createUi(options: UiOptions): Ui {
     },
     update,
     setHelp,
+    destroy,
   };
 
   // --- Événements ---
   const run = (command: () => unknown): void => {
+    if (commandsBlocked(helpOpen)) {
+      return;
+    }
     command();
     update();
   };
@@ -646,7 +659,7 @@ export function createUi(options: UiOptions): Ui {
     setHelp(false);
   });
   // Piège de focus : Tab et Maj+Tab restent dans l'aide tant qu'elle est ouverte.
-  document.addEventListener('keydown', (event) => {
+  const onDocumentKeyDown = (event: KeyboardEvent): void => {
     if (!helpOpen || event.key !== 'Tab') {
       return;
     }
@@ -657,11 +670,12 @@ export function createUi(options: UiOptions): Ui {
       event.preventDefault();
       controls[next]?.focus({ preventScroll: true });
     }
-  });
+  };
+  document.addEventListener('keydown', onDocumentKeyDown);
   langButton.addEventListener('click', () => {
     tr.setLocale(builder.model.otherLocale);
   });
-  tr.subscribe(() => {
+  const unsubscribeLocale = tr.subscribe(() => {
     update();
   });
   pauseButton.addEventListener('click', () => {
@@ -677,6 +691,10 @@ export function createUi(options: UiOptions): Ui {
     run(() => level.setKp(range.valueAsNumber));
   });
   const commitNumber = (): void => {
+    if (commandsBlocked(helpOpen)) {
+      numberInput.valueAsNumber = level.snapshot.kp;
+      return;
+    }
     const value = numberInput.valueAsNumber;
     if (Number.isFinite(value)) {
       level.setKp(value);
@@ -733,14 +751,29 @@ export function createUi(options: UiOptions): Ui {
   });
 
   // Souris : clic sur la console = interagir (en approche).
-  canvas.addEventListener('click', (event) => {
-    if (geometry !== null && level.snapshot.phase === 'approach') {
+  const onCanvasClick = (event: MouseEvent): void => {
+    if (!commandsBlocked(helpOpen) && geometry !== null && level.snapshot.phase === 'approach') {
       const rect = canvas.getBoundingClientRect();
       if (isConsoleHit(event.clientX - rect.left, event.clientY - rect.top, geometry)) {
         run(() => level.interact());
       }
     }
-  });
+  };
+  canvas.addEventListener('click', onCanvasClick);
+
+  function destroy(): void {
+    if (destroyed) {
+      return;
+    }
+    destroyed = true;
+    document.removeEventListener('keydown', onDocumentKeyDown);
+    canvas.removeEventListener('click', onCanvasClick);
+    unsubscribeLocale();
+    helpOpen = false;
+    root.replaceChildren();
+    root.classList.remove('ui');
+    canvas.setAttribute('aria-hidden', 'true');
+  }
 
   update();
   return ui;

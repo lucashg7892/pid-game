@@ -714,3 +714,77 @@ test('(n) bouton Pause sans aria-pressed ; focus sur « Rejouer » à l’issue'
   await expect(replay).toBeFocused();
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });
+
+test('(o) K24 : aide ouverte pendant un trajet, « Reprendre » ne relance pas le jeu', async ({
+  page,
+}) => {
+  const problems = await open(page, '?renderer=webgl&e2e=1&lang=fr');
+  await run(page, [...TO_CONSOLE, ['setKp', 2500], ['launch'], ['advance', 0.5]]);
+  await page.getByRole('button', { name: FR('controls.help.show') }).click();
+  const dialog = page.getByRole('dialog', { name: FR('controls.help.title') });
+  await expect(dialog).toBeVisible();
+  const before = await page.evaluate(() => window.__huygens?.snapshot());
+  expect(before?.phase).toBe('paused');
+
+  // Le bouton « Reprendre » est recouvert par l'aide : le clic est envoyé tel quel, sans test de
+  // visibilité de Playwright, pour prouver que le gestionnaire lui-même est gardé.
+  const resume = page.locator('#ui .ui-pause');
+  await expect(resume).toHaveText(FR('controls.resume'));
+  await resume.dispatchEvent('click');
+  await page.locator('#ui .ui-touch-action').dispatchEvent('click');
+  await run(page, [['advance', 1.0]]);
+  const after = await page.evaluate(() => window.__huygens?.snapshot());
+  expect(after).toEqual(before);
+  await expect(dialog).toBeVisible();
+
+  await dialog.getByRole('button', { name: FR('controls.help.close') }).click();
+  expect((await run(page, [])).phase).toBe('trip');
+  expect(problems, CONSOLE_FAILURE).toEqual([]);
+});
+
+test('(p) K23 : l’aide est opaque, les mesures ne transparaissent pas', async ({ page }) => {
+  const problems = await open(page, '?renderer=webgl&e2e=1&lang=fr');
+  await run(page, [...TO_CONSOLE, ['setKp', 2500], ['launch'], ['advance', 1.5]]);
+  await page.getByRole('button', { name: FR('controls.help.show') }).click();
+  const dialog = page.getByRole('dialog', { name: FR('controls.help.title') });
+  await expect(dialog).toBeVisible();
+  const alpha = await dialog.evaluate((node) => {
+    const color = getComputedStyle(node).backgroundColor;
+    return color.startsWith('rgba') ? Number(color.split(',')[3]?.replace(')', '')) : 1;
+  });
+  expect(alpha).toBe(1);
+  const out = process.env['CAPTURE_DIR'];
+  if (out !== undefined && out !== '') {
+    await settle(page);
+    await page.screenshot({ path: `${out}/t017-aide-trajet.png` });
+  }
+  expect(problems, CONSOLE_FAILURE).toEqual([]);
+});
+
+test('(q) cycle de vie de la vue : attach, detach, attach sans fuite ni erreur', async ({
+  page,
+}) => {
+  const problems = await open(page, '?renderer=webgl&e2e=1&lang=fr');
+  // Compteurs d'une image de la boucle (les images de `advance` ne remettent pas ceux de three à 0).
+  const draws = async (): Promise<number> => {
+    await settle(page);
+    await settle(page);
+    return page.evaluate(() => window.__huygens?.stats().drawCalls ?? -1);
+  };
+  await run(page, [...TO_CONSOLE, ['setKp', 2500], ['launch'], ['advance', 1.5]]);
+  const initial = await draws();
+  expect(initial).toBeGreaterThan(2);
+  for (let cycle = 0; cycle < 3; cycle += 1) {
+    await page.evaluate(() => {
+      window.__huygens?.detachLevel();
+    });
+    expect(await draws(), 'papier seul : moins d’appels de dessin').toBeLessThan(initial);
+    expect(await page.evaluate(() => window.__huygens?.trace().length)).toBe(0);
+    await page.evaluate(() => {
+      window.__huygens?.attachLevel();
+    });
+    expect(await draws()).toBe(initial);
+    expect(await page.evaluate(() => (window.__huygens?.trace().length ?? 0) > 0)).toBe(true);
+  }
+  expect(problems, CONSOLE_FAILURE).toEqual([]);
+});

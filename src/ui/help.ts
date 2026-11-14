@@ -36,6 +36,16 @@ export function helpPauseDecision(
 }
 
 /**
+ * Vrai si les commandes du niveau (pause, reprise, réglage, tactile...) sont suspendues : tant
+ * que l'aide est ouverte, seul sa fermeture agit (K24) ; la reprise se fait par
+ * {@link helpPauseDecision}.
+ * @param helpOpen vrai si l'aide est ouverte.
+ */
+export function commandsBlocked(helpOpen: boolean): boolean {
+  return helpOpen;
+}
+
+/**
  * Indice du contrôle qui doit recevoir le focus après un Tab dans l'aide, ou `null` si le
  * comportement natif convient (le focus reste entre deux contrôles de l'aide).
  * @param current indice du contrôle actif dans l'aide, -1 s'il est hors de l'aide.

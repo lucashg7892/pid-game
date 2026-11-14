@@ -406,6 +406,11 @@
   z-index: 2;
 }
 
+/* Papier opaque : les mesures du trajet ne doivent pas transparaître sous l'aide (K23). */
+.ui-paper.ui-help {
+  background: #fbf7ec;
+}
+
 .ui-help ul {
   margin: 0.2em 0 0.5em;
   padding-left: 1.1em;

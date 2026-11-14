@@ -1,6 +1,6 @@
 # Tutoriel : lancer le projet sur son PC (Windows)
 
-À quoi sert cette page : guider pas à pas, sous Windows et dans PowerShell, l'installation d'une copie du projet, son lancement dans le navigateur, une partie du niveau 1, les tests et la validation MATLAB. Aucune connaissance en développement n'est supposée. État décrit : commit `566a8a3` (2026-11-13).
+À quoi sert cette page : guider pas à pas, sous Windows et dans PowerShell, l'installation d'une copie du projet, son lancement dans le navigateur, une partie du niveau 1, les tests et la validation MATLAB. Aucune connaissance en développement n'est supposée. État décrit : commit `13e8b7e` (les captures, les durées et les chiffres non recopiés ici datent de `566a8a3`).
 
 > **Statut des commandes.** Sous Windows, l'utilisateur a exécuté avec succès le clone, `npm.cmd ci` et `npm.cmd run dev` le 2026-11-13 (décision D16 du registre), puis a joué le niveau. La validation MATLAB (étape 6) a été exécutée sous Windows par le rédacteur. Les autres commandes (`git pull`, `npm run test`, `npm run test:cov`, `npm run check`, réinstallation) ont été exécutées sous Linux seulement et restent marquées « non exécuté sous Windows ».
 >
@@ -100,7 +100,7 @@ Pour réussir, Kp doit être entre 2000 et 3800 N/m : trop faible, la cabine s'a
 | + / − | Kp ± 100 N/m |
 | Page préc. / Page suiv. | Kp ± 1000 N/m |
 | R | recommencer |
-| Échap | pause, reprise, fermer l'aide |
+| Échap | fermer l'aide ou le réglage de Kp ; sinon pause, reprise |
 
 Table complète : [interface.md](interface.md#touches). À la souris : cliquez sur la console, puis utilisez le panneau. Pour jouer en anglais : bouton « English », ou ajoutez `?lang=en` à l'adresse.
 
@@ -128,13 +128,13 @@ Ces commandes ne sont pas nécessaires pour jouer. Elles vérifient le code.
 
 | Commande | Durée indicative | Ce qu'elle montre |
 |---|---|---|
-| `npm run test` | ≈ 30 s | les 426 tests unitaires (34 fichiers) au commit `566a8a3` ; la fin doit afficher `Test Files 34 passed (34)` et `Tests 426 passed (426)`. Les lignes `T1`, `REF`, `EXACT` comparent la simulation aux formules et à la solution exacte |
+| `npm run test` | ≈ 30 s | les 439 tests unitaires (36 fichiers) au commit `13e8b7e` ; la fin doit afficher `Test Files  36 passed (36)` et `Tests  439 passed (439)`. Les lignes `T1`, `REF`, `EXACT` comparent la simulation aux formules et à la solution exacte |
 | `npm run test:cov` | ≈ 40 s | les mêmes tests, puis un tableau de couverture de `src/sim` : 100 % partout. Échoue sous 95 % des lignes |
 | `npm run check` | ≈ 1 à 2 min | toute la chaîne : vérification des types, lint, formatage, règles d'architecture, tests, construction du site dans `dist\`. Doit se terminer sans erreur |
 
 Durées mesurées sous Linux ; non exécuté sous Windows. Détail des tests : [tests.md](tests.md).
 
-Les tests de bout en bout (`npm run e2e`, 28 tests dans un vrai navigateur) demandent d'abord `npx playwright install chromium`, qui télécharge un navigateur. Non exécuté sous Windows ; voir [tests.md](tests.md#tests-de-bout-en-bout-playwright).
+Les tests de bout en bout (`npm run e2e`, 39 tests dans un vrai navigateur) demandent d'abord `npx playwright install chromium`, qui télécharge un navigateur. Non exécuté sous Windows ; voir [tests.md](tests.md#tests-de-bout-en-bout-playwright).
 
 ## 6. Relancer la validation MATLAB
 

@@ -1,6 +1,6 @@
 # Documentation technique de Huygens’s world (dépôt `pid-game`)
 
-À quoi sert cette page : servir d'index et expliquer comment lire la documentation. La documentation décrit l'état réel du commit `88ae23c` (branche `main`) : la v0.1 est validée avec réserves, le niveau 1 est jouable. Le code (`src/`, `tests/`, `public/`) n'a pas changé depuis `566a8a3` : les pages qui citent ce commit restent exactes. Elle est rédigée en français.
+À quoi sert cette page : servir d'index et expliquer comment lire la documentation. La documentation décrit l'état réel du commit `13e8b7e` (branche `migration`) : la v0.1 a été validée avec réserves au commit `88ae23c` (rapport T-012) et le niveau 1 est jouable. Depuis, P-005, T-014, T-015 et T-016 ont corrigé huit défauts connus et modifié le code ; les pages mises à jour (voir le [CHANGELOG](CHANGELOG.md), entrée D-014) citent `13e8b7e`, les autres citent encore `566a8a3`, dont le code qu'elles décrivent n'a pas changé. Elle est rédigée en français.
 
 ## Par où commencer
 
@@ -17,7 +17,7 @@ Pour comprendre ce qui est affiché : [rendu.md](rendu.md) (dessin au crayon) et
 | Page | Contenu |
 |---|---|
 | [bilan-v0.1.md](bilan-v0.1.md) | bilan de la v0.1 : contenu, chiffres clés, méthode, leçons, suite du parcours |
-| [defauts-connus.md](defauts-connus.md) | défauts connus K1 à K22, par thème, avec gravité et piste de correction |
+| [defauts-connus.md](defauts-connus.md) | défauts connus K1 à K24, par thème, avec gravité et piste de correction |
 | [architecture.md](architecture.md) | modules, règles de dépendances, flux d'une image, garde-fous automatiques |
 | [simulation.md](simulation.md) | noyau de simulation : algorithme d'un pas, exports, horloge, RK4, saturation, déterminisme, procédures d'ajout |
 | [physique/ascenseur.md](physique/ascenseur.md) | modèle de l'ascenseur, formules, valeurs mesurées, fenêtre de réussite, stabilité |
@@ -55,7 +55,7 @@ Pour comprendre ce qui est affiché : [rendu.md](rendu.md) (dessin au crayon) et
 
 ### Captures
 
-Les images de `img/` sont produites par les tests e2e (T-008 à T-010), dans Chrome headless avec rendu logiciel. Elles servent de référence visuelle : l'orchestrateur les regarde à chaque exécution (leçon L9). Les pages les intègrent par des liens relatifs.
+Les images de `img/` sont produites par les tests e2e (T-008 à T-010, T-016), dans Chrome headless avec rendu logiciel. Elles servent de référence visuelle : l'orchestrateur les regarde à chaque exécution (leçon L9). Les pages les intègrent par des liens relatifs.
 
 ### Pages prévues
 

@@ -4,10 +4,14 @@
 
 ## Correspondance tâche → commit
 
-Sortie de `git log --oneline 88ae23c` (18 commits). Le commit de T-013 est à venir.
+Sortie de `git log --oneline 88ae23c` (18 commits) pour les lignes jusqu'à `88ae23c`. Les quatre lignes du haut viennent de `git log --oneline 88ae23c..13e8b7e` (branche `migration`) ; les commits de documentation et de protocole qui s'intercalent (T-013, P-001 à P-004) n'y figurent pas.
 
 | Commit | Contenu |
 |---|---|
+| `13e8b7e` | T-016 : e2e de saturation et capture `docs/img/t016-saturation.png` (K20) |
+| `88be7ac` | T-015 : l'aide met en pause pendant un trajet, `aria-modal`, piège de focus, focus sur « Rejouer » (K19, K21) |
+| `2b3c01e` | T-014 : perte de contexte GPU et exception après démarrage, page de repli d'échec (K16, K17) |
+| `a165a14` | P-005 : vrai signe moins, invite de rotation en portrait, Échap ferme le réglage, version 0.1.0 (K1, K2, K3, K22) |
 | `88ae23c` | T-012 : validation finale indépendante de la v0.1 (validée avec réserves) ; défauts connus K16 à K22 |
 | `8736af7` | T-011 : CI GitHub Actions (check + e2e) et déploiement Pages manuel ; liste des défauts connus |
 | `bf0624d` | D-010 : documentation du rendu et de l'interface, tutoriel mis à jour (`npm.cmd`), ADR-010 à 012, errata |
@@ -31,7 +35,17 @@ Les neuf premiers commits ont été créés après coup, à la suite, à partir 
 
 ## Versions
 
-- **v0.1 — validée avec réserves le 2026-11-13** (rapport [validation/T-012-v0.1.md](validation/T-012-v0.1.md), bilan [bilan-v0.1.md](bilan-v0.1.md)). Le champ `version` de `package.json` vaut encore `0.0.0` (défaut connu K22).
+- **v0.1 — validée avec réserves le 2026-11-13** (rapport [validation/T-012-v0.1.md](validation/T-012-v0.1.md), bilan [bilan-v0.1.md](bilan-v0.1.md)). Le champ `version` de `package.json` valait `0.0.0` au commit de la validation (K22) ; il vaut `0.1.0` depuis P-005 (`a165a14`).
+
+## D-014 — Documentation des correctifs P-005, T-014, T-015 et T-016 (2026-11-13)
+
+Les quatre tâches ci-dessous corrigent huit des défauts connus ; état documenté : commit `13e8b7e`. Chiffres relevés au commit `13e8b7e` : `npm test` donne 36 fichiers et 439 tests verts (426 au commit `566a8a3`) ; `npx playwright test --list` donne 39 tests dans 5 fichiers (28 dans 3 fichiers) ; `npm run lint:arch` : 57 modules (55). Le rédacteur n'a exécuté aucun test e2e.
+
+- **P-005** (`a165a14`) : `formatNumber` remplace le signe moins d'ICU par le vrai signe moins U+2212 (`MINUS`, dans `src/i18n/format.ts`) (K1). Échap en phase de réglage ferme le panneau de Kp (nouvelle intention `closeTuning`, qui appelle `level.interact()`), hors réglage il met en pause (K3). En portrait, la barre du haut mesure 76 px (`TOP_BAR_PORTRAIT`), l'invite de rotation est posée à `top: 80px` et `ROTATE_BAR` passe de 44 à 48 (K2). `package.json` : version `0.1.0` (K22 en partie ; `prefers-reduced-motion` reste lu au démarrage seulement). Texte de l'aide : « Échap : fermer le réglage de Kp, ou pause ».
+- **T-014** (`2b3c01e`) : perte de contexte GPU (`renderer.onDeviceLost`, WebGL et WebGPU) et exception après le démarrage arrêtent la session, retirent l'interface et affichent une page de repli d'échec (`src/render/failure.ts`, `showFailurePage` dans `src/main.ts`, clés `fallback.lost.*` et `fallback.error.*`) (K16, K17). Crochet `crashNextFrame()` du mode `?e2e=1`. Tests : `tests/render/failure.test.ts` (4), `tests/e2e/failure.spec.ts` (4). Le chemin WebGPU `device.lost` n'est exercé par aucun test.
+- **T-015** (`88be7ac`) : l'aide met en pause pendant un trajet et ne reprend à la fermeture que si c'est elle qui a mis en pause (`src/ui/help.ts`) (K19) ; `aria-modal`, piège de focus, focus rendu à l'ouvreur, focus sur le bouton de l'issue, plus d'`aria-pressed` sur « Pause » (K21) ; `z-index: 2` sur `.ui-help`. Tests : `tests/ui/help.test.ts` (8), e2e (j) à (n) de `ui.spec.ts`. Nouveaux défauts : K23, K24.
+- **T-016** (`13e8b7e`) : `tests/e2e/saturation.spec.ts` (2 tests) et capture `docs/img/t016-saturation.png` (K20).
+- Pages mises à jour : `interface.md`, `rendu.md`, `architecture.md`, `i18n-accessibilite.md`, `tests.md`, `developpement.md`, `tutoriel-lancer-en-local.md`, `defauts-connus.md`, `bilan-v0.1.md`, `README.md` et ce journal. Aucune ADR : aucune décision structurante. Rédacteur seul, aucun code modifié.
 
 ## T-013 — Documentation finale de la v0.1 (2026-11-13)
 

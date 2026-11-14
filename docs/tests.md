@@ -15,7 +15,7 @@ Configuration (`vitest.config.ts`) : environnement `node`, fichiers `tests/**/*.
 
 ## Inventaire
 
-Sortie de `npx vitest run` au commit `566a8a3`, sur une extraction propre du commit (`git archive 566a8a3`) : **34 fichiers, 426 tests, tous verts**. Les fichiers `tests/game/helpers.ts` et `tests/ui/helpers.ts` sont des modules d'outils partagés, pas des fichiers de test : Vitest ne les compte pas. S'y ajoutent 28 tests de bout en bout (Playwright), [plus bas](#tests-de-bout-en-bout-playwright).
+Sortie de `npm test` au commit `13e8b7e` (arbre propre) : **36 fichiers, 439 tests, tous verts** (« Test Files  36 passed (36) », « Tests  439 passed (439) »). Au commit `566a8a3`, il y en avait 34 fichiers et 426 tests ; T-014 et T-015 ont ajouté `failure.test.ts` et `help.test.ts`, P-005 un test dans `keys.test.ts`. Les fichiers `tests/game/helpers.ts` et `tests/ui/helpers.ts` sont des modules d'outils partagés, pas des fichiers de test : Vitest ne les compte pas. S'y ajoutent 39 tests de bout en bout (Playwright), [plus bas](#tests-de-bout-en-bout-playwright).
 
 | Fichier | Tests | Ce qu'il prouve |
 |---|---|---|
@@ -28,11 +28,13 @@ Sortie de `npx vitest run` au commit `566a8a3`, sur une extraction propre du com
 | `tests/render/noise.test.ts` | 9 | hachage déterministe et réparti ; bruit borné et continu ; graines ; boiling 8 Hz figé en mouvement réduit |
 | `tests/render/patterns.test.ts` | 9 | hachures dans le polygone (convexe, concave, qui se recoupe), au pas régulier ; pointillés ; cas dégénérés ; sortie pleine |
 | `tests/render/curve.test.ts` | 6 | échelle 1,2 m/s jusqu'à 3 s puis resserrée ; y fidèle aux échantillons ; 1 801 points sans débordement |
+| `tests/render/failure.test.ts` | 4 | garde-fou d'échec du rendu (`createFailureGuard`) : un seul signalement, plus aucun appel gardé après un échec, une exception devient un échec `error` |
 | `tests/render/gauge.test.ts` | 4 | 0 N en bas, 5000 N en haut ; remplissage \|uSat\| / 5000 ; 11 graduations ; repère du poids 490,5 N |
-| `tests/ui/keys.test.ts` | 33 | 27 touches × 20 combinaisons de phase et de focus ; Ctrl, Alt, Meta ; répétition ; Échap ferme l'aide ; aucun défilement ; écarts de Kp ; marche par position physique |
+| `tests/ui/keys.test.ts` | 34 | 27 touches × 20 combinaisons de phase et de focus ; Ctrl, Alt, Meta ; répétition ; Échap ferme l'aide, ferme le réglage (`closeTuning`) sans lancer ni pause ; aucun défilement ; écarts de Kp ; marche par position physique |
 | `tests/ui/view-model.test.ts` | 20 | textes exacts des 7 bandeaux en FR et EN ; panneau, mesures, légende, pause, aide ; messages d'issue avec e mesurée et e théorique ; étiquette Kp dans toutes les phases ; mémoïsation ; titre « Huygens’s world » |
 | `tests/ui/layout.test.ts` | 20 | 13 tailles d'écran : aucun panneau ne coupe la cage, la console ni le bonhomme, ni ne sort de l'écran ; cas particuliers ; même objet réécrit ; zone de clic de la console |
-| `tests/ui/announce.test.ts` | 4 | annonces de chaque événement en FR et EN, saturation une seule fois, valeur de e |
+| `tests/ui/announce.test.ts` | 4 | annonces de chaque événement en FR et EN, saturation une seule fois, valeur de e (signe moins U+2212) |
+| `tests/ui/help.test.ts` | 8 | règles pures de l'aide : `helpPauseDecision` (pause à l'ouverture pendant un trajet seulement, reprise à la fermeture seulement si l'aide avait mis en pause) et `trapFocusIndex` (piège de focus) |
 | `tests/game/units.test.ts` | 16 | géométrie (quais, vide de 4 m, poutre 3,30 m, consigne 3 m) ; arrondi de Kp (10 cas) ; seuil noLift calculé ; victoire au 120e pas consécutif ; choc strictement au-dessus de 3,30 m, victoire au pas 1800 prioritaire, NaN ; `place` du bonhomme ; imports limités à `src/game` et `src/sim`, ni aléa, ni horloge, ni DOM |
 | `tests/game/outcomes.test.ts` | 19 | issues de la spec §11 ; pas d'issue exacts ; borne haute 3800/3900 figée (D-11) ; balayage 0 → 8000 ; erreur finale à la victoire ≈ m·g/Kp (1e-3 m) ; marche de 0,327 m à 1500 N/m |
 | `tests/game/state-machine.test.ts` | 15 | état initial ; marche bornée ; zone de la console ; `initialKp` ; bornes et arrondi de Kp ; verrouillage pendant le trajet, l'issue et la pause ; commandes sans objet ; pause sans pas ni saut de temps ; bonhomme à bord ; `restart` (second trajet identique bit à bit) ; état figé après l'issue |
@@ -50,11 +52,11 @@ Sortie de `npx vitest run` au commit `566a8a3`, sur une extraction propre du com
 | `tests/sim/determinism.test.ts` | 4 | déterminisme (a), (b), (c) et trace non triviale |
 | `tests/i18n/catalogs.test.ts` | 24 | structure des JSON ; convention de clés ; parité FR/EN ; paramètres identiques ; `MESSAGE_PARAMS` exact ; clés de la spec §6 ; nombres physiques cités ; typographie ; `isLocale`, `otherLocale`, `isMessageKey`, `matchLocale` |
 | `tests/i18n/detect.test.ts` | 7 | priorité de `?lang=`, casse, région, valeur inconnue, paramètre répété, langues du navigateur, repli sur l'anglais |
-| `tests/i18n/format.test.ts` | 13 | virgule ou point décimal ; arrondi ; décimales imposées ; groupement à 5 chiffres ; signe ; zéro négatif ; valeur non finie ; options invalides ; cache ; unités et `%` |
+| `tests/i18n/format.test.ts` | 13 | virgule ou point décimal ; arrondi ; décimales imposées ; groupement à 5 chiffres ; signe (vrai signe moins U+2212, jamais « - ») ; zéro négatif ; valeur non finie ; options invalides ; cache ; unités et `%` |
 | `tests/i18n/interpolate.test.ts` | 11 | remplacement ; pas de double substitution ; paramètre manquant, hérité, en trop, non textuel ; accolades littérales ; gabarit mal formé ; `I18nError` ; `parseTemplate` |
 | `tests/i18n/translator.test.ts` | 15 | traduction de chaque clé dans chaque langue ; erreurs ; catalogues injectés ; abonnés (notification, désabonnement, doublon, erreur groupée) ; formatage selon la langue |
 
-Sous-totaux : `tests/sim/` 98 tests (9 fichiers), `tests/i18n/` 70 tests (5 fichiers), `tests/game/` 62 tests (6 fichiers), `tests/render/` 118 tests (9 fichiers), `tests/ui/` 77 tests (4 fichiers), test fumée 1.
+Sous-totaux : `tests/sim/` 98 tests (9 fichiers), `tests/i18n/` 70 tests (5 fichiers), `tests/game/` 62 tests (6 fichiers), `tests/render/` 122 tests (10 fichiers), `tests/ui/` 86 tests (5 fichiers), test fumée 1.
 
 ## Oracle analytique (`tests/sim/oracle.test.ts`)
 
@@ -207,7 +209,7 @@ Conséquence : M2 montrait qu'aucun test d'oracle ne voyait l'ordre de l'intégr
 
 ## Tests de bout en bout (Playwright)
 
-Fichiers : `tests/e2e/render.spec.ts`, `level.spec.ts`, `ui.spec.ts` (outils : `console.ts`, `overlay.ts`, `png.ts`). Configuration : `playwright.config.ts`. Chromium seul, contre le **build de production** servi par `vite preview` sur `http://127.0.0.1:4173/pid-game/`, un test à la fois, aucune nouvelle tentative. Options de Chromium : `--use-angle=swiftshader` (rendu WebGL logiciel, sans GPU réel), `--enable-unsafe-swiftshader`, `--ignore-gpu-blocklist`.
+Fichiers : `tests/e2e/render.spec.ts`, `level.spec.ts`, `ui.spec.ts`, `failure.spec.ts`, `saturation.spec.ts` (outils : `console.ts`, `overlay.ts`, `png.ts`). Configuration : `playwright.config.ts`. Chromium seul, contre le **build de production** servi par `vite preview` sur `http://127.0.0.1:4173/pid-game/`, un test à la fois, aucune nouvelle tentative. Options de Chromium : `--use-angle=swiftshader` (rendu WebGL logiciel, sans GPU réel), `--enable-unsafe-swiftshader`, `--ignore-gpu-blocklist`.
 
 ### Comment les lancer
 
@@ -224,17 +226,19 @@ Avec un Chrome déjà installé (réseau filtré) : la variable `PW_CHROME_PATH`
 PW_CHROME_PATH=/usr/bin/google-chrome npx playwright test
 ```
 
-**La VM des agents ne peut pas télécharger de navigateur** (403 « Connection blocked by network allowlist », log T-008). Les tests e2e sont donc exécutés par l'orchestrateur, dans son environnement, sur une copie du dépôt, avec la seconde commande : Google Chrome for Testing 153, headless, rendu logiciel SwiftShader, WebGL2 ([ADR-012](decisions/ADR-012-tests-navigateur.md)). Résultat consigné au commit `566a8a3` : **28 tests verts en 1,7 min** (log T-010). Le rédacteur n'a pas pu les exécuter ; il a seulement listé les tests.
+**La VM des agents ne peut pas télécharger de navigateur** (403 « Connection blocked by network allowlist », log T-008). Les tests e2e sont donc exécutés par l'orchestrateur, dans son environnement, sur une copie du dépôt, avec la seconde commande : Google Chrome for Testing 153, headless, rendu logiciel SwiftShader, WebGL2 ([ADR-012](decisions/ADR-012-tests-navigateur.md)). Résultat consigné au commit `566a8a3` : **28 tests verts en 1,7 min** (log T-010). Les 11 tests ajoutés depuis (T-014, T-015, T-016) sont décrits d'après leur code ; le rédacteur n'a exécuté aucun test e2e, il a seulement listé les tests.
 
 ### Inventaire
 
-Sortie de `npx playwright test --list` au commit `566a8a3` : « Total: 28 tests in 3 files ».
+Sortie de `npx playwright test --list` au commit `13e8b7e` : « Total: 39 tests in 5 files » (28 tests dans 3 fichiers au commit `566a8a3`).
 
 | Fichier | Tests | Ce qu'ils vérifient |
 |---|---|---|
 | `render.spec.ts` | 10 | WebGL2 imposé : démarrage sans erreur console, papier dessiné, **4 appels de dessin**, triangles entre 1 000 et 30 000 ; portrait 390 × 844 : papier aligné sans déformation, lignes de mètre de même teinte ; uniformité des lignes de mètre à 1280 × 720, 1281 × 721 et 390 × 844 ; redimensionnement 1280 × 720 → 800 × 900 ; page de repli `?renderer=none` en FR et en EN ; mode automatique : backend constaté, sans exception |
 | `level.spec.ts` | 6 | (a) bonhomme dessiné à l'état initial ; (b, c, d) console, trajet à 2500 N/m, victoire au pas 291 ; (e) 4500 N/m : choc au pas 58 ; (f, g) 1500 N/m : marche trop haute au pas 1800, courbe dans sa zone, budget ; (h) `window.__huygens` absent sans `?e2e=1` ; (i) portrait : victoire dessinée |
-| `ui.spec.ts` | 12 | (a) partie complète au clavier réel en français (aide, marche, panneau, + × 15, Entrée, victoire, R) ; (b) en anglais, 4500 N/m (Page préc. × 3, + × 5), choc ; (c) bascule de langue pendant le réglage ; (d) accessibilité FR et EN ; (e) aucune touche ne fait défiler la page ; (f) perte de focus pendant un trajet : pause ; (f bis) en approche : arrêt sans pause ; (g) invite de rotation en portrait ; (h) police manuscrite servie depuis `/pid-game/fonts/` ; (i) aucun panneau ne recouvre la cage, la console ni le bonhomme, à 1280 × 720 et 390 × 844 |
+| `ui.spec.ts` | 17 | (a) partie complète au clavier réel en français (aide, marche, panneau, + × 15, Entrée, victoire, R) ; (b) en anglais, 4500 N/m (Page préc. × 3, + × 5), choc ; (c) bascule de langue pendant le réglage ; (d) accessibilité FR et EN ; (e) aucune touche ne fait défiler la page ; (f) perte de focus pendant un trajet : pause ; (f bis) en approche : arrêt sans pause ; (g) invite de rotation en portrait ; (h) police manuscrite servie depuis `/pid-game/fonts/` ; (i) aucun panneau ne recouvre la cage, la console ni le bonhomme, à 1280 × 720 et 390 × 844 ; (j) aide ouverte pendant un trajet : pause, reprise à la fermeture (bouton et Échap) ; (k) pause du joueur puis aide : la fermeture de l'aide ne reprend pas ; (l) hors trajet, l'aide ne change pas la phase ; (m) aide modale : focus dedans, Tab piégé, focus rendu à l'ouvreur ; (n) bouton Pause sans `aria-pressed`, focus sur « Rejouer » à l'issue |
+| `failure.spec.ts` | 4 | WebGL2 imposé, en FR et en EN : perte du contexte (`WEBGL_lose_context`) puis exception provoquée par `crashNextFrame()` ; dans les deux cas la page de repli traduite (`#fallback`, `data-kind` valant `context-lost` ou `error`) remplace le jeu, canvas masqué, `#ui` retiré, aucun bouton. Le chemin WebGPU (`device.lost`) n'est pas exercé |
+| `saturation.spec.ts` | 2 | (a) Kp = 2500 : jauge rouge à 0,1 s (au moins 500 pixels de crayon rouge), sans rouge à 0,5 s ; (b) Kp = 4500 : texte « Saturé », annonce `level1.saturation`, capture `docs/img/t016-saturation.png`, texte disparu à 0,4 s |
 
 Chaque test surveille la console du navigateur : toute erreur ou tout avertissement non listé fait échouer le test. Messages tolérés, avec leur raison dans `render.spec.ts` : « GL Driver Message … GPU stall due to ReadPixels » (SwiftShader) ; en mode automatique, « No available adapters. » et l'avertissement de three « WebGPU is not available, running under WebGL2 backend. ».
 
@@ -246,6 +250,7 @@ Plusieurs tests décodent la capture d'écran (`tests/e2e/png.ts`) et comptent d
 
 - **présence** : pixels de graphite dans la boîte du bonhomme, et aucun dans une boîte témoin 2 m plus à droite (papier vierge) ;
 - **position** : points de la courbe y(t) aux coordonnées attendues ; aucune trace de courbe hors de sa zone ;
+- **jauge rouge** (T-016) : `saturation.spec.ts` compte les pixels de crayon rouge (r ≥ 120, r − g ≥ 60, r − b ≥ 60) dans le rectangle monde de la jauge : au moins 500 à 0,1 s à Kp = 2500, aucun à 0,5 s ;
 - **aspect du papier** : teinte des lignes de mètre identique le long d'une ligne et d'une ligne à l'autre, et comparaison à la capture de référence de T-008.
 
 Les tests d'aspect ont été ajoutés après l'incident de T-009b : les tests de position passaient alors que le papier était visiblement dégradé (voir [rendu.md](rendu.md#papier-millimétré)). Les tests produisent aussi les captures de `docs/img/`, que l'orchestrateur regarde à chaque exécution (leçon L9).

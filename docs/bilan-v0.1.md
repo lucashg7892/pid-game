@@ -1,6 +1,6 @@
 # Bilan de la v0.1
 
-À quoi sert cette page : résumer pour un lecteur extérieur ce que contient la v0.1 de Huygens’s world, ses chiffres clés, la façon dont elle a été produite, les leçons tirées et la suite prévue. Verdict de la validation finale T-012 : **v0.1 validée avec réserves** le 2026-11-13 ([rapport](validation/T-012-v0.1.md)). État décrit : commit `88ae23c`.
+À quoi sert cette page : résumer pour un lecteur extérieur ce que contient la v0.1 de Huygens’s world, ses chiffres clés, la façon dont elle a été produite, les leçons tirées et la suite prévue. Verdict de la validation finale T-012 : **v0.1 validée avec réserves** le 2026-11-13 ([rapport](validation/T-012-v0.1.md)). État décrit : commit `88ae23c`, celui de la validation. Les chiffres qui ont changé depuis (tests, clés de texte, défauts connus) sont relevés au commit `13e8b7e` et marqués comme tels ; les autres restent ceux de `88ae23c`.
 
 ## Ce que contient la v0.1
 
@@ -8,26 +8,26 @@ Une tranche verticale : un seul niveau, « Le vide », complet (décision D4 du 
 
 - Le bonhomme marche jusqu'à une console, le joueur règle le gain Kp d'un contrôleur proportionnel, puis lance un ascenseur. Kp trop faible : la cabine s'arrête sous la marche (erreur statique). Kp trop fort : elle dépasse et heurte la poutre. Voir [jeu.md](jeu.md).
 - Un noyau de simulation pur et déterministe (`src/sim`), validé contre une solution exacte calculée sous MATLAB. Voir [simulation.md](simulation.md).
-- Un rendu au crayon sur papier millimétré, en WebGPU avec repli WebGL2, et une page de repli sans GPU. Voir [rendu.md](rendu.md).
+- Un rendu au crayon sur papier millimétré, en WebGPU avec repli WebGL2, et une page de repli sans GPU, ou après une perte du contexte GPU ou une erreur inattendue (T-014). Voir [rendu.md](rendu.md).
 - Une interface en français et en anglais, jouable au clavier, à la souris et au tactile, avec annonces pour lecteurs d'écran. Voir [interface.md](interface.md).
 - Une intégration continue sur GitHub Actions et un déploiement GitHub Pages manuel. Voir [developpement.md](developpement.md#intégration-continue).
 
-Objectifs de la spec, d'après T-012 §C : O1 (niveau jouable) atteint ; O2 (voir erreur statique, dépassement, saturation) atteint, saturation sans preuve de bout en bout ; O3 (fondations, dont CI et Pages) partiel ; O4 (physique couverte par un oracle) atteint.
+Objectifs de la spec, d'après T-012 §C : O1 (niveau jouable) atteint ; O2 (voir erreur statique, dépassement, saturation) atteint, saturation sans preuve de bout en bout à `88ae23c` (e2e et capture ajoutés ensuite par T-016) ; O3 (fondations, dont CI et Pages) partiel ; O4 (physique couverte par un oracle) atteint.
 
 ## Chiffres clés
 
 | Mesure | Valeur | Source |
 |---|---|---|
-| Tests unitaires (Vitest) | 426 tests, 34 fichiers, tous verts | `npm run check`, rapport T-012 §A |
-| Tests de bout en bout (Playwright) | 28 tests dans 3 fichiers, verts en 1,7 min au commit `566a8a3` | exécution par l'orchestrateur, log `orchestration/logs/T-010.md` ; liste confirmée par T-012 §A |
+| Tests unitaires (Vitest) | 439 tests, 36 fichiers, tous verts au commit `13e8b7e` (426 tests, 34 fichiers à `88ae23c`) | `npm test` au commit `13e8b7e` ; rapport T-012 §A pour `88ae23c` |
+| Tests de bout en bout (Playwright) | 39 tests dans 5 fichiers au commit `13e8b7e` (liste de `npx playwright test --list`) ; 28 tests dans 3 fichiers, verts en 1,7 min au commit `566a8a3` | exécution par l'orchestrateur, log `orchestration/logs/T-010.md`, pour les 28 premiers ; liste confirmée par T-012 §A. Les 11 tests ajoutés depuis n'ont pas été exécutés par le rédacteur |
 | Couverture du noyau `src/sim` | 100 % des lignes, branches et fonctions (seuils 95 / 90) | `npm run test:cov`, rapport T-012 §A |
 | JavaScript du build | 885,25 kB, soit 246,57 kB gzip (budget de la spec : 400 kB gzip) | `npm run check`, rapport T-012 §A |
 | Polices (Patrick Hand, 2 fichiers woff2) | 23 944 et 20 112 octets, chargées à la demande | `stat` sur `public/fonts/` au commit `88ae23c` |
 | Écart simulation / modèle exact | 1,42e-7 m au pire sur la hauteur y | MATLAB, rapport T-012 §B |
 | Fenêtre de réussite | Kp ∈ [2000 ; 3800] N/m, contiguë ; 0 désaccord sur 80 issues | MATLAB, rapport T-012 §B |
 | Marges aux bornes hautes | +5,842 mm à Kp = 3800 ; −1,865 mm à Kp = 3900 | MATLAB, rapport T-012 §B |
-| Textes traduits | 111 clés par langue, mêmes clés en FR et EN | rapport T-012 §C et §F |
-| Défauts connus | 22 (K1 à K22), dont 1 majeur, aucun bloquant | [defauts-connus.md](defauts-connus.md) |
+| Textes traduits | 115 clés par langue, mêmes clés en FR et EN au commit `13e8b7e` (111 à `88ae23c`) | comptage par script ; rapport T-012 §C et §F |
+| Défauts connus | 24 (K1 à K24) au commit `13e8b7e`, dont 8 corrigés (K1, K2, K3, K16, K17, K19, K20, K21) et 1 corrigé en partie (K22) ; plus aucun majeur ouvert ; à `88ae23c` : 22, dont 1 majeur (K16), aucun bloquant | [defauts-connus.md](defauts-connus.md) |
 
 ## Comment elle a été produite
 
@@ -61,4 +61,4 @@ Reformulées depuis le registre (`orchestration/REGISTRE.md` §4, L1 à L10).
 
 La progression pédagogique est fixée par la décision D8 du registre : boucle ouverte et fermée, contrôleur P, système du premier ordre, terme I (avec l'emballement de l'intégrale, ou windup), terme D (avec le bruit), PID complet, puis défi final. Les termes I et D sont des non-objectifs de la v0.1 ([spec T-001](specs/T-001-tranche-verticale.md) §1) ; l'écran de victoire du niveau 1 annonce déjà le terme I (spec §6).
 
-Avant d'y aller, le rapport T-012 recommande pour la v0.2 : gérer la perte de contexte GPU (K16), ajouter un e2e de saturation (K20), faire tourner la CI sur GitHub et trancher la publication (K14), mettre en pause à l'ouverture de l'aide (K19), essayer WebGPU réel et le tactile sur appareil (K8, K9).
+Avant d'y aller, le rapport T-012 recommandait pour la v0.2 : gérer la perte de contexte GPU (K16, fait en T-014), ajouter un e2e de saturation (K20, fait en T-016), faire tourner la CI sur GitHub et trancher la publication (K14), mettre en pause à l'ouverture de l'aide (K19, fait en T-015), essayer WebGPU réel et le tactile sur appareil (K8, K9). Restent ouverts : K14, K8 et K9.

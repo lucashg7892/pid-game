@@ -1,6 +1,6 @@
 # Développement
 
-À quoi sert cette page : installer le projet, connaître chaque script npm et les conventions de code. État au commit `566a8a3` pour le code ; intégration continue et déploiement au commit `88ae23c` (T-011). Pour un pas-à-pas sous Windows destiné à un non-développeur, voir le [tutoriel de lancement local](tutoriel-lancer-en-local.md).
+À quoi sert cette page : installer le projet, connaître chaque script npm et les conventions de code. État au commit `13e8b7e` pour le code ; intégration continue et déploiement au commit `88ae23c` (T-011). Pour un pas-à-pas sous Windows destiné à un non-développeur, voir le [tutoriel de lancement local](tutoriel-lancer-en-local.md).
 
 ## Prérequis
 
@@ -41,7 +41,7 @@ Commandes exactes de `package.json` au commit `7bcd9ce` (11 scripts).
 | `npm run test:cov` | `vitest run --coverage` | tests unitaires et couverture de `src/sim` ; échoue sous 95 % des lignes ou 90 % des branches (voir [tests.md](tests.md#couverture)) |
 | `npm run build` | `vite build` | build de production dans `dist/` |
 | `npm run preview` | `vite preview` | sert le contenu de `dist/` |
-| `npm run e2e` | `playwright test` | tests de bout en bout (28) dans Chromium, contre le build servi par `vite preview` ; construit le site avant (voir [tests.md](tests.md#tests-de-bout-en-bout-playwright)) |
+| `npm run e2e` | `playwright test` | tests de bout en bout (39) dans Chromium, contre le build servi par `vite preview` ; construit le site avant (voir [tests.md](tests.md#tests-de-bout-en-bout-playwright)) |
 | `npm run check` | `npm run typecheck && npm run lint && npm run test && npm run build` | vérification complète avant livraison |
 
 ### Tests de bout en bout et `PW_CHROME_PATH`
@@ -78,7 +78,7 @@ Le script `test:cov` a été ajouté par T-003 avec le paquet `@vitest/coverage-
 
 Cible de compilation : ES2023 (`tsconfig.json` et `build.target` de `vite.config.ts`).
 
-## Arborescence au commit `566a8a3`
+## Arborescence au commit `13e8b7e`
 
 Liste tirée de `git ls-files`.
 
@@ -91,14 +91,14 @@ src/main.ts    point de composition
 src/sim/       noyau de simulation (9 fichiers), voir simulation.md
 src/i18n/      i18n FR/EN (7 fichiers TypeScript + locales/fr.json, locales/en.json)
 src/game/      logique du niveau 1 (7 fichiers), voir jeu.md
-src/render/    rendu au crayon (18 fichiers), voir rendu.md
-src/ui/        interface (8 fichiers TypeScript + ui.css), voir interface.md
+src/render/    rendu au crayon (19 fichiers), voir rendu.md
+src/ui/        interface (9 fichiers TypeScript + ui.css), voir interface.md
 tests/smoke.test.ts  tests/sim/ (9 fichiers)  tests/i18n/ (5 fichiers)
 tests/game/    6 fichiers de test + helpers.ts (outils partagés)
-tests/render/  9 fichiers de test
-tests/ui/      4 fichiers de test + helpers.ts
-tests/e2e/     3 fichiers .spec.ts + console.ts, overlay.ts, png.ts
-docs/img/      16 captures produites par les tests e2e
+tests/render/  10 fichiers de test
+tests/ui/      5 fichiers de test + helpers.ts
+tests/e2e/     5 fichiers .spec.ts + console.ts, overlay.ts, png.ts
+docs/img/      17 captures produites par les tests e2e
 validation/    oracle MATLAB de T-005 : matlab/ (9 scripts), data/ (3 CSV), README.md
 docs/  orchestration/
 ```

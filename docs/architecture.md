@@ -1,6 +1,6 @@
 # Architecture
 
-À quoi sert cette page : présenter les modules du code, qui a le droit d'importer qui, le déroulement d'une image et les garde-fous automatiques. État au commit `566a8a3` (2026-11-13) : tous les modules sont validés et le niveau 1 est jouable dans un navigateur.
+À quoi sert cette page : présenter les modules du code, qui a le droit d'importer qui, le déroulement d'une image et les garde-fous automatiques. État au commit `13e8b7e` : tous les modules sont validés et le niveau 1 est jouable dans un navigateur.
 
 ## Modules
 
@@ -9,7 +9,7 @@
 | `src/sim/` | noyau de simulation pur : pas fixe, déterministe, sans rendu ni DOM | **validé** (T-003, T-004, T-004b, T-005). Voir [simulation.md](simulation.md) |
 | `src/game/` | logique de niveau : phases, victoire et échec, bonhomme, événements | **validé** (T-007). Voir [jeu.md](jeu.md) |
 | `src/i18n/` | textes FR/EN, interpolation, formatage, détection de langue | **validé** (T-006, clés ajoutées en T-010). Voir [i18n-accessibilite.md](i18n-accessibilite.md) |
-| `src/render/` | rendu three.js (`three/webgpu`, repli WebGL2) : papier, traits de crayon, bonhomme, courbe, jauge | **validé** (T-008, T-009). Voir [rendu.md](rendu.md) |
+| `src/render/` | rendu three.js (`three/webgpu`, repli WebGL2) : papier, traits de crayon, bonhomme, courbe, jauge | **validé** (T-008, T-009 ; échecs en cours de route : T-014). Voir [rendu.md](rendu.md) |
 | `src/ui/` | interface DOM accessible : bandeau d'aide, panneau Kp, mesures, issues, touches, annonces | **validé** (T-010). Voir [interface.md](interface.md) |
 | `src/main.ts` | point de composition : seul fichier qui connaît tous les modules | **validé** (T-010), voir ci-dessous |
 
@@ -34,12 +34,12 @@ public/      favicon.svg  fonts/ (Patrick Hand, OFL.txt)
 
 1. Crée le traducteur (`detectLocale(location.search, navigator.languages)`), écrit `<html lang>`, le titre du document et le nom accessible du canvas.
 2. Crée le niveau (`createLevel1()`).
-3. Démarre le rendu (`startRendering`) avec le choix lu dans `?renderer=`. En cas d'échec, affiche la page de repli traduite et s'arrête.
+3. Démarre le rendu (`startRendering`) avec le choix lu dans `?renderer=` et un rappel `onFailure`. Si le démarrage échoue, affiche la page de repli traduite et s'arrête. Si le rendu échoue plus tard (perte du contexte GPU, exception dans une image) ou si la construction de l'interface lève une exception, `handleFailure` retire l'interface et affiche une page de repli d'échec (voir [rendu.md](rendu.md#échecs-en-cours-de-route-t-014)).
 4. Crée l'interface (`createUi`) et branche le clavier (`bindKeyboard`).
 5. À chaque changement de taille, calcule la géométrie de l'écran pour l'interface (`UiGeometry`) à partir du cadrage du rendu, et y joint les ancres de la session (`session.anchors()`) : l'interface reçoit des nombres, sans importer le rendu.
 6. Écrit dans `document.body.dataset` le backend (`backend`), et, après la première image, `drawCalls` et `triangles`.
 
-**Crochet de test** : seulement avec `?e2e=1` dans l'URL, `window.__huygens` expose les commandes du niveau, une copie de l'instantané, une avance déterministe du temps (`advance(secondes)`, par images fixes de 1/60 s) et les compteurs de rendu. Dans ce mode, le temps réel ne fait plus avancer le niveau. Sans `?e2e=1`, `window.__huygens` n'existe pas (test e2e (h) de `level.spec.ts`).
+**Crochet de test** : seulement avec `?e2e=1` dans l'URL, `window.__huygens` expose les commandes du niveau, une copie de l'instantané, une avance déterministe du temps (`advance(secondes)`, par images fixes de 1/60 s), les compteurs de rendu et `crashNextFrame()`, qui provoque une exception à l'image suivante (essai de la page de repli d'erreur). Dans ce mode, le temps réel ne fait plus avancer le niveau. Sans `?e2e=1`, `window.__huygens` n'existe pas (test e2e (h) de `level.spec.ts`).
 
 ## Flux d'une image
 
@@ -136,13 +136,13 @@ x 2 dependency violations (2 errors, 0 warnings). 6 modules, 4 dependencies crui
 
 (Chemin vers `node_modules` raccourci : la copie pointait vers le `node_modules` du projet.)
 
-Sur le dépôt réel, au commit `566a8a3` (code de sortie 0, mesure sur une extraction propre `git archive 566a8a3`) :
+Sur le dépôt réel, au commit `13e8b7e` (`npm run lint:arch`, code de sortie 0, arbre propre) :
 
 ```text
-✔ no dependency violations found (55 modules, 143 dependencies cruised)
+✔ no dependency violations found (57 modules, 147 dependencies cruised)
 ```
 
-Les 55 modules : 53 fichiers de `src/` (`src/render` 18, `src/sim` 9, `src/i18n` 9 dont 2 JSON, `src/ui` 9 dont `ui.css`, `src/game` 7, `src/main.ts`) et 2 fichiers de three (`three/build/three.webgpu.js` et `three/build/three.tsl.js`), importés par `src/render`. Évolution de la même commande : 21 modules à `c00e678`, 28 à `7bcd9ce`, 35 à la fin de T-008 (log T-008), 55 à `566a8a3`. La sortie du test de violation ci-dessus (6 modules) date de la copie du socle T-002.
+Les 57 modules : 55 fichiers de `src/` (`src/render` 19, `src/sim` 9, `src/i18n` 9 dont 2 JSON, `src/ui` 10 dont `ui.css`, `src/game` 7, `src/main.ts`) et 2 fichiers de three (`three/build/three.webgpu.js` et `three/build/three.tsl.js`), importés par `src/render`. Évolution de la même commande : 21 modules à `c00e678`, 28 à `7bcd9ce`, 35 à la fin de T-008 (log T-008), 55 à `566a8a3`, 57 à `13e8b7e` (T-014 et T-015 ont ajouté `src/render/failure.ts` et `src/ui/help.ts`). La sortie du test de violation ci-dessus (6 modules) date de la copie du socle T-002.
 
 Limite : la commande analyse seulement `src/`. Les fichiers de `tests/` ne sont pas contrôlés.
 

@@ -1,6 +1,6 @@
 # Internationalisation et accessibilité
 
-À quoi sert cette page : décrire le module de traduction FR/EN (`src/i18n`, validé en T-006 et complété en T-010) et la façon d'ajouter une clé ou une langue. La seconde partie décrit l'accessibilité réalisée et testée en T-010. État au commit `566a8a3`.
+À quoi sert cette page : décrire le module de traduction FR/EN (`src/i18n`, validé en T-006 et complété en T-010) et la façon d'ajouter une clé ou une langue. La seconde partie décrit l'accessibilité réalisée et testée en T-010. État au commit `13e8b7e`.
 
 ## Partie 1 — i18n (validé, T-006)
 
@@ -24,7 +24,7 @@ Il est branché depuis T-010 : `src/main.ts` crée le traducteur avec `detectLoc
 ### Structure des locales
 
 - Un fichier JSON plat par langue : `{ "clé": "texte", … }`, sans imbrication.
-- 111 clés par langue, les mêmes dans les deux fichiers (comptage par script au commit `566a8a3` ; parité vérifiée par `tests/i18n/catalogs.test.ts`). T-006 en avait créé 89 ; T-010 en a ajouté 22 (liste plus bas).
+- 115 clés par langue, les mêmes dans les deux fichiers (comptage par script au commit `13e8b7e` ; 111 au commit `566a8a3`, T-014 en a ajouté 4 ; parité vérifiée par `tests/i18n/catalogs.test.ts`). T-006 en avait créé 89 ; T-010 en a ajouté 22 (liste plus bas).
 - Fins de ligne LF, aucune clé dupliquée, aucune valeur vide (tests).
 
 ### Convention de clés
@@ -44,7 +44,7 @@ Exemples : `level1.fail.noLift`, `hud.status.win`. Aucune clé n'est le préfixe
 | `hud.` | courbes, légende, valeurs affichées, messages d'état, bandeau d'aide, étiquette de Kp | 38 |
 | `controls.` | boutons, aide des commandes, noms des touches | 24 |
 | `a11y.` | noms accessibles et descriptions pour lecteurs d'écran | 7 |
-| `fallback.` | page affichée sans WebGPU ni WebGL2 | 7 |
+| `fallback.` | page de repli : sans WebGPU ni WebGL2, contexte GPU perdu (`fallback.lost.*`), erreur inattendue (`fallback.error.*`) | 11 |
 
 Un texte identique en FR et en EN est suspect (oubli de traduction). Seules cinq clés y ont droit, avec une raison écrite dans le test : `controls.pause`, `controls.action`, `level1.dimension`, `app.title`, `hud.kp.value`.
 
@@ -133,7 +133,7 @@ Un paramètre oublié, en trop ou mal nommé est donc refusé à la compilation.
 | séparateur décimal | `0,2` | `0.2` |
 | décimales par défaut | minimum 0, maximum max(minimum, 2), arrondi au plus proche, zéros finaux retirés | idem |
 | groupement des milliers | seulement à partir de 5 chiffres entiers : `5000`, `12 345` (espace U+202F) | `5000`, `12,345` |
-| signe moins | U+002D (celui d'ICU avec Node 22) | U+002D |
+| signe moins | U+2212 (vrai signe moins, constante `MINUS` de `src/i18n/format.ts`, non réexportée par `index.ts` ; ICU donne U+002D, remplacé par `formatNumber`) | U+2212 |
 | zéro négatif, négatif arrondi à zéro | `0`, jamais `-0` | idem |
 | nombre et unité | séparés par U+00A0 : `0,2 m` | U+00A0 : `0.2 m` |
 | pour cent | `12,5 %` (U+00A0) | `12.5%` (collé) |
@@ -174,7 +174,7 @@ Détails : une même fonction n'est abonnée qu'une fois ; un abonnement ou dés
 
 ### Exports de `src/i18n/index.ts`
 
-Liste complète au commit `c00e678`, inchangée à `566a8a3` : 18 valeurs (dont la classe `I18nError`) et 12 types.
+Liste complète au commit `c00e678`, inchangée à `13e8b7e` : 18 valeurs (dont la classe `I18nError`) et 12 types.
 
 | Nom | Nature | Rôle |
 |---|---|---|
@@ -242,10 +242,13 @@ Réalisée en T-010 (`src/ui`), testée par les scénarios e2e (d), (e) et (f) d
 | lecteurs d'écran | région `aria-live="polite"` unique : réglage, lancement, première saturation (une fois par trajet), issue avec la valeur de e, pause, reprise, recommencer | e2e (d) ; `tests/ui/announce.test.ts` |
 | aucune touche ne fait défiler la page | toutes les touches du jeu et ↑ ↓ Début Fin Espace Entrée sont interceptées quand le focus est sur la page | e2e (e) |
 | perte de focus | marche arrêtée ; pause automatique pendant un trajet, pas en approche | e2e (f) et (f bis) |
+| fenêtre d'aide modale (T-015) | `role="dialog"` avec `aria-modal="true"` ; focus sur « Fermer l’aide » à l'ouverture, piégé dans l'aide, rendu à l'ouvreur à la fermeture ; pause pendant un trajet | e2e (j) à (m) ; `tests/ui/help.test.ts` |
+| bouton Pause (T-015) | nom accessible fixé par son libellé, sans `aria-pressed` ; focus sur « Rejouer le niveau » à l'apparition de l'issue | e2e (n) |
 | couleurs : motif en plus de la teinte | consigne en pointillés, hauteur en trait plein, erreur hachurée ; seul le rouge de la jauge saturée est une couleur | captures ; [rendu.md](rendu.md#courbe-yt) |
 | contrastes ≥ 4,5:1 | texte ≈ 14:1, secondaire ≈ 9:1, rouge ≈ 7:1, déclarés dans `src/ui/ui.css` | **non mesuré par un test** |
 | mouvement réduit | « boiling » figé (`prefers-reduced-motion`), transitions CSS supprimées ; il n'y a pas de secousse de caméra | `tests/render/noise.test.ts`, `level-painter.test.ts` ; non testé en e2e |
 | sans WebGPU ni WebGL2 | page de repli statique traduite, sans exception | e2e `?renderer=none` (FR, EN) |
+| perte du contexte GPU, exception inattendue (T-014) | page de repli traduite, interface retirée (pas de boutons morts) | `tests/e2e/failure.spec.ts` (FR, EN) |
 | langue | bouton avec l'attribut `lang` de l'autre langue ; `<html lang>` mis à jour ; Kp et phase conservés | e2e (c) |
 | tactile | boutons ◀ ▶ « Action » de 56 × 56 px (spec : ≥ 44 × 44) sur écran à pointeur grossier | **non essayé sur un vrai écran tactile** (log T-010) |
 

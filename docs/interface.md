@@ -1,6 +1,6 @@
 # Interface du joueur (`src/ui`)
 
-À quoi sert cette page : décrire ce que le joueur voit et ce qu'il peut faire, phase par phase : textes, panneau de réglage, touches, accessibilité, disposition à l'écran, police. Elle décrit le commit `566a8a3` (interface validée en T-010). Le dessin de la scène est dans [rendu.md](rendu.md), les règles du niveau dans [jeu.md](jeu.md).
+À quoi sert cette page : décrire ce que le joueur voit et ce qu'il peut faire, phase par phase : textes, panneau de réglage, touches, accessibilité, disposition à l'écran, police. Elle décrit le commit `13e8b7e` (interface validée en T-010, corrigée par P-005, T-014 et T-015). Le dessin de la scène est dans [rendu.md](rendu.md), les règles du niveau dans [jeu.md](jeu.md).
 
 ## Principe
 
@@ -35,9 +35,13 @@ Le panneau Kp s'ouvre à gauche du bonhomme et de la console, sans les couvrir. 
 
 ### Trajet
 
-Le panneau reste visible mais verrouillé (« Kp est verrouillé pendant le trajet. ») et propose « Recommencer ». À droite de la cage, les **mesures** du trajet : temps, erreur, et la force posée au-dessus de la jauge (« Force : 4200 N »). La **légende** des tracés (pointillés : consigne ; trait plein : hauteur ; hachures : erreur ; jauge) est dépliée pendant le premier trajet seulement, puis repliée ; le joueur peut la déplier lui-même.
+Le panneau reste visible mais verrouillé (« Kp est verrouillé pendant le trajet. ») et propose « Recommencer ». À droite de la cage, les **mesures** du trajet : temps, erreur, et la force posée au-dessus de la jauge (« Force : 4200 N »). Les nombres négatifs portent le vrai signe moins U+2212, jamais le trait d'union ASCII (« −0,03 m », « Force : −102 N » ; `formatNumber`, voir [i18n-accessibilite.md](i18n-accessibilite.md#règles-typographiques-des-textes)). La **légende** des tracés (pointillés : consigne ; trait plein : hauteur ; hachures : erreur ; jauge) est dépliée pendant le premier trajet seulement, puis repliée ; le joueur peut la déplier lui-même.
 
 Voir la capture en tête de [rendu.md](rendu.md).
+
+Pendant la saturation du moteur (Kp = 4500 N/m, 0,1 s après le lancement), la jauge est rouge et le mot « Saturé » est affiché (`hud.saturated`) ; la région `aria-live` annonce `level1.saturation`.
+
+![Saturation à Kp = 4500 N/m, 0,1 s après le lancement (capture e2e de T-016)](img/t016-saturation.png)
 
 ### Issue
 
@@ -49,7 +53,7 @@ Un panneau donne le titre de l'issue, un message qui explique le mécanisme phys
 
 ### Pause
 
-« Échap » ou le bouton « Pause » figent le jeu ; le bandeau indique comment reprendre.
+« Échap » (hors phase de réglage) ou le bouton « Pause » figent le jeu ; le bandeau indique comment reprendre. En phase de réglage, « Échap » ferme le panneau de Kp au lieu de mettre en pause. Le bouton « Pause » change de libellé (« Reprendre ») sans attribut `aria-pressed`.
 
 ## Bandeau d'aide contextuel
 
@@ -69,7 +73,7 @@ En français, l'espace avant « : » est une espace insécable (U+00A0), comme p
 
 ## Touches
 
-Traduction touche → intention par la fonction pure `keyToIntent` (`src/ui/keys.ts`), exécutée par `bindKeyboard` (`input.ts`). Vérifiée par `tests/ui/keys.test.ts` (33 tests, dont 27 touches × 20 combinaisons de phase et de focus) et par les scénarios e2e au clavier réel.
+Traduction touche → intention par la fonction pure `keyToIntent` (`src/ui/keys.ts`), exécutée par `bindKeyboard` (`input.ts`). Vérifiée par `tests/ui/keys.test.ts` (34 tests, dont 27 touches × 20 combinaisons de phase et de focus) et par les scénarios e2e au clavier réel.
 
 Règles générales :
 
@@ -112,11 +116,11 @@ Les touches de Kp n'agissent qu'en approche et en réglage ; ailleurs, le niveau
 | Entrée | `Enter` | `interact` | `launch` | `block` | `block` | `block` |
 | Entrée du pavé numérique | `NumpadEnter` | `interact` | `launch` | `block` | `block` | `block` |
 | Espace | `Space` | `interact` | `launch` | `block` | `block` | `block` |
-| Échap | `Escape` | `pause` | `pause` | `pause` | `pause` | `resume` |
+| Échap | `Escape` | `pause` | `closeTuning` | `pause` | `pause` | `resume` |
 
 - `interact` en approche ouvre le réglage si le bonhomme est à la console, sinon ne fait rien.
-- **E lance le trajet en phase de réglage.** Dans `src/game`, `interact()` en réglage referme le panneau ; le clavier ne l'utilise pas ainsi. Aucune touche ne referme le panneau sans lancer (réserve du log T-010).
-- Échap, quand l'aide des commandes est ouverte, la referme (`closeHelp`), sans mettre en pause, quelle que soit la phase.
+- **E lance le trajet en phase de réglage.** Échap, lui, referme le panneau sans lancer : l'intention `closeTuning` appelle `level.interact()`, qui en réglage referme le panneau (événement `tuningClosed`). Avant P-005, aucune touche ne le faisait (K3).
+- Échap, quand l'aide des commandes est ouverte, la referme (`closeHelp`), sans mettre en pause ni fermer le réglage, quelle que soit la phase.
 
 ### Selon le focus
 
@@ -137,7 +141,16 @@ Quand la fenêtre perd le focus ou que l'onglet est masqué : la marche s'arrêt
 
 ## Aide des commandes « ? »
 
-Le bouton « ? » ouvre une fenêtre d'aide (`role="dialog"`) qui liste les commandes au clavier, à la souris et au tactile (clés `controls.help.`). À l'ouverture, le focus va sur « Fermer l’aide ». Échap ou « Fermer l’aide » la referme. Le focus revient au bouton « ? » seulement s'il était dans l'aide au moment de la fermeture ; sinon il reste où il était (`setHelp`, `src/ui/overlay.ts`). Relevé par la validation T-012 (§F, affirmation 7).
+Le bouton « ? » ouvre une fenêtre d'aide (`role="dialog"`, `aria-modal="true"`) qui liste les commandes au clavier, à la souris et au tactile (clés `controls.help.`). Depuis T-015 (`setHelp`, `src/ui/overlay.ts` ; règles pures dans `src/ui/help.ts`) :
+
+- **pause** : ouvrir l'aide pendant un trajet met le jeu en pause ; la fermer reprend le jeu seulement si c'est l'aide qui avait mis en pause (`helpPauseDecision`). Une pause demandée par le joueur avant l'ouverture n'est pas levée par la fermeture. Hors trajet, l'aide ne change pas la phase ;
+- **focus** : à l'ouverture, le focus va sur « Fermer l’aide » ; Tab et Maj+Tab restent dans l'aide (`trapFocusIndex`) ; à la fermeture, le focus revient à l'élément qui l'avait à l'ouverture, ou, à défaut (élément disparu, désactivé ou masqué), au bouton « ? » ;
+- Échap ou « Fermer l’aide » la referme ;
+- la couche de l'aide est au-dessus des mesures du trajet (`z-index: 2` sur `.ui-help`).
+
+Limites connues : K23 (les mesures transparaissent sous le papier translucide de l'aide) et K24 (cliquer « Reprendre » avec l'aide ouverte relance le jeu derrière elle), dans [defauts-connus.md](defauts-connus.md).
+
+À l'apparition du panneau d'issue, le focus est porté sur son bouton « Rejouer le niveau » ; quand le panneau se ferme, le focus qui s'y trouvait est rendu au document (`releaseFocus`).
 
 ## Langue
 
@@ -161,7 +174,7 @@ Chaque événement est consommé une seule fois. Le canvas porte `role="img"` et
 
 ## Petit écran en portrait
 
-Sur un écran en portrait de moins de 700 px de large, une invite propose de tourner l'appareil (`app.rotateHint`), et la disposition passe en « bandes » (voir plus bas). À 390 px de large, la scène est petite (17 m dans la largeur). L'étiquette permanente de Kp y est en partie masquée par l'invite (réserve du log T-010).
+Sur un écran en portrait de moins de 700 px de large, une invite propose de tourner l'appareil (`app.rotateHint`), et la disposition passe en « bandes » (voir plus bas). À 390 px de large, la scène est petite (17 m dans la largeur). Depuis P-005, la barre du haut y mesure 76 px (`TOP_BAR_PORTRAIT` : le titre et l'étiquette de Kp passent sur deux lignes, mesuré à 390 px de large) et l'invite de rotation est posée plus bas (`.ui-rotate { top: 80px }`, hauteur réservée `ROTATE_BAR` = 48) : l'étiquette de Kp n'est plus masquée (K2). La capture ci-dessous date de T-010 et montre l'ancienne disposition.
 
 ![Portrait 390 × 844 avec l'invite de rotation (capture e2e de T-010)](img/t010-06-portrait.png)
 
@@ -221,8 +234,9 @@ Constantes de disposition exportées par `layout.ts` (pixels CSS, sauf mention) 
 | Constante | Valeur | Rôle |
 |---|---|---|
 | `MARGIN` | 12 | marge autour des panneaux |
-| `TOP_BAR` | 56 | hauteur réservée à la barre du haut |
-| `ROTATE_BAR` | 44 | hauteur réservée à l'invite de rotation sous la barre du haut, en portrait |
+| `TOP_BAR` | 56 | hauteur réservée à la barre du haut (paysage) |
+| `TOP_BAR_PORTRAIT` | 76 | hauteur réservée à la barre du haut en portrait étroit (titre et Kp sur deux lignes) |
+| `ROTATE_BAR` | 48 | hauteur réservée à l'invite de rotation sous la barre du haut, en portrait |
 | `BANNER_RESERVE` | 76 | hauteur réservée au bandeau d'aide |
 | `MIN_SIDE` | 240 | largeur libre minimale de chaque côté de la cage pour la disposition « côtés » |
 | `MIN_BANNER_BAND` | 56 | hauteur minimale sous la scène pour y poser le bandeau |

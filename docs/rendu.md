@@ -1,6 +1,6 @@
 # Rendu au crayon (`src/render`)
 
-À quoi sert cette page : expliquer comment le jeu dessine la scène : démarrage du moteur graphique, cadrage, papier millimétré, traits de crayon, bonhomme, courbe et jauge, budget de dessin. Elle décrit le commit `566a8a3` (rendu validé en T-008 et T-009). Les textes posés par-dessus la scène sont dans [interface.md](interface.md).
+À quoi sert cette page : expliquer comment le jeu dessine la scène : démarrage du moteur graphique, cadrage, papier millimétré, traits de crayon, bonhomme, courbe et jauge, budget de dessin. Elle décrit le commit `13e8b7e` (rendu validé en T-008 et T-009 ; échecs en cours de route ajoutés par T-014). Les textes posés par-dessus la scène sont dans [interface.md](interface.md).
 
 ![Le niveau 1 en cours de trajet, 1280 × 720 (capture e2e de T-010)](img/t010-03-trajet.png)
 
@@ -8,11 +8,11 @@
 
 `src/render` est le seul module qui importe three.js (`three/webgpu` et `three/tsl`, règle `three-only-in-render`). Il lit l'instantané du niveau (`level.snapshot`) et l'enregistreur de signaux (`level.signals`) à chaque image ; il ne les modifie jamais et n'en garde aucune référence.
 
-Le point de composition (`src/main.ts`) n'appelle qu'une fonction : `startRendering(canvas, choice, { level, onFrame })`. Elle renvoie une session (`RenderSession`) ou un échec, sans jamais lever d'exception.
+Le point de composition (`src/main.ts`) n'appelle qu'une fonction : `startRendering(canvas, choice, { level, onFrame, onFailure })`. Elle renvoie une session (`RenderSession`) ou un échec, sans jamais lever d'exception. Les échecs survenus après le démarrage passent par `onFailure` (voir « Échecs en cours de route »).
 
 ### Fichiers purs et fichiers three
 
-Sur les 18 fichiers du module, 12 n'importent pas three (dont `index.ts`) et `camera.ts` n'en importe qu'un type : ils se testent sous Node, sans navigateur (`tests/render/`, 118 tests).
+Sur les 19 fichiers du module, 13 n'importent pas three (dont `index.ts`) et `camera.ts` n'en importe qu'un type : ils se testent sous Node, sans navigateur (`tests/render/`, 122 tests).
 
 | Fichier | three ? | Rôle |
 |---|---|---|
@@ -27,7 +27,8 @@ Sur les 18 fichiers du module, 12 n'importent pas three (dont `index.ts`) et `ca
 | `gauge.ts` | non | graduations et remplissage de la jauge de force |
 | `level-display.ts` | non | phase effective, interpolation, attitude, ancres écran pour l'interface |
 | `level-painter.ts` | non | `LevelPainter` : remplit les 5 lots de traits à chaque image |
-| `session.ts` | non (passe par les fichiers three) | `startRendering` : assemble tout, boucle d'images |
+| `failure.ts` | non | `createFailureGuard` : un seul signalement d'échec, plus aucun appel gardé ensuite |
+| `session.ts` | non (passe par les fichiers three) | `startRendering` : assemble tout, boucle d'images, branche `renderer.onDeviceLost` et le garde-fou |
 | `bootstrap.ts` | oui | `bootRenderer`, boucle `setAnimationLoop`, suivi de taille, mouvement réduit |
 | `stage.ts` | oui | scène, caméra orthographique, papier |
 | `paper.ts` | oui | matériau TSL du papier millimétré |
@@ -49,6 +50,19 @@ La valeur est lue sans tenir compte de la casse ni des espaces ; une valeur inco
 Échecs possibles, tous rendus comme une valeur (`BootFailureReason`) : `disabled` (`?renderer=none`), `unsupported` (ni WebGPU ni WebGL2 annoncés), `init-failed` (`init()` a échoué). Dans les trois cas, `main.ts` cache le canvas et affiche la page de repli traduite (clés `fallback.`), avec un lien vers le dépôt GitHub.
 
 ![Page de repli en français (capture e2e de T-008)](img/t008-fallback-fr.png)
+
+### Échecs en cours de route (T-014)
+
+Deux échecs peuvent survenir après le démarrage (`RenderFailureKind`, fichier `failure.ts`) :
+
+- `context-lost` : perte du contexte WebGL (`webglcontextlost`) ou du périphérique WebGPU (`device.lost`). `session.ts` affecte `renderer.onDeviceLost`, que three appelle pour les deux backends ; la valeur transmise est `info.api` suivi de `info.message`.
+- `error` : exception levée dans le rappel `onFrame` ou dans le dessin (le rappel de la boucle et `renderNow` passent par `FailureGuard.guard`), ou, dans `main.ts`, pendant la création de l'interface après le démarrage.
+
+`createFailureGuard(onFailure)` ne signale que le premier échec ; ensuite `guard` n'appelle plus rien. Au premier échec, `session.ts` arrête la session (boucle, observation de taille, vue, scène, renderer libéré ; `stop()` reste sans danger s'il est rappelé) puis appelle `onFailure({ kind, detail })`. `detail` est un message technique, écrit dans la console (`Huygens’s world : <kind> : <detail>`), jamais montré au joueur.
+
+Côté `main.ts` (`handleFailure`, une seule fois) : l'interface est nettoyée (`#ui` retiré, écouteur `resize` et clavier retirés), puis `showFallback` remplace le jeu par `showFailurePage` : un `<main id="fallback">` avec l'attribut `data-kind` (`context-lost` ou `error`), un titre, une explication invitant à recharger la page (la progression du niveau est perdue) et le lien vers la documentation. Clés `fallback.lost.title`, `fallback.lost.explanation`, `fallback.error.title`, `fallback.error.explanation` (FR et EN). Le canvas est caché et `body.dataset.backend` vaut `none`.
+
+Vérifié par `tests/render/failure.test.ts` et `tests/e2e/failure.spec.ts` (perte du contexte par `WEBGL_lose_context`, et exception provoquée par le crochet `window.__huygens.crashNextFrame()` du mode `?e2e=1`), en FR et en EN. Le chemin WebGPU `device.lost` est lu dans three mais n'est exercé par aucun test (voir K8 dans [defauts-connus.md](defauts-connus.md)).
 
 **Ce qui a été exercé.** Les tests e2e tournent dans Chrome headless avec le rendu logiciel SwiftShader : WebGL2 imposé, repli FR et EN, et mode automatique. En mode automatique, aucun adaptateur WebGPU n'est trouvé (« No available adapters. ») et three passe sur WebGL2 (log T-008). **WebGPU réel n'a été exercé par aucun test automatique.** Le 2026-11-13, l'utilisateur a constaté sur son PC Windows que « tout fonctionne » (décision D16, log T-010), sans relever quel backend était actif.
 
@@ -229,11 +243,12 @@ Vite affiche l'avertissement « Some chunks are larger than 500 kB after minific
 
 ## Exports de `src/render/index.ts`
 
-Liste complète au commit `566a8a3`, vérifiée par script (82 noms). Les fichiers internes (`level-painter.ts`, `stroke-batch.ts`, `noise.ts`, `patterns.ts`, `pencil-style.ts`, `pencil-material.ts`, `level-view.ts`, `walker-pose.ts`, `gauge.ts`) ne sont pas réexportés : seuls les tests les importent directement.
+Liste complète au commit `13e8b7e`, comptée par script (86 noms : 58 exports nommés plus les 28 de `paper.ts`). Les fichiers internes (`level-painter.ts`, `stroke-batch.ts`, `noise.ts`, `patterns.ts`, `pencil-style.ts`, `pencil-material.ts`, `level-view.ts`, `walker-pose.ts`, `gauge.ts`) ne sont pas réexportés : seuls les tests les importent directement.
 
 | Fichier | Valeurs | Types |
 |---|---|---|
 | `session.ts` | `startRendering` | `LevelSource`, `RenderSession`, `RenderStats`, `StartOptions`, `StartResult` |
+| `failure.ts` | `createFailureGuard` | `FailureGuard`, `RenderFailure`, `RenderFailureKind` |
 | `bootstrap.ts` | `bootRenderer`, `createFrameLoop`, `detectBackend`, `disposeRenderer`, `hasGraphicsApi`, `observeCanvasSize`, `prefersReducedMotion` | `Backend`, `BootFailureReason`, `BootResult`, `FrameLoop` |
 | `options.ts` | `parseRendererChoice`, `capPixelRatio`, `MAX_PIXEL_RATIO` | `RendererChoice` |
 | `camera.ts` | `computeFrame`, `applyFrame`, `worldXToPixel`, `worldYToPixel`, `PLAY_ZONE`, `PLAY_ZONE_MARGIN_X` (0,5 m), `PLAY_ZONE_BELOW_GROUND` (1,5 m), `PLAY_ZONE_ABOVE_BEAM` (2,2 m) | `Frame`, `WorldRect` |
@@ -246,4 +261,4 @@ Valeurs des constantes du papier : tableau de la section « Papier millimétré 
 
 ## Tests
 
-Tests Vitest de `tests/render/` (118) et tests e2e de `tests/e2e/render.spec.ts` et `level.spec.ts` : voir [tests.md](tests.md). Justification des choix : [ADR-010](decisions/ADR-010-rendu-crayon.md).
+Tests Vitest de `tests/render/` (122) et tests e2e de `tests/e2e/render.spec.ts`, `level.spec.ts`, `failure.spec.ts` et `saturation.spec.ts` : voir [tests.md](tests.md). Justification des choix : [ADR-010](decisions/ADR-010-rendu-crayon.md).

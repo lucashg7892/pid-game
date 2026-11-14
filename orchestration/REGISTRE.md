@@ -25,6 +25,10 @@ Tenu par l'orchestrateur. Les sous-agents ne modifient jamais ce fichier.
 | D17 | Dépôt | Reste privé pour l'instant : CI active, déploiement Pages préparé mais manuel |
 | D18 | Fin de v0.1 | Aller jusqu'à T-013 avec des vérifications allégées ; défauts mineurs consignés dans `orchestration/DEFAUTS-CONNUS.md` |
 | D19 | Protocole allégé (2026-11-13) | Garder la configuration actuelle (Opus, pas d'Ollama) ; autonomie des agents, vérification proportionnée N1/N2/N3, outils natifs (`CLAUDE.md`, `.claude/`) : [ADR-014](../docs/decisions/ADR-014-protocole-allege.md) |
+| D20 | Niveau 2 (2026-11-13) | Le niveau 2 reprend l'ascenseur du niveau 1 avec une action intégrale (gain Ki) ; l'étape « premier ordre » de D8 est reportée |
+| D21 | Enseignement (2026-11-13) | Pas de niveau 0 d'enseignement boucle ouverte/fermée pour l'instant |
+| D22 | Écrans (2026-11-13) | Écran titre avec un bouton Jouer et la mention de copyright, puis un menu avec la liste des niveaux |
+| D23 | Clavier (2026-11-13) | Échap ferme le panneau de réglage ; le bouton Pause est le seul moyen de pause à ce moment (K3, déjà appliqué en P-005) |
 
 ## 2. Protocole
 

@@ -25,6 +25,10 @@ export { createSaturation, isSaturated, saturate } from './saturation';
 export { SIGNAL_STRIDE, createSignalRecorder, type CircularSignalRecorder } from './signals';
 export { createProportionalController, type ProportionalController } from './controllers/p';
 export {
+  createProportionalIntegralController,
+  type ProportionalIntegralController,
+} from './controllers/pi';
+export {
   ELEVATOR_MAX_FORCE,
   ELEVATOR_PARAMS,
   ELEVATOR_POSITION,
@@ -33,7 +37,10 @@ export {
   ELEVATOR_VELOCITY,
   createElevator,
   createElevatorLoop,
+  createElevatorPiLoop,
   type ElevatorLoopOptions,
   type ElevatorParams,
+  type ElevatorPiLoop,
+  type ElevatorPiLoopOptions,
 } from './plants/elevator';
 export { createClosedLoop, type SteppableClosedLoop } from './loop';

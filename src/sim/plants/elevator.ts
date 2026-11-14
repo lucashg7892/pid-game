@@ -1,5 +1,9 @@
 import { SIM_DT } from '../clock';
 import { createProportionalController } from '../controllers/p';
+import {
+  createProportionalIntegralController,
+  type ProportionalIntegralController,
+} from '../controllers/pi';
 import { createRk4 } from '../integrators';
 import { createClosedLoop, type SteppableClosedLoop } from '../loop';
 import { createSaturation } from '../saturation';
@@ -122,4 +126,49 @@ export function createElevatorLoop(options: ElevatorLoopOptions): SteppableClose
     x0: new Float64Array(ELEVATOR_STATE_SIZE),
     setpoint: () => r,
   });
+}
+
+/** Options d'assemblage de la boucle PI de l'ascenseur : celles de la boucle P, plus Ki. */
+export interface ElevatorPiLoopOptions extends ElevatorLoopOptions {
+  /** Gain intégral Ki (N/(m·s)), fini et ≥ 0. */
+  readonly ki: number;
+}
+
+/**
+ * Boucle PI de l'ascenseur : boucle à pas fixe ordinaire, plus son contrôleur exposé en
+ * lecture pour que le niveau lise l'intégrale (`controller.integral`) et le terme
+ * proportionnel (`controller.proportionalTerm`) après chaque pas. Ne pas appeler
+ * `controller.update` ni `controller.reset` directement : la boucle s'en charge.
+ */
+export type ElevatorPiLoop = SteppableClosedLoop & {
+  readonly controller: ProportionalIntegralController;
+};
+
+/**
+ * Assemble la boucle du niveau « L'ascenseur à action intégrale » (spec T-018 §3.1) : même
+ * assemblage que {@link createElevatorLoop} (ascenseur, saturation [−Umax, +Umax], RK4,
+ * consigne constante, cabine posée au sol), avec un contrôleur PI sans anti-windup.
+ * À Ki = 0, la trace est identique bit à bit à celle de {@link createElevatorLoop}.
+ * @param options voir {@link ElevatorPiLoopOptions}.
+ * @throws RangeError si un paramètre est invalide (Kp, Ki, Umax, consigne non finie, dt hors de
+ *   ]0, `MAX_SIM_DT` (clock.ts)], paramètres physiques).
+ */
+export function createElevatorPiLoop(options: ElevatorPiLoopOptions): ElevatorPiLoop {
+  const maxForce = options.maxForce ?? ELEVATOR_MAX_FORCE;
+  const r = options.setpoint ?? ELEVATOR_SETPOINT;
+  if (!Number.isFinite(r)) {
+    throw new RangeError(`setpoint doit être fini (reçu ${String(r)})`);
+  }
+  const controller = createProportionalIntegralController(options.kp, options.ki);
+  const loop = createClosedLoop({
+    plant: createElevator(options.params),
+    controller,
+    saturation: createSaturation(-maxForce, maxForce),
+    integrator: createRk4(ELEVATOR_STATE_SIZE),
+    dt: options.dt ?? SIM_DT,
+    x0: new Float64Array(ELEVATOR_STATE_SIZE),
+    setpoint: () => r,
+  });
+  // Ajout en place : les accesseurs de la boucle (k, enabled) restent ceux de l'objet d'origine.
+  return Object.assign(loop, { controller });
 }

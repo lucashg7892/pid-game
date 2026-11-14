@@ -57,7 +57,9 @@ Un commit par tâche validée, fait par l'orchestrateur, au nom de lucashg7892 <
 
 ## Environnement d'exécution
 
-Ces points viennent de l'expérience de la v0.1 (leçons du registre) :
+Claude Code tourne maintenant en local sur Windows, avec un vrai navigateur possible et les outils de fichiers ordinaires. Les points ci-dessous viennent de l'expérience de la v0.1 (leçons du registre) et ne valent que pour les sessions pilotées à distance (« session distante »), pas pour une session locale. Les e2e se lancent en local avec `npm.cmd run e2e` si Playwright est installé.
+
+### Session distante
 
 - Le dépôt n'est accessible aux agents que par `device_bash`, dans `$HOME/mnt/PID_GAME`, jamais par leurs outils de fichiers locaux.
 - Commandes au premier plan, moins de 180 s, pas de processus en arrière-plan.

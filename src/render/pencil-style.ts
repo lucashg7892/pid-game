@@ -285,6 +285,13 @@ export const GAUGE_MINOR_TICK = 0.05;
 export const GAUGE_HATCH_ANGLE = Math.PI / 4;
 /** Taille du petit poids (repère m·g) dessiné à droite de la jauge (m). */
 export const GAUGE_WEIGHT_SIZE = 0.07;
+/**
+ * Jauge du terme intégral I (niveau 2) : bords gauche et droit (m), à droite de la jauge de
+ * force et du petit poids de son repère ; mêmes ordonnées et même échelle que la jauge de force.
+ */
+export const GAUGE_I_MIN_X = 6;
+/** Voir {@link GAUGE_I_MIN_X}. */
+export const GAUGE_I_MAX_X = 6.42;
 /** Épaisseur du plateau de la cabine sous le plancher (m). */
 export const CABIN_PLATE_THICKNESS = 0.1;
 /** Hauteur de la rambarde au-dessus du plancher (m). */

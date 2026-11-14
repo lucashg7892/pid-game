@@ -21,6 +21,8 @@ import { GAUGE_WEIGHT_Y } from './gauge';
 import {
   CONSOLE_POST_HEIGHT,
   DIMENSION_X,
+  GAUGE_I_MAX_X,
+  GAUGE_I_MIN_X,
   GAUGE_MAX_X,
   GAUGE_MAX_Y,
   GAUGE_MIN_X,
@@ -43,6 +45,11 @@ export const CONSOLE_ANCHOR_Y = CONSOLE_POST_HEIGHT + 0.3;
  * droite de la jauge et du petit poids dessiné au repère de m·g.
  */
 export const GAUGE_LABEL_X = GAUGE_MAX_X + 0.2;
+/**
+ * Idem au niveau 2 : les deux jauges partagent l'échelle, dont les étiquettes passent à droite
+ * de la jauge du terme intégral.
+ */
+export const GAUGE_I_LABEL_X = GAUGE_I_MAX_X + 0.2;
 
 /** État affiché, réécrit en place par {@link computeDisplay}. */
 export interface LevelDisplay {
@@ -152,12 +159,16 @@ export interface LevelAnchors {
   readonly walkerHead: ScreenPoint;
   /** Milieu du bord haut de la jauge de force (étiquette « force » / « N »). */
   readonly forceGauge: ScreenPoint;
-  /** Bord gauche, au niveau du haut de l'échelle de la jauge (étiquette « 5000 N max »). */
+  /** Bord gauche, au niveau du haut de l'échelle des jauges (« 5000 N max » ; niveau 2 : à droite de la jauge I). */
   readonly gaugeMax: ScreenPoint;
   /** Bord gauche, au niveau du repère du poids m·g (étiquette « poids »). */
   readonly gaugeWeight: ScreenPoint;
+  /** Milieu du bord haut de la jauge du terme intégral (niveau 2). */
+  readonly iGauge: ScreenPoint;
   /** Vrai si la cote d'erreur est dessinée. */
   errorDimensionVisible: boolean;
+  /** Vrai au niveau 2 : la jauge du terme intégral est dessinée. */
+  iGaugeVisible: boolean;
 }
 
 /** Crée des ancres (à allouer une fois). */
@@ -170,7 +181,9 @@ export function createAnchors(): LevelAnchors {
     forceGauge: { x: 0, y: 0 },
     gaugeMax: { x: 0, y: 0 },
     gaugeWeight: { x: 0, y: 0 },
+    iGauge: { x: 0, y: 0 },
     errorDimensionVisible: false,
+    iGaugeVisible: false,
   };
 }
 
@@ -222,7 +235,11 @@ export function computeAnchors(
     display.walkerGround + WALKER_HEAD_TOP,
   );
   place(out.forceGauge, frame, widthPx, heightPx, (GAUGE_MIN_X + GAUGE_MAX_X) / 2, GAUGE_MAX_Y);
-  place(out.gaugeMax, frame, widthPx, heightPx, GAUGE_LABEL_X, GAUGE_MAX_Y);
-  place(out.gaugeWeight, frame, widthPx, heightPx, GAUGE_LABEL_X, GAUGE_WEIGHT_Y);
+  const withIntegral = s.levelId === 'level2';
+  const labelX = withIntegral ? GAUGE_I_LABEL_X : GAUGE_LABEL_X;
+  place(out.gaugeMax, frame, widthPx, heightPx, labelX, GAUGE_MAX_Y);
+  place(out.gaugeWeight, frame, widthPx, heightPx, labelX, GAUGE_WEIGHT_Y);
+  place(out.iGauge, frame, widthPx, heightPx, (GAUGE_I_MIN_X + GAUGE_I_MAX_X) / 2, GAUGE_MAX_Y);
+  out.iGaugeVisible = withIntegral;
   out.errorDimensionVisible = display.phase === 'outcome' && s.outcome === 'win';
 }

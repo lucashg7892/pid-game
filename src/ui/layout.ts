@@ -49,6 +49,10 @@ export interface UiGeometry {
   readonly gaugeMax: ScreenXY;
   /** Bord gauche, au niveau du repère du poids m·g (« poids »). */
   readonly gaugeWeight: ScreenXY;
+  /** Milieu du bord haut de la jauge du terme intégral (niveau 2). */
+  readonly iGauge: ScreenXY;
+  /** Vrai au niveau 2 : la jauge du terme intégral est dessinée. */
+  readonly iGaugeVisible: boolean;
   /** Milieu de la cote d'erreur. */
   readonly errorDimension: ScreenXY;
   /** Ordonnée écran du dessus du quai d'arrivée. */
@@ -89,6 +93,11 @@ export interface UiLayout {
   readonly help: PanelBox;
   /** Étiquette de force : milieu du bord bas. */
   readonly force: { x: number; y: number };
+  /**
+   * Étiquette de la jauge du terme intégral : milieu du bord bas, une rangée au-dessus de
+   * l'étiquette de force (les deux étiquettes se chevaucheraient sur la même rangée).
+   */
+  readonly iGauge: { x: number; y: number };
   /** Étiquette « max » : bord gauche et milieu vertical. */
   readonly gaugeMax: { x: number; y: number };
   /** Étiquette « poids » : bord gauche et milieu vertical. */
@@ -120,6 +129,23 @@ export const GAUGE_LABELS_ROOM = 84;
  * de la jauge touche le haut de la scène : la bulle et les mesures s'arrêtent plus haut.
  */
 export const GAUGE_TITLE_BAND = 18;
+/**
+ * Décalage vertical (px) de l'étiquette de la jauge du terme intégral au-dessus de celle de la
+ * force : une rangée entière (mesuré : une étiquette fait 20 px de haut), car les deux étiquettes
+ * se chevaucheraient en largeur.
+ */
+export const GAUGE_TITLE_ROW = 22;
+/**
+ * Relèvement (px) des étiquettes de titre des jauges en portrait au niveau 2 : l'étiquette
+ * « 5000 N max » y est repoussée à droite de la jauge I, sous l'étiquette de force, qui la
+ * toucherait sinon.
+ */
+export const GAUGE_TITLE_LIFT = 6;
+/**
+ * Descente (px) de la cote chiffrée en portrait au niveau 2 : l'étiquette « poids », repoussée à
+ * droite de la jauge I, la toucherait sinon (mesuré à 390×844 : 3 px de recouvrement).
+ */
+export const DIMENSION_NUDGE = 6;
 /** Largeur minimale d'un côté pour y poser des panneaux (px). */
 export const MIN_SIDE = 240;
 /** Hauteur minimale de la bande sous la scène pour y poser le bandeau (px). */
@@ -158,6 +184,7 @@ export function createLayout(): UiLayout {
     readout: box(),
     help: box(),
     force: { x: 0, y: 0 },
+    iGauge: { x: 0, y: 0 },
     gaugeMax: { x: 0, y: 0 },
     gaugeWeight: { x: 0, y: 0 },
     dimension: { x: 0, y: 0 },
@@ -306,13 +333,16 @@ export function computeLayout(g: UiGeometry, out: UiLayout): UiLayout {
   out.force.x = Math.round(g.forceGauge.x);
   // Le haut de la jauge touche le haut de la scène en portrait : l'étiquette (large de ~110 px,
   // plus que la jauge) déborderait sur la cage ; on la tient au-dessus du haut de la zone de jeu.
-  out.force.y = Math.round(Math.min(g.forceGauge.y - 4, scene.top - 2));
+  const lift = g.iGaugeVisible && !sides ? GAUGE_TITLE_LIFT : 0;
+  out.force.y = Math.round(Math.min(g.forceGauge.y - 4, scene.top - 2 - lift));
+  out.iGauge.x = Math.round(g.iGauge.x);
+  out.iGauge.y = out.force.y - GAUGE_TITLE_ROW;
   out.gaugeMax.x = Math.round(g.gaugeMax.x);
   out.gaugeMax.y = Math.round(g.gaugeMax.y);
   out.gaugeWeight.x = Math.round(g.gaugeWeight.x);
   out.gaugeWeight.y = Math.round(g.gaugeWeight.y);
   out.dimension.x = Math.round(Math.max(g.errorDimension.x + 10, cage.right + 6));
-  out.dimension.y = Math.round(g.errorDimension.y);
+  out.dimension.y = Math.round(g.errorDimension.y + (lift > 0 ? DIMENSION_NUDGE : 0));
 
   if (sides) {
     // Obstacles à ne pas couvrir : la console, et le bonhomme s'il est sur le quai.
@@ -350,6 +380,10 @@ export function computeLayout(g: UiGeometry, out: UiLayout): UiLayout {
     }
   } else {
     const full = width - 2 * MARGIN;
+    // Au niveau 2, l'étiquette de la jauge I prend une rangée de plus au-dessus de la scène.
+    const titleBand = g.iGaugeVisible
+      ? GAUGE_TITLE_BAND + GAUGE_TITLE_ROW + GAUGE_TITLE_LIFT
+      : GAUGE_TITLE_BAND;
     const topBand = TOP_BAR_PORTRAIT + ROTATE_BAR;
     const bandTop = scene.top - MARGIN - topBand;
     const below = scene.bottom + MARGIN;
@@ -359,8 +393,8 @@ export function computeLayout(g: UiGeometry, out: UiLayout): UiLayout {
       MARGIN,
       Math.min(MAX_WIDTH.bubble * 1.5, full),
       'bottom',
-      scene.top - MARGIN - GAUGE_TITLE_BAND,
-      bandTop - GAUGE_TITLE_BAND,
+      scene.top - MARGIN - titleBand,
+      bandTop - titleBand,
     );
     set(
       out.readout,
@@ -368,7 +402,7 @@ export function computeLayout(g: UiGeometry, out: UiLayout): UiLayout {
       Math.min(MAX_WIDTH.readout * 1.5, full),
       'top',
       topBand,
-      bandTop - GAUGE_TITLE_BAND,
+      bandTop - titleBand,
     );
     set(out.panel, MARGIN, Math.min(MAX_WIDTH.panel * 1.5, full), 'top', below, belowRoom);
     set(out.outcome, MARGIN, Math.min(MAX_WIDTH.outcome * 1.5, full), 'top', below, belowRoom);

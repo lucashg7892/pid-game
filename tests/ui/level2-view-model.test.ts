@@ -139,6 +139,63 @@ describe('modèle de vue du niveau 2', () => {
     });
   }
 
+  it('jauge I : légende de la jauge et ligne de légende propres au niveau 2, niveau 1 inchangé', () => {
+    for (const locale of ['fr', 'en'] as const) {
+      const cat = CATALOGS[locale];
+      const t2 = staticTexts(tr(locale), 'level2');
+      const t1 = staticTexts(tr(locale));
+      expect(t1.legendLines).toHaveLength(4);
+      expect(t2.legendLines).toHaveLength(5);
+      expect(t2.legendLines.slice(0, 4)).toEqual(t1.legendLines);
+      expect(t2.legendLines[4]).toBe(cat['level2.legend.integral']);
+      expect(t2.legendLines[4]).toContain('490');
+      expect(t2.integralTitle).toBe(cat['hud.igauge.title']);
+    }
+  });
+
+  for (const locale of ['fr', 'en'] as const) {
+    it(`${locale} : valeur de I affichée en trajet, signée, arrondie, mémoïsée ; vide au niveau 1`, () => {
+      const cat = CATALOGS[locale];
+      const level = tuning2(800);
+      const builder = createViewModelBuilder(tr(locale), 'level2');
+      expect(builder.build(level.snapshot, CLOSED).integral).toBe('');
+      level.launch();
+      advance(level, 0.3);
+      const vm = builder.build(level.snapshot, CLOSED);
+      const i = level.snapshot.iTerm;
+      expect(i).toBeGreaterThan(0);
+      const text = tr(locale).formatNumber(i, { maximumFractionDigits: 0 });
+      expect(vm.integral).toBe(cat['hud.igauge.value'].replace('{i}', text));
+      expect(vm.integralReadout).toBe(cat['hud.readout.iTerm'].replace('{i}', text));
+      // Même chaîne tant que la valeur arrondie ne change pas.
+      const before = vm.integral;
+      builder.build(level.snapshot, CLOSED);
+      expect(builder.model.integral).toBe(before);
+      // Valeur négative : signe conservé (la jauge en montre l'intensité).
+      const negative = builder.build(copy(level.snapshot, { iTerm: -300 }), CLOSED);
+      expect(negative.integral).toContain('300');
+      expect(negative.integral).toMatch(/[-−]/);
+      // Valeur non finie : 0.
+      expect(builder.build(copy(level.snapshot, { iTerm: Number.NaN }), CLOSED).integral).toBe(
+        cat['hud.igauge.value'].replace('{i}', '0'),
+      );
+      const one = createLevel1();
+      one.moveRight();
+      expect(createViewModelBuilder(tr(locale)).build(one.snapshot, CLOSED).integral).toBe('');
+    });
+  }
+
+  it('changement de langue en trajet : le texte de la jauge I suit', () => {
+    const t = tr('fr');
+    const level = tuning2(800);
+    level.launch();
+    advance(level, 0.3);
+    const builder = createViewModelBuilder(t, 'level2');
+    expect(builder.build(level.snapshot, CLOSED).integral).toMatch(new RegExp(`^I${NB}: `));
+    t.setLocale('en');
+    expect(builder.build(level.snapshot, CLOSED).integral).toMatch(/^I: /);
+  });
+
   it('textes statiques : le niveau 2 ne change rien aux textes communs', () => {
     const t = tr('fr');
     const a = staticTexts(t);

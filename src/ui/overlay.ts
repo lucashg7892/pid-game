@@ -202,6 +202,7 @@ export function createUi(options: UiOptions): Ui {
   const builder = createViewModelBuilder(tr, level.snapshot.levelId);
   const { tuning } = level;
   const showsTeaser = level.snapshot.levelId === 'level1';
+  const hasIntegral = level.snapshot.levelId === 'level2';
   /** Valeur réglée courante (Kp au niveau 1, Ki au niveau 2). */
   const tunedNow = (): number => (tuning.param === 'ki' ? level.snapshot.ki : level.snapshot.kp);
   const layout = createLayout();
@@ -319,6 +320,10 @@ export function createUi(options: UiOptions): Ui {
   const readoutLabel = new AttrSlot(readout, 'aria-label');
   const time = new TextSlot(el('p', 'num', readout));
   const error = new TextSlot(el('p', 'num', readout));
+  // Ligne réservée aux lecteurs d'écran (niveau 2) : la valeur voyante est posée sur la jauge I.
+  const integralReadoutNode = el('p', 'ui-sr num', readout);
+  integralReadoutNode.hidden = !hasIntegral;
+  const integralReadout = new TextSlot(integralReadoutNode);
   const satNode = el('p', 'ui-saturated', readout);
   const saturated = new TextSlot(satNode);
   const legend = el('details', 'ui-legend', readout);
@@ -331,7 +336,9 @@ export function createUi(options: UiOptions): Ui {
   });
   const legendList = el('ul', '', legend);
   const legendItems: TextSlot[] = [];
-  for (const kind of ['setpoint', 'position', 'error', 'force']) {
+  for (const kind of hasIntegral
+    ? ['setpoint', 'position', 'error', 'force', 'integral']
+    : ['setpoint', 'position', 'error', 'force']) {
     const li = el('li', `ui-legend-${kind}`, legendList);
     el('span', 'ui-swatch', li).setAttribute('aria-hidden', 'true');
     legendItems.push(new TextSlot(el('span', '', li)));
@@ -357,6 +364,13 @@ export function createUi(options: UiOptions): Ui {
   const gaugeWeightNode = gaugeLabel('ui-gauge-tag');
   const gaugeWeight = new TextSlot(gaugeWeightNode);
   const gaugeWeightPoint = new PointSlot(gaugeWeightNode);
+  // Jauge du terme intégral (niveau 2) : légende avant le lancement, « I : … N » ensuite.
+  const integralTitleNode = gaugeLabel('ui-igauge-title');
+  const integralTitle = new TextSlot(integralTitleNode);
+  const integralTitlePoint = new PointSlot(integralTitleNode);
+  const integralValueNode = gaugeLabel('ui-igauge-title ui-igauge-value num');
+  const integralValue = new TextSlot(integralValueNode);
+  const integralValuePoint = new PointSlot(integralValueNode);
 
   // --- Issue ---
   const outcome = el('section', 'ui-paper ui-outcome', root);
@@ -420,6 +434,7 @@ export function createUi(options: UiOptions): Ui {
   let previousPaused = false;
   let previousOutcome = false;
   let gaugeTitleVisible = true;
+  let integralVisible = false;
   let topPaused = false;
 
   const announce = (text: string): void => {
@@ -551,6 +566,10 @@ export function createUi(options: UiOptions): Ui {
     gaugeMax.set(t.gaugeMax);
     gaugeWeight.set(t.gaugeWeight);
     gaugeTitleVisible = !vm.readoutVisible;
+    integralTitle.set(t.integralTitle);
+    integralValue.set(vm.integral);
+    integralReadout.set(vm.integralReadout);
+    integralVisible = hasIntegral && vm.readoutVisible;
 
     // Issue.
     show(outcome, vm.outcomeVisible);
@@ -607,6 +626,10 @@ export function createUi(options: UiOptions): Ui {
     gaugeMaxPoint.apply(layout.gaugeMax.x, layout.gaugeMax.y);
     gaugeWeightPoint.apply(layout.gaugeWeight.x, layout.gaugeWeight.y);
     show(gaugeTitleNode, gaugeTitleVisible);
+    integralTitlePoint.apply(layout.iGauge.x, layout.iGauge.y);
+    integralValuePoint.apply(layout.iGauge.x, layout.iGauge.y);
+    show(integralTitleNode, hasIntegral && gaugeTitleVisible);
+    show(integralValueNode, integralVisible);
     show(gaugeMaxNode, true);
     show(gaugeWeightNode, true);
   };

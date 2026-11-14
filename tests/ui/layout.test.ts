@@ -14,11 +14,24 @@ import {
 } from '../../src/game';
 import { PLAY_ZONE, computeFrame, worldXToPixel, worldYToPixel } from '../../src/render/camera';
 import { GAUGE_WEIGHT_Y } from '../../src/render/gauge';
-import { CONSOLE_ANCHOR_Y, GAUGE_LABEL_X, WALKER_HEAD_TOP } from '../../src/render/level-display';
-import { DIMENSION_X, GAUGE_MAX_X, GAUGE_MAX_Y, GAUGE_MIN_X } from '../../src/render/pencil-style';
+import {
+  CONSOLE_ANCHOR_Y,
+  GAUGE_I_LABEL_X,
+  GAUGE_LABEL_X,
+  WALKER_HEAD_TOP,
+} from '../../src/render/level-display';
+import {
+  DIMENSION_X,
+  GAUGE_I_MAX_X,
+  GAUGE_I_MIN_X,
+  GAUGE_MAX_X,
+  GAUGE_MAX_Y,
+  GAUGE_MIN_X,
+} from '../../src/render/pencil-style';
 import {
   GAUGE_LABELS_ROOM,
   GAUGE_TITLE_BAND,
+  GAUGE_TITLE_ROW,
   boxExtent,
   computeLayout,
   consoleRect,
@@ -31,8 +44,13 @@ import {
   type UiLayout,
 } from '../../src/ui/layout';
 
-/** Géométrie comme la calcule main.ts (même cadrage que le rendu). */
-function geometry(width: number, height: number, walkerX = WALKER_SPAWN_X): UiGeometry {
+/** Géométrie comme la calcule main.ts (même cadrage que le rendu) ; `level2` : jauge I présente. */
+function geometry(
+  width: number,
+  height: number,
+  walkerX = WALKER_SPAWN_X,
+  level2 = false,
+): UiGeometry {
   const f = computeFrame(width, height);
   const x = (v: number): number => worldXToPixel(f, width, v);
   const y = (v: number): number => worldYToPixel(f, height, v);
@@ -55,8 +73,10 @@ function geometry(width: number, height: number, walkerX = WALKER_SPAWN_X): UiGe
     console: { x: x(CONSOLE_X), y: y(CONSOLE_ANCHOR_Y) },
     walkerHead: { x: x(walkerX), y: y(WALKER_HEAD_TOP) },
     forceGauge: { x: x((GAUGE_MIN_X + GAUGE_MAX_X) / 2), y: y(GAUGE_MAX_Y) },
-    gaugeMax: { x: x(GAUGE_LABEL_X), y: y(GAUGE_MAX_Y) },
-    gaugeWeight: { x: x(GAUGE_LABEL_X), y: y(GAUGE_WEIGHT_Y) },
+    gaugeMax: { x: x(level2 ? GAUGE_I_LABEL_X : GAUGE_LABEL_X), y: y(GAUGE_MAX_Y) },
+    gaugeWeight: { x: x(level2 ? GAUGE_I_LABEL_X : GAUGE_LABEL_X), y: y(GAUGE_WEIGHT_Y) },
+    iGauge: { x: x((GAUGE_I_MIN_X + GAUGE_I_MAX_X) / 2), y: y(GAUGE_MAX_Y) },
+    iGaugeVisible: level2,
     errorDimension: { x: x(DIMENSION_X), y: y(2.9) },
     arrivalLedgeY: y(ARRIVAL_LEDGE_HEIGHT),
     groundY: y(START_LEDGE_HEIGHT),
@@ -88,10 +108,16 @@ const SIZES: readonly (readonly [number, number])[] = [
 ];
 
 describe('computeLayout', () => {
-  for (const [w, h] of SIZES) {
-    it(`${String(w)}×${String(h)} : aucun panneau ne coupe la cage, la console ni le bonhomme, ni ne sort de l’écran`, () => {
+  for (const [w, h, level2] of SIZES.flatMap(
+    ([a, b]) =>
+      [
+        [a, b, false],
+        [a, b, true],
+      ] as const,
+  )) {
+    it(`${String(w)}×${String(h)}${level2 ? ' (niveau 2)' : ''} : aucun panneau ne coupe la cage, la console ni le bonhomme, ni ne sort de l’écran`, () => {
       for (const walkerX of WALKER_POSITIONS) {
-        const g = geometry(w, h, walkerX);
+        const g = geometry(w, h, walkerX, level2);
         const layout = computeLayout(g, createLayout());
         for (const name of PANELS) {
           const b = layout[name];
@@ -171,6 +197,44 @@ describe('computeLayout', () => {
         expect(intersects(tag, boxExtent(l[name])), name).toBe(false);
       }
     }
+  });
+
+  it('niveau 2, paysage : étiquette de la jauge I une rangée au-dessus de celle de la force, mesures plus à droite', () => {
+    const g1 = geometry(1280, 720);
+    const g2 = geometry(1280, 720, WALKER_SPAWN_X, true);
+    const l1 = computeLayout(g1, createLayout());
+    const l2 = computeLayout(g2, createLayout());
+    expect(l2.iGauge.x).toBe(Math.round(g2.iGauge.x));
+    expect(l2.iGauge.x).toBeGreaterThan(l2.force.x);
+    expect(l2.iGauge.y).toBe(l2.force.y - GAUGE_TITLE_ROW);
+    // L'échelle (« max », « poids ») est à droite de la jauge I, les mesures au-delà.
+    expect(l2.gaugeMax.x).toBeGreaterThan(g2.iGauge.x);
+    expect(l2.readout.left).toBeGreaterThanOrEqual(l2.gaugeMax.x + GAUGE_LABELS_ROOM);
+    expect(l2.readout.left).toBeGreaterThan(l1.readout.left);
+    // Les étiquettes des deux jauges ne se coupent pas (boîtes de 110 px sur 20 px).
+    const box = (p: { x: number; y: number }): Parameters<typeof intersects>[0] => ({
+      left: p.x - 55,
+      right: p.x + 55,
+      top: p.y - 20,
+      bottom: p.y,
+    });
+    expect(intersects(box(l2.force), box(l2.iGauge))).toBe(false);
+    for (const name of PANELS.filter((n) => n !== 'help')) {
+      expect(intersects(box(l2.iGauge), boxExtent(l2[name])), name).toBe(false);
+    }
+  });
+
+  it('niveau 2, portrait : la bulle et les mesures laissent la place aux deux rangées d’étiquettes', () => {
+    const g = geometry(390, 844, WALKER_SPAWN_X, true);
+    const l = computeLayout(g, createLayout());
+    const top = l.iGauge.y - 20;
+    expect(boxExtent(l.bubble).bottom).toBeLessThanOrEqual(top);
+    expect(boxExtent(l.readout).bottom).toBeLessThanOrEqual(top);
+    expect(l.iGauge.x + 55).toBeLessThanOrEqual(g.width);
+    expect(l.gaugeMax.x + GAUGE_LABELS_ROOM).toBeLessThanOrEqual(g.width);
+    // Niveau 1 : une seule rangée, bandes inchangées.
+    const l1 = computeLayout(geometry(390, 844), createLayout());
+    expect(boxExtent(l1.bubble).bottom).toBeGreaterThan(boxExtent(l.bubble).bottom);
   });
 
   it('portrait : la bulle et les mesures laissent la place à l’étiquette de la jauge', () => {

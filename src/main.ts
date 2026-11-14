@@ -235,6 +235,10 @@ function uiGeometry(width: number, height: number, anchors: Readonly<LevelAnchor
     forceGauge: anchors.forceGauge,
     gaugeMax: anchors.gaugeMax,
     gaugeWeight: anchors.gaugeWeight,
+    iGauge: anchors.iGauge,
+    get iGaugeVisible(): boolean {
+      return anchors.iGaugeVisible;
+    },
     errorDimension: anchors.errorDimension,
     arrivalLedgeY: worldYToPixel(frame, height, ARRIVAL_LEDGE_HEIGHT),
     groundY: worldYToPixel(frame, height, START_LEDGE_HEIGHT),

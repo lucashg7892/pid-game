@@ -70,6 +70,8 @@ import {
   ERROR_HATCH_SPACING,
   GAUGE_HATCH_ANGLE,
   GAUGE_HATCH_SPACING,
+  GAUGE_I_MAX_X,
+  GAUGE_I_MIN_X,
   GAUGE_MAJOR_TICK,
   GAUGE_MAX_X,
   GAUGE_MAX_Y,
@@ -166,6 +168,9 @@ export class LevelPainter {
   private pixelSize = 0;
   private decorSeed = -1;
   private decorPixelSize = -1;
+  /** Vrai au niveau 2 : la jauge du terme intégral est dessinée. */
+  private integralGauge = false;
+  private decorIntegral = false;
   private readonly pose = createPoseBuffer();
   private readonly segments = new Float64Array(SEGMENT_CAPACITY * SEGMENT_STRIDE);
   private readonly scratch = new Float64Array(INTERSECTION_CAPACITY);
@@ -219,9 +224,15 @@ export class LevelPainter {
       batch.seed = seed;
       batch.pixelSize = this.pixelSize;
     }
-    if (seed !== this.decorSeed || this.pixelSize !== this.decorPixelSize) {
+    this.integralGauge = s.levelId === 'level2';
+    if (
+      seed !== this.decorSeed ||
+      this.pixelSize !== this.decorPixelSize ||
+      this.integralGauge !== this.decorIntegral
+    ) {
       this.decorSeed = seed;
       this.decorPixelSize = this.pixelSize;
+      this.decorIntegral = this.integralGauge;
       this.paintDecor();
     }
     computeDisplay(s, this.display);
@@ -328,26 +339,9 @@ export class LevelPainter {
       b.line(MOTOR_X - c, MOTOR_Y - s, MOTOR_X + c, MOTOR_Y + s, STYLE_THIN);
     }
     b.line(VOID_MAX_X, MOTOR_Y - MOTOR_RADIUS * 1.6, MOTOR_X, MOTOR_Y, STYLE_OUTLINE);
-    // Jauge de force : cadre, zéro au milieu, fil vers le moteur.
     // Jauge de force : cadre, graduations tous les 500 N (0 en bas, 5000 N en haut), repère du
     // poids m·g (pointillés et petit poids), fil vers le moteur.
-    b.rect(GAUGE_MIN_X, GAUGE_MIN_Y, GAUGE_MAX_X, GAUGE_MAX_Y, STYLE_OUTLINE);
-    for (let i = 0; i < GAUGE_TICK_COUNT; i += 1) {
-      const y = gaugeTickY(i);
-      const length = isMajorGaugeTick(i) ? GAUGE_MAJOR_TICK : GAUGE_MINOR_TICK;
-      b.line(GAUGE_MIN_X - length, y, GAUGE_MIN_X, y, STYLE_THIN);
-    }
-    const dashes = dashLine(
-      GAUGE_MIN_X,
-      GAUGE_WEIGHT_Y,
-      GAUGE_MAX_X + 0.04,
-      GAUGE_WEIGHT_Y,
-      0.04,
-      0.025,
-      this.segments,
-    );
-    this.segmentsAt(b, this.segments, dashes, 0, 0, STYLE_THIN);
-    this.weightIcon(GAUGE_MAX_X + 0.07, GAUGE_WEIGHT_Y);
+    this.gaugeFrame(GAUGE_MIN_X, GAUGE_MAX_X);
     b.line(MOTOR_X + MOTOR_RADIUS, MOTOR_Y, GAUGE_MIN_X - GAUGE_MAJOR_TICK, MOTOR_Y, STYLE_THIN);
     // Console : pied, pupitre incliné hachuré, bouton.
     const top = CONSOLE_POST_HEIGHT;
@@ -378,6 +372,32 @@ export class LevelPainter {
     b.line(CURVE_ORIGIN_X, CURVE_AXIS_Y, axisEnd, CURVE_AXIS_Y, STYLE_THIN);
     b.line(axisEnd - 0.08, CURVE_AXIS_Y + 0.04, axisEnd, CURVE_AXIS_Y, STYLE_THIN);
     b.line(axisEnd - 0.08, CURVE_AXIS_Y - 0.04, axisEnd, CURVE_AXIS_Y, STYLE_THIN);
+    // Jauge du terme intégral (niveau 2), en dernier : le décor du niveau 1 reste inchangé.
+    if (this.integralGauge) {
+      this.gaugeFrame(GAUGE_I_MIN_X, GAUGE_I_MAX_X);
+    }
+  }
+
+  /** Cadre d'une jauge de 0 à 5000 N : graduations à gauche, repère m·g (pointillés, poids). */
+  private gaugeFrame(minX: number, maxX: number): void {
+    const b = this.decor;
+    b.rect(minX, GAUGE_MIN_Y, maxX, GAUGE_MAX_Y, STYLE_OUTLINE);
+    for (let i = 0; i < GAUGE_TICK_COUNT; i += 1) {
+      const y = gaugeTickY(i);
+      const length = isMajorGaugeTick(i) ? GAUGE_MAJOR_TICK : GAUGE_MINOR_TICK;
+      b.line(minX - length, y, minX, y, STYLE_THIN);
+    }
+    const dashes = dashLine(
+      minX,
+      GAUGE_WEIGHT_Y,
+      maxX + 0.04,
+      GAUGE_WEIGHT_Y,
+      0.04,
+      0.025,
+      this.segments,
+    );
+    this.segmentsAt(b, this.segments, dashes, 0, 0, STYLE_THIN);
+    this.weightIcon(maxX + 0.07, GAUGE_WEIGHT_Y);
   }
 
   private beamStub(x0: number, x1: number): void {
@@ -503,6 +523,10 @@ export class LevelPainter {
     // En dernier : nombre de traits variable (graines des traits précédents stables).
     if (d.tripVisible) {
       this.paintGauge(s.uSat, s.saturated);
+      if (this.integralGauge) {
+        // Choix : |I| (la jauge montre l'intensité, comme celle de la force) ; jamais en rouge.
+        this.fillGauge(b, GAUGE_I_MIN_X, GAUGE_I_MAX_X, forceToGaugeY(s.iTerm));
+      }
     }
   }
 
@@ -600,29 +624,7 @@ export class LevelPainter {
   private paintGauge(uSat: number, saturated: boolean): void {
     const b = saturated ? this.red : this.actors;
     const level = forceToGaugeY(uSat);
-    if (level - GAUGE_MIN_Y > 2 * HATCH_INSET) {
-      this.hatchRect(
-        b,
-        GAUGE_MIN_X,
-        GAUGE_MIN_Y,
-        GAUGE_MAX_X,
-        level,
-        GAUGE_HATCH_ANGLE,
-        GAUGE_HATCH_SPACING,
-        STYLE_GAUGE_FILL,
-      );
-      this.hatchRect(
-        b,
-        GAUGE_MIN_X,
-        GAUGE_MIN_Y,
-        GAUGE_MAX_X,
-        level,
-        -GAUGE_HATCH_ANGLE,
-        GAUGE_HATCH_SPACING * 2,
-        STYLE_GAUGE_FILL,
-      );
-    }
-    b.line(GAUGE_MIN_X - 0.03, level, GAUGE_MAX_X + 0.03, level, STYLE_OUTLINE);
+    this.fillGauge(b, GAUGE_MIN_X, GAUGE_MAX_X, level);
     if (saturated) {
       // Saturé : cadre repassé au crayon rouge et petits éclats au-dessus.
       b.rect(GAUGE_MIN_X, GAUGE_MIN_Y, GAUGE_MAX_X, GAUGE_MAX_Y, STYLE_OUTLINE);
@@ -631,6 +633,33 @@ export class LevelPainter {
         b.line(cx + k * 0.08, GAUGE_MAX_Y + 0.04, cx + k * 0.14, GAUGE_MAX_Y + 0.14, STYLE_THIN);
       }
     }
+  }
+
+  /** Remplissage hachuré d'une jauge jusqu'à `level` (m), et trait de niveau. */
+  private fillGauge(b: StrokeBatch, minX: number, maxX: number, level: number): void {
+    if (level - GAUGE_MIN_Y > 2 * HATCH_INSET) {
+      this.hatchRect(
+        b,
+        minX,
+        GAUGE_MIN_Y,
+        maxX,
+        level,
+        GAUGE_HATCH_ANGLE,
+        GAUGE_HATCH_SPACING,
+        STYLE_GAUGE_FILL,
+      );
+      this.hatchRect(
+        b,
+        minX,
+        GAUGE_MIN_Y,
+        maxX,
+        level,
+        -GAUGE_HATCH_ANGLE,
+        GAUGE_HATCH_SPACING * 2,
+        STYLE_GAUGE_FILL,
+      );
+    }
+    b.line(minX - 0.03, level, maxX + 0.03, level, STYLE_OUTLINE);
   }
 
   /** Petit poids (trapèze à anse) : repère de m·g à droite de la jauge. */

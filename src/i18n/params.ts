@@ -20,6 +20,8 @@ export const MESSAGE_PARAMS = {
   'hud.hint.item': ['keys', 'action'],
   'hud.force.value': ['u'],
   'hud.gauge.max': ['n'],
+  'hud.igauge.value': ['i'],
+  'hud.readout.iTerm': ['i'],
   'hud.error.value': ['e'],
   'hud.time.value': ['t'],
   'hud.status.launch': ['kp'],

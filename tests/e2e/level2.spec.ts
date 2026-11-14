@@ -9,12 +9,24 @@
  * 900 à 8000 ; le Ki par défaut (2000) heurte la poutre.
  *
  * Captures : cinq PNG dans docs/img/t021-*.png (menu à deux entrées, réglage, victoire, choc, réglage
- * en portrait) et docs/img/t022-niveau2-trop-court.png (Ki = 0, fin de temps) ; les autres,
- * seulement si la variable CAPTURE_DIR est définie.
+ * en portrait), docs/img/t022-niveau2-trop-court.png (Ki = 0, fin de temps) et, pour la jauge du
+ * terme intégral (T-024), docs/img/t024-niveau2-jauge-i.png et t024-niveau2-jauge-i-portrait.png ;
+ * les autres, seulement si la variable CAPTURE_DIR est définie.
  */
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { CONSOLE_X, VOID_MAX_X, VOID_MIN_X } from '../../src/game';
+import { PLAY_ZONE, computeFrame, worldXToPixel, worldYToPixel } from '../../src/render/camera';
+import { forceToGaugeY } from '../../src/render/gauge';
+import { CONSOLE_ANCHOR_Y } from '../../src/render/level-display';
+import {
+  GAUGE_I_MAX_X,
+  GAUGE_I_MIN_X,
+  GAUGE_MAX_Y,
+  GAUGE_MIN_Y,
+} from '../../src/render/pencil-style';
 import { ALLOWED_WEBGL, CONSOLE_FAILURE, watchConsole } from './console';
+import { decodePng, luma, pixelAt, type DecodedPng } from './png';
 
 type Lang = 'fr' | 'en';
 
@@ -148,6 +160,112 @@ async function checkNoOverlap(page: Page, width: number, height: number): Promis
     expect(hit(b, tag), 'bulle et étiquette').toBe(false);
     expect(hit(b, tools), 'bulle et boutons').toBe(false);
   }
+}
+
+/** Chiffres d'un texte (« I : 1 234 N » → 1234), signe moins compris. */
+function digitsOf(text: string): number {
+  return Number(text.replace(/[^0-9\-−]/g, '').replace('−', '-'));
+}
+
+type Box = { x: number; y: number; w: number; h: number };
+
+/**
+ * Jauge du terme intégral : ses étiquettes (« Terme intégral I » puis « I : … N ») ne coupent ni
+ * les étiquettes de la jauge de force (légende, « Force : … N », « max », « poids »), ni les
+ * panneaux, ni la cage, ni la console ; tout reste dans l'écran.
+ */
+async function checkIGaugeLabels(page: Page, width: number, height: number): Promise<string[]> {
+  const frame = computeFrame(width, height);
+  const x = (v: number): number => worldXToPixel(frame, width, v);
+  const y = (v: number): number => worldYToPixel(frame, height, v);
+  const cage: Box = {
+    x: x(VOID_MIN_X),
+    y: y(PLAY_ZONE.maxY),
+    w: x(VOID_MAX_X) - x(VOID_MIN_X),
+    h: y(PLAY_ZONE.minY) - y(PLAY_ZONE.maxY),
+  };
+  const console_: Box = {
+    x: x(CONSOLE_X - 0.35),
+    y: y(CONSOLE_ANCHOR_Y + 0.35),
+    w: 0.7 * frame.pixelsPerMeter,
+    h: y(0) - y(CONSOLE_ANCHOR_Y + 0.35),
+  };
+  const labels: [string, Box][] = [];
+  for (const selector of ['.ui-igauge-title', '.ui-force', '.ui-gauge-title', '.ui-gauge-tag']) {
+    const nodes = await page.locator(`#ui ${selector}`).all();
+    for (const node of nodes) {
+      if (await node.isVisible())
+        labels.push([`${selector} « ${(await node.textContent()) ?? ''} »`, await boxOf(node)]);
+    }
+  }
+  const panels: [string, Box][] = [
+    ['cage', cage],
+    ['console', console_],
+  ];
+  for (const selector of [
+    '.ui-readout',
+    '.ui-bubble',
+    '.ui-panel',
+    '.ui-outcome',
+    '.ui-dimension',
+    '.ui-kp-tag',
+    '.ui-tools',
+  ]) {
+    const node = page.locator(`#ui ${selector}`);
+    if (await node.isVisible()) panels.push([selector, await boxOf(node)]);
+  }
+  const report: string[] = [];
+  for (const [i, [name, b]] of labels.entries()) {
+    report.push(
+      `${name} [${b.x.toFixed(0)}, ${b.y.toFixed(0)}, ${(b.x + b.w).toFixed(0)}, ${(b.y + b.h).toFixed(0)}]`,
+    );
+    expect(b.x, `${name} dans l’écran`).toBeGreaterThanOrEqual(0);
+    expect(b.x + b.w, `${name} dans l’écran`).toBeLessThanOrEqual(width);
+    expect(b.y, `${name} dans l’écran`).toBeGreaterThanOrEqual(0);
+    for (const [other, o] of labels.slice(i + 1))
+      expect(hit(b, o), `${name} / ${other}`).toBe(false);
+    for (const [other, o] of panels) expect(hit(b, o), `${name} / ${other}`).toBe(false);
+  }
+  return report;
+}
+
+/** Pixels de graphite (sombres, sans la teinte bleu-vert de la grille) dans un rectangle monde. */
+function inkIn(image: DecodedPng, minX: number, minY: number, maxX: number, maxY: number): number {
+  const frame = computeFrame(image.width, image.height);
+  let count = 0;
+  for (
+    let py = Math.ceil(worldYToPixel(frame, image.height, maxY));
+    py <= worldYToPixel(frame, image.height, minY);
+    py += 1
+  ) {
+    for (
+      let px = Math.ceil(worldXToPixel(frame, image.width, minX));
+      px <= worldXToPixel(frame, image.width, maxX);
+      px += 1
+    ) {
+      const c = pixelAt(image, px, py);
+      if (luma(c) < 170 && c.g - c.r < 25) count += 1;
+    }
+  }
+  return count;
+}
+
+/** Capture décodée avec l'interface masquée (mesure du seul rendu), puis interface rétablie. */
+async function inkSnapshot(page: Page): Promise<DecodedPng> {
+  const hidden = await page.addStyleTag({
+    content: '#ui, #screens { visibility: hidden !important; }',
+  });
+  await settle(page);
+  const image = decodePng(await page.screenshot());
+  await hidden.evaluate((node) => {
+    node.parentNode?.removeChild(node);
+  });
+  return image;
+}
+
+/** Intérieur de la jauge I (hors cadre), de 0 N jusqu'à `top` (m). */
+function insideI(image: DecodedPng, top: number): number {
+  return inkIn(image, GAUGE_I_MIN_X + 0.03, GAUGE_MIN_Y + 0.03, GAUGE_I_MAX_X - 0.03, top);
 }
 
 for (const lang of ['fr', 'en'] as const) {
@@ -345,6 +463,90 @@ for (const lang of ['fr', 'en'] as const) {
     expect(problems, CONSOLE_FAILURE).toEqual([]);
   });
 
+  test(`(i) ${lang} : jauge du terme intégral I (étiquettes, valeur, remplissage hachuré, sans recouvrement)`, async ({
+    page,
+  }) => {
+    const problems = await open(page, `e2e=1&screen=level2&lang=${lang}`);
+    const title = page.locator('#ui .ui-igauge-title:not(.ui-igauge-value)');
+    const value = page.locator('#ui .ui-igauge-value');
+    const sr = page.locator('#ui .ui-readout .ui-sr');
+    // Approche et réglage : légende de la jauge, pas encore de valeur.
+    await expect(title).toBeVisible();
+    await expect(title).toHaveText(t('hud.igauge.title'));
+    await expect(value).toBeHidden();
+    await checkIGaugeLabels(page, 1280, 720);
+    await run(page, [...TO_CONSOLE, ['setKi', 800]]);
+    await expect(title).toBeVisible();
+    await checkIGaugeLabels(page, 1280, 720);
+    // Vide avant le lancement : seul le repère m·g pointillé traverse l'intérieur du cadre.
+    const before = await inkSnapshot(page);
+    const emptyInk = insideI(before, GAUGE_MAX_Y - 0.03);
+    const frameInk = inkIn(
+      before,
+      GAUGE_I_MIN_X - 0.2,
+      GAUGE_MIN_Y - 0.03,
+      GAUGE_I_MAX_X + 0.2,
+      GAUGE_MAX_Y + 0.03,
+    );
+    expect(frameInk, 'cadre et graduations de la jauge I').toBeGreaterThan(150);
+    expect(emptyInk, 'intérieur vide avant le lancement').toBeLessThan(frameInk / 3);
+
+    // Trajet : à 0,15 s le moteur est encore saturé (5000 N, jauge de force rouge) et I déjà chargé
+    // (capture) ; à 0,3 s la saturation est finie (mesuré : jusqu'à 0,2 s) et I vaut environ 530 N.
+    await run(page, [['launch'], ['advance', 0.15]]);
+    const early = await run(page, []);
+    expect(early.iTerm).toBeGreaterThan(200);
+    expect(await page.evaluate(() => window.__huygens?.snapshot().saturated)).toBe(true);
+    await expect(page.locator('#ui .ui-force')).toHaveClass(/is-saturated/);
+    await shot(page, 't024-niveau2-jauge-i.png', lang === 'fr');
+    await run(page, [['advance', 0.15]]);
+    const mid = await run(page, []);
+    expect(mid.phase).toBe('trip');
+    expect(mid.iTerm).toBeGreaterThan(100);
+    await expect(title).toBeHidden();
+    await expect(value).toBeVisible();
+    expect(Math.abs(digitsOf((await value.textContent()) ?? '') - mid.iTerm)).toBeLessThanOrEqual(
+      1,
+    );
+    expect(Math.abs(digitsOf((await sr.textContent()) ?? '') - mid.iTerm)).toBeLessThanOrEqual(1);
+    expect((await sr.textContent()) ?? '').toContain(t('hud.readout.iTerm').split('{i}')[0] ?? '');
+    await expect(page.locator('#ui .ui-force')).toHaveText(/\d/);
+    await expect(page.locator('#ui .ui-legend-integral')).toContainText(
+      t('level2.legend.integral'),
+    );
+    await checkIGaugeLabels(page, 1280, 720);
+
+    const level = forceToGaugeY(mid.iTerm);
+    const trip = await inkSnapshot(page);
+    const filled = insideI(trip, level - 0.02);
+    const above = inkIn(
+      trip,
+      GAUGE_I_MIN_X + 0.03,
+      level + 0.06,
+      GAUGE_I_MAX_X - 0.03,
+      GAUGE_MAX_Y - 0.03,
+    );
+    test.info().annotations.push({
+      type: 'jauge I',
+      description: `I = ${mid.iTerm.toFixed(0)} N, niveau ${level.toFixed(3)} m, hachuré ${String(filled)} px (vide ${String(emptyInk)}), au-dessus ${String(above)} px`,
+    });
+    expect(filled, 'zone hachurée sous le niveau de I').toBeGreaterThan(emptyInk + 80);
+    expect(above, 'rien au-dessus du niveau de I').toBeLessThanOrEqual(emptyInk);
+
+    // À l'issue : la valeur finale reste affichée et dessinée.
+    await run(page, [['advance', 6]]);
+    const end = await run(page, []);
+    expect(end.phase).toBe('outcome');
+    await expect(value).toBeVisible();
+    expect(Math.abs(digitsOf((await value.textContent()) ?? '') - end.iTerm)).toBeLessThanOrEqual(
+      1,
+    );
+    await checkIGaugeLabels(page, 1280, 720);
+    const done = await inkSnapshot(page);
+    expect(insideI(done, forceToGaugeY(end.iTerm) - 0.02)).toBeGreaterThan(emptyInk + 80);
+    expect(problems, CONSOLE_FAILURE).toEqual([]);
+  });
+
   test(`(d) ${lang} : niveau 1 inchangé derrière le menu à deux entrées`, async ({ page }) => {
     const problems = await open(page, `e2e=1&screen=menu&lang=${lang}`);
     await page.getByRole('button', { name: t('level1.title'), exact: true }).click();
@@ -466,5 +668,44 @@ test('(h) T-022 : Ki = 0, le P seul reste trop court au bout de 10 s (tolérance
   expect(trace.length / 2).toBe(1201);
   await shot(page, 't022-niveau2-trop-court.png', true);
   await checkNoOverlap(page, 1280, 720);
+  expect(problems, CONSOLE_FAILURE).toEqual([]);
+});
+
+test('(j) portrait 390×844 : jauge I en trajet et à l’issue, étiquettes sans recouvrement, capture', async ({
+  page,
+}) => {
+  const problems = await open(page, 'e2e=1&screen=level2&lang=fr', 390, 844);
+  await expect(page.locator('#ui .ui-igauge-title:not(.ui-igauge-value)')).toBeVisible();
+  await checkIGaugeLabels(page, 390, 844);
+  await run(page, [...TO_CONSOLE, ['setKi', 800]]);
+  await settle(page);
+  await checkIGaugeLabels(page, 390, 844);
+  await run(page, [['launch'], ['advance', 0.15]]);
+  await settle(page);
+  await expect(page.locator('#ui .ui-igauge-value')).toBeVisible();
+  await checkIGaugeLabels(page, 390, 844);
+  await checkNoOverlap(page, 390, 844);
+  await shot(page, 't024-niveau2-jauge-i-portrait.png', true);
+  await run(page, [['advance', 6]]);
+  await settle(page);
+  expect((await run(page, [])).phase).toBe('outcome');
+  await checkIGaugeLabels(page, 390, 844);
+  await checkNoOverlap(page, 390, 844);
+  expect(problems, CONSOLE_FAILURE).toEqual([]);
+});
+
+test('(k) niveau 1 : aucune jauge I, ni étiquette ni trait dans sa bande', async ({ page }) => {
+  const problems = await open(page, 'e2e=1&screen=level1&lang=fr');
+  await run(page, [...TO_CONSOLE, ['setKp', 2500], ['launch'], ['advance', 0.3]]);
+  expect((await run(page, [])).levelId).toBe('level1');
+  await expect(page.locator('#ui .ui-igauge-title')).toHaveCount(2);
+  await expect(page.locator('#ui .ui-igauge-title:visible')).toHaveCount(0);
+  await expect(page.locator('#ui .ui-legend-integral')).toHaveCount(0);
+  await expect(page.locator('#ui .ui-readout .ui-sr')).toBeHidden();
+  const image = await inkSnapshot(page);
+  expect(
+    inkIn(image, GAUGE_I_MIN_X - 0.2, GAUGE_MIN_Y - 0.03, GAUGE_I_MAX_X + 0.2, GAUGE_MAX_Y + 0.03),
+    'bande de la jauge I au niveau 1',
+  ).toBe(0);
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });

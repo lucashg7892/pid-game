@@ -43,6 +43,7 @@ Depuis D19 (ADR-014), les règles courantes sont dans `CLAUDE.md` : rôles dans 
 | P-005 | réalisateur | K1 (signe moins U+2212), K2 (invite de rotation en portrait), K3 (Échap ferme le réglage), K22 (version 0.1.0) | VALIDÉ (N2) | — |
 | T-014 | réalisateur | K16 (perte de contexte GPU) et K17 (exception après démarrage) : page de repli d'échec | VALIDÉ (N2) | — |
 | T-015 | réalisateur | K19 (aide met en pause pendant un trajet) et K21 (aria-modal, piège de focus, focus sur « Rejouer », aria-pressed) | VALIDÉ (N2) | — |
+| T-016 | réalisateur | K20 : e2e de saturation (instantané, jauge rouge mesurée, DOM) et capture | VALIDÉ (N2) | — |
 | T-000 | réalisateur | Pilote : git init, .gitignore, .gitattributes | VALIDÉ | logs/T-000.md |
 | T-001 | concepteur | Spec de la tranche verticale | VALIDÉ | logs/T-001.md |
 | T-002 | réalisateur | Socle outillé (npm, TS, Vite, lint, tests) | VALIDÉ (réserves) | logs/T-002.md |

@@ -266,7 +266,7 @@ Risques :
 
 ## Écarts à la réalisation
 
-Section ajoutée par le rédacteur après la réalisation, sur l'état du commit `119519b` (2026-11-13). Le reste de cette spec, rédigé par le concepteur au commit `8091429`, n'est pas modifié ; quand la spec et le code divergent, le code fait foi. Sources : le code et les tests du commit `119519b`, les logs `orchestration/logs/T-020.md` et `T-021a.md`, `orchestration/DEFAUTS-CONNUS.md`. Aucun log de T-021b n'a été lu par le rédacteur ; les mesures du niveau 2 citées ci-dessous viennent du log T-021a ou d'un script jetable du rédacteur (images de 1/30 s).
+Section ajoutée par le rédacteur après la réalisation, sur l'état du commit `119519b` (2026-11-13), complétée pour T-022 (`08908b6`) puis pour T-023 à T-025 (`a308ada`, 2026-11-14). Le reste de cette spec, rédigé par le concepteur au commit `8091429`, n'est pas modifié ; quand la spec et le code divergent, le code fait foi. Sources : le code et les tests du commit `119519b`, les logs `orchestration/logs/T-020.md` et `T-021a.md`, `orchestration/DEFAUTS-CONNUS.md`. Aucun log de T-021b n'a été lu par le rédacteur ; les mesures du niveau 2 citées ci-dessous viennent du log T-021a ou d'un script jetable du rédacteur (images de 1/30 s).
 
 ### Décisions de l'utilisateur qui priment sur la spec
 
@@ -279,17 +279,19 @@ Section ajoutée par le rédacteur après la réalisation, sur l'état du commit
 | Q7 : durée du trajet | 720 pas (6 s) jusqu'à T-021b (décision D24) ; **1200 pas (10 s) depuis T-022 (décision D27)**, comme le niveau 1 | la spec proposait de garder 1800 pas |
 | Q3 : poutre | `BEAM_HEIGHT` = 3,3626 m, la poutre du niveau 1 réglée par T-020 | la spec proposait de garder 3,30 m ; la poutre du niveau 1 a changé avant la réalisation du niveau 2 |
 | Q2 : anti-windup | **aucun** (option A : le windup se montre par l'échec) | conforme à la recommandation ; voir [ADR-016](../decisions/ADR-016-controleur-pi-sans-anti-windup.md) |
-| §6, Q6 : jauge de l'intégrale, annotations, loupe, courbe I(t) | **reportées** (K30, K31) ; l'instantané expose déjà `iTerm` | le rendu du niveau 2 est celui du niveau 1 |
-| §8 : oracle MATLAB étendu, `tests/sim/pi-exact.test.ts` | **reportés** (K28) ; le PI n'est validé que par tests unitaires et de déterminisme | la spec demandait T-018c |
+| §6, Q6 : jauge de l'intégrale | **faite en T-024** (K30 corrigé) : seconde jauge à l'échelle de la première, repère m·g, remplissage |I| (option A de la spec) ; la graduation « demande » n'est pas faite | voir la section « Retouches de T-023 à T-025 » |
+| §6, Q6 : annotations détaillées, loupe de la bande de tolérance, courbe I(t) | **reportées** (K31) | le reste du rendu du niveau 2 est celui du niveau 1 |
+| §8 : oracle MATLAB étendu, `tests/sim/pi-exact.test.ts` | **faits en T-023** (K28 corrigé) ; reportés jusqu'à T-022 | la spec demandait T-018c |
 | Q9 : accès au niveau 2 | libre depuis le menu, sans sauvegarde | conforme à la recommandation |
 
 ### Tâches réellement faites
 
 | Tâche de la spec | Réalisée sous le nom | Commit | Remarques |
 |---|---|---|---|
-| T-018b (PI, `createElevatorPiLoop`, tests, déterminisme) | **T-021a** (N3, validateur indépendant, verdict « validé, sans réserve ») | `99324fd` | `src/sim/controllers/pi.ts` ; `tests/sim/pi.test.ts` (14), `pi-determinism.test.ts` (4) ; **pas** de test d'oracle exact |
+| T-018b (PI, `createElevatorPiLoop`, tests, déterminisme) | **T-021a** (N3, validateur indépendant, verdict « validé, sans réserve ») | `99324fd` | `src/sim/controllers/pi.ts` ; `tests/sim/pi.test.ts` (14), `pi-determinism.test.ts` (4) ; **pas** de test d'oracle exact (ajouté ensuite par T-023) |
 | T-018a (extraction de la machine à états), T-018d (constantes, `createLevel2`), T-018e (textes), T-018g (interface), T-018h (e2e, intégration) | **T-021b** (classée N2 dans le message du commit ; la spec classait T-018a et T-018d en N3) | `119519b` | `src/game/elevator-level.ts`, `level.ts` (enveloppe), `level2.ts` ; clés `level2.*` ; panneau de réglage commun ; menu à deux entrées ; `tests/e2e/level2.spec.ts` (11) |
-| T-018c (oracle MATLAB), T-018f (rendu : jauge I, bande, annotations) | **non réalisées** | — | K28, K30, K31 |
+| T-018c (oracle MATLAB) | **T-023** (N3, validateur indépendant, « validé avec réserves », réserve levée) | `badab42` | `validation/matlab/t018_*.m` (8 fichiers), `validation/data/pi_traj_dt120.csv` et `pi_sweep_summary.csv`, `tests/sim/pi-exact.test.ts` (22) ; K28 corrigé |
+| T-018f (rendu : jauge I) | **T-024** (N2), en partie | `1da298f` | jauge de I, étiquettes, légende, e2e et captures ; la bande de tolérance, les annotations et la graduation « demande » ne sont pas faites (K31) |
 
 ### Écarts de conception
 
@@ -306,7 +308,7 @@ Les mesures ci-dessous sont celles de l'état `119519b` (tolérance 0,5 m, 720 p
 - Avec la tolérance de 0,5 m : Ki gagnants [0 ; 800], chocs [900 ; 8000], **aucune** fin de temps ; Ki = 840 gagne (pic 3,362216 m, marge 0,384 mm), Ki = 850 heurte (pic 3,365122 m) (log T-021a, K29). Ki = 0 gagne (erreur finale 0,196407 m) ; `KI_DEFAULT` = 500 gagne (erreur finale 0,046204 m, script du rédacteur).
 - Avec une tolérance de 0,10 m (information, non retenue) : fins de temps [0 ; 200], gagnants [300 ; 800], chocs [900 ; 8000], et Ki = 0 ne gagne pas (log T-021a). C'est le correctif proposé en K32.
 - Pas saturés au départ : 23 à Ki = 0, 25 à Ki = 800, 26 à 1000, 36 à 4000 ; intégrale maximale 582,1 N (Ki 800), 724,8 N (1000), 2829,8 N (4000) ; I tend vers m·g = 490,5 N (log T-021a).
-- Les conjectures du §4.3 se vérifient en ordre de grandeur seulement : le seuil de choc heuristique (≈ 1360 N/(m·s), ou 1770 sans l'élan) est supérieur d'environ 60 % à celui mesuré (entre 840 et 850) ; la limite de stabilité Ki < c·Kp/m (§4.2) et le pôle lent n'ont pas été vérifiés (pas d'oracle, K28).
+- Les conjectures du §4.3 se vérifient en ordre de grandeur seulement : le seuil de choc heuristique (≈ 1360 N/(m·s), ou 1770 sans l'élan) est supérieur d'environ 60 % à celui mesuré (entre 840 et 850) ; la limite de stabilité Ki < c·Kp/m (§4.2) et le pôle lent n'avaient pas été vérifiés à cette date (pas d'oracle, K28 ; la limite de la boucle échantillonnée est mesurée par T-023, voir plus bas).
 - Ki = 0 identique au P bit à bit sur 1800 pas pour Kp ∈ {0, 150, 1000, 2500, 4500, 8000} ; empreinte SHA-256 du PI (Kp = 2500, Ki = 1000) : `0d9d331a5a4a9df28a188dd71b599a3559bd47ccc04f6d4ab78b7db5b725744b` ; empreinte du P inchangée (log T-021a).
 
 ### Retouche de T-022 (commit `08908b6`, décisions D27 à D29)
@@ -319,5 +321,14 @@ Source : `orchestration/logs/T-022.md` (mesures vérifiées par un validateur in
 - **Plage mesurée** (Kp = 2500, 1200 pas), grille de Ki au pas de 100 : « trop court » de 0 à 100, victoire de 200 à 800, choc de 900 à 8000, aucun « trop lent ». Au pas de 10 : « trop court » de 0 à 120, « trop lent » à 130, victoire de 140 à 840, choc dès 850. Ki est nécessaire : le P seul s'arrête à 0,196 m.
 - **Victoire la plus lente** : Ki = 200 au pas 733 sur la grille (marge 467 pas) ; Ki = 140 au pas 1185 hors grille.
 - **Marges de la borne de choc** : 12,02 mm sous la poutre à Ki = 800, 17,03 mm au-dessus à 900 ; 0,384 mm à 840 et 2,522 mm à 850 hors grille.
+
+### Retouches de T-023 à T-025 (commit `a308ada`)
+
+Sources : `orchestration/logs/T-023.md` (mesures vérifiées par un validateur indépendant), le code et les tests du commit `a308ada`, `orchestration/DEFAUTS-CONNUS.md`.
+
+- **T-023 (§8, oracle MATLAB du PI, N3)** : propagation exacte de la boucle PI discrète à trois états, comparée au noyau (Kp = 2500, tolérance 0,10 m, 1200 pas). 0 désaccord noyau / exact sur 113 valeurs de Ki ; pire écart 1,5e-7 m sur y, 1,524e-6 m/s sur ẏ, 2,144e-4 N sur I ; tolérances du test TypeScript y 1e-6 m, ẏ 1e-5 m/s, I 1e-3 N. Bornes exactes de Ki : step → slow 128,3759, première victoire 138,5864, choc 841,3209 (841,0670 avec y entre deux pas). Ki critique de la boucle échantillonnée 18 310,30 N/(m·s), soit 0,9155 fois la limite continue 8·Kp = 20 000 (§4.2). K28 corrigé, K34 précisé (« trop lent » pour les entiers 129 à 138). `src/sim` et les constantes de jeu inchangés.
+- **T-024 (§6, jauge de I, N2)** : seconde jauge à droite de la jauge de force, même échelle de 0 à 5000 N, repère m·g, remplissage |I| (`GAUGE_I_MIN_X` = 6 m, `GAUGE_I_MAX_X` = 6,42 m) ; étiquettes « Terme intégral I » puis « I : … N », ligne de légende `level2.legend.integral`, ligne « Terme I » du panneau de mesures pour les lecteurs d'écran ; ancres `iGauge` et `iGaugeVisible` ; « 5000 N max » et « poids » à droite de la jauge I au niveau 2 ; niveau 1 identique. Non fait : la graduation « demande », la bande de tolérance, les annotations détaillées du windup, la loupe, la courbe I(t) (K31). K30 corrigé ; K36 à K38 ajoutés (étiquettes en portrait au niveau 1, étiquette haute au niveau 2).
+- **T-025 (K35)** : dix captures de `docs/img/` régénérées ; K35 corrigé.
+- **Tests du niveau 2** : `tests/e2e/level2.spec.ts` compte 16 tests (« FR et EN » comptés pour deux) au commit `a308ada` ; les tests (i) à (k) sont ceux de la jauge I.
 
 Documentation correspondante : [jeu.md](../jeu.md#niveau-2--arbitre-et-fin-de-temps), [physique/ascenseur.md](../physique/ascenseur.md#niveau-2--contrôleur-pi), [simulation.md](../simulation.md#contrôleur-pi-t-021a), [interface.md](../interface.md#niveau-2--la-mémoire-t-021b), [ADR-016](../decisions/ADR-016-controleur-pi-sans-anti-windup.md).

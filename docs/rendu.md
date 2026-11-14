@@ -1,6 +1,6 @@
 # Rendu au crayon (`src/render`)
 
-À quoi sert cette page : expliquer comment le jeu dessine la scène : démarrage du moteur graphique, cadrage, papier millimétré, traits de crayon, bonhomme, courbe et jauge, budget de dessin. Elle décrit le commit `08908b6` (rendu validé en T-008 et T-009 ; échecs en cours de route ajoutés par T-014 ; cadrage fixé et ancres de la jauge par T-019 et T-020 ; session de rendu réutilisable entre les écrans par T-017 ; trajet de 10 s et courbe sur 1201 points par T-022). Les textes posés par-dessus la scène sont dans [interface.md](interface.md).
+À quoi sert cette page : expliquer comment le jeu dessine la scène : démarrage du moteur graphique, cadrage, papier millimétré, traits de crayon, bonhomme, courbe et jauge, budget de dessin. Elle décrit le commit `a308ada` (rendu validé en T-008 et T-009 ; échecs en cours de route ajoutés par T-014 ; cadrage fixé et ancres de la jauge par T-019 et T-020 ; session de rendu réutilisable entre les écrans par T-017 ; trajet de 10 s et courbe sur 1201 points par T-022 ; jauge du terme intégral au niveau 2 par T-024). Les textes posés par-dessus la scène sont dans [interface.md](interface.md).
 
 ![Le niveau 1 en cours de trajet, 1280 × 720 (capture e2e de T-010)](img/t010-03-trajet.png)
 
@@ -115,7 +115,7 @@ La grille est en coordonnées **monde** : une ligne de mètre passe par chaque e
 
 Papier `#f7f0de`, grain discret (± 1,5 %) par cellules de 1 cm, sans texture ni image.
 
-![Papier seul, 1280 × 720 (capture de référence de T-008, périmée : sa scène montre l'ancien réglage de Kp ; K35)](img/t008-paper-1280x720.png)
+![Papier seul, 1280 × 720 (capture de référence de T-008, régénérée par T-025 : K35 corrigé)](img/t008-paper-1280x720.png)
 
 **Anticrénelage.** La distance au trait le plus proche est convertie en pixels par `fwidth` (dérivée écran). Un trait plus fin qu'un pixel est dessiné sur un pixel avec une intensité réduite d'autant. Anti-moiré : une famille s'estompe quand son pas à l'écran tombe sous 6 px et disparaît sous 2,5 px.
 
@@ -149,10 +149,10 @@ Le peintre (`level-painter.ts`) répartit les traits en 5 lots, un par matériau
 
 | Lot | Contenu | Mis à jour | Capacité (sommets) |
 |---|---|---|---|
-| `decor` | quais, cage, poutre, poulies, moteur, cadre de la jauge, pupitre, axe des temps | quand la graine du boiling ou la taille d'un pixel change | 12 000 |
+| `decor` | quais, cage, poutre, poulies, moteur, cadre de la jauge de force (et, au niveau 2, de la jauge I), pupitre, axe des temps | quand la graine du boiling ou la taille d'un pixel change | 12 000 |
 | `error` | hachures de l'erreur e entre la courbe et la consigne | à chaque image (trajet) | 8 000 |
 | `curve` | courbe y(t), graduations de seconde | à chaque image (trajet) | 12 000 |
-| `actors` | cabine, câbles, levier, consigne pointillée, bonhomme, cote, jauge | à chaque image | 4 000 |
+| `actors` | cabine, câbles, levier, consigne pointillée, bonhomme, cote, jauge (et, au niveau 2, remplissage de la jauge I) | à chaque image | 4 000 |
 | `red` | jauge saturée, au crayon rouge | à chaque image | 1 200 |
 
 Total préalloué : 37 200 sommets, soit 12 400 triangles au plus, sous le budget de 30 000 triangles de la spec §7 même lots pleins.
@@ -236,24 +236,33 @@ L'embarquement dans la cabine et la sortie après la victoire ne sont pas animé
 
 **Étiquettes permanentes (T-019).** Trois textes DOM, de l'interface (`src/ui`), sont posés à côté de la jauge dès l'approche : la légende « Force du moteur » au-dessus du cadre, « 5000 N max » au niveau du haut de l'échelle et « poids » au niveau du repère m·g (clés `hud.gauge.title`, `hud.gauge.max`, `hud.gauge.weight`). Dès le lancement du trajet, la légende cède la place à « Force : … N ». Ces étiquettes sont `aria-hidden` : le panneau des mesures et le nom de la jauge disent la même chose aux lecteurs d'écran. Le rendu ne calcule que les deux ancres d'écran correspondantes (voir ci-dessous) ; le détail est dans [interface.md](interface.md#étiquettes-de-la-jauge-de-force-t-019).
 
-![Approche, 1280 × 720 : bulle d'ouverture réécrite et étiquettes de la jauge (capture de T-019, prise avant T-020 : l'étiquette de Kp affiche encore 1000 N/m)](img/t019-approche-fr.png)
+![Approche, 1280 × 720 : bulle d'ouverture réécrite et étiquettes de la jauge (capture de T-019, refaite au commit `a308ada` : l'étiquette de Kp affiche 2000 N/m)](img/t019-approche-fr.png)
+
+## Jauge du terme intégral (niveau 2)
+
+T-024 (K30) ajoute au niveau 2 une seconde jauge, à droite de la jauge de force et du petit poids de son repère. Elle est dessinée par `LevelPainter` (`level-painter.ts`), qui factorise le dessin de la première :
+
+- **Cadre et graduations** : `gaugeFrame(minX, maxX)` dessine, dans le lot `decor`, le cadre de 0 à 5000 N, les graduations tous les 500 N, le repère m·g en pointillés et le petit poids ; la jauge de force l'appelle avec `GAUGE_MIN_X` et `GAUGE_MAX_X`, la jauge I avec `GAUGE_I_MIN_X` = 6 m et `GAUGE_I_MAX_X` = 6,42 m (`pencil-style.ts`). Même échelle et mêmes ordonnées que la jauge de force. Le cadre de la jauge I est dessiné **en dernier** du décor, pour que le décor du niveau 1 reste identique (graines des traits précédents stables) ; le décor est redessiné quand le niveau change (`decorIntegral`).
+- **Remplissage** : `fillGauge(batch, minX, maxX, niveau)`, partagé avec la jauge de force, hachure à |I| (`forceToGaugeY(s.iTerm)` : la fonction prend la valeur absolue et borne à la pleine échelle) pendant le trajet et à l'issue, dans le lot `actors`, **jamais en rouge** (le terme I n'est pas saturé). Choix du réalisateur : montrer l'intensité, comme la jauge de force.
+- **Étiquettes** : « Terme intégral I » puis « I : … N », « 5000 N max » et « poids » sont des textes DOM de `src/ui` ([interface.md](interface.md#jauge-du-terme-intégral-i-niveau-2-t-024)). Au niveau 2, « 5000 N max » et « poids » passent à droite de la jauge I : `GAUGE_I_LABEL_X` = `GAUGE_I_MAX_X` + 0,2 m, au lieu de `GAUGE_LABEL_X`.
+- **Budget** : la jauge I ajoute des traits au lot `decor` et au lot `actors` du niveau 2 ; le niveau 1 n'en reçoit aucun (test `tests/render/integral-gauge.test.ts`, 6 tests : cadre au niveau 2 seulement, remplissage qui suit |I|, aucun trait dans la bande au niveau 1, valeur absolue). Les nombres de triangles du tableau ci-dessus (niveau 1) n'ont pas été remesurés pour le niveau 2 ; le test de budget e2e existant s'applique.
 
 ## Interpolation et ancres pour l'interface
 
 `computeDisplay` applique le contrat de [jeu.md](jeu.md#contrats-pour-le-rendu-et-linterface) : cabine à `lerp(cabinPrevY, cabinY, alpha)` pendant le trajet, figée à l'issue ; bonhomme à `lerp(walkerPrevX, walkerX, alpha)` sur le quai.
 
-`computeAnchors` calcule, à chaque image, la position en pixels CSS des éléments que l'interface annote : dessus du pupitre de la console, centre du plancher de la cabine, milieu de la cote d'erreur, haut de la tête du bonhomme, haut de la jauge, et, depuis T-019, le bord gauche de l'échelle de la jauge au niveau du haut (`gaugeMax`, étiquette « 5000 N max ») et du repère du poids (`gaugeWeight`, étiquette « poids »), à `GAUGE_LABEL_X` = `GAUGE_MAX_X` + 0,2 m. Ces ancres sont un objet réutilisé, réécrit à chaque image (`session.anchors()`). `main.ts` les transmet à `src/ui` sous forme de données, car `src/ui` n'a pas le droit d'importer `src/render`.
+`computeAnchors` calcule, à chaque image, la position en pixels CSS des éléments que l'interface annote : dessus du pupitre de la console, centre du plancher de la cabine, milieu de la cote d'erreur, haut de la tête du bonhomme, haut de la jauge, et, depuis T-019, le bord gauche de l'échelle de la jauge au niveau du haut (`gaugeMax`, étiquette « 5000 N max ») et du repère du poids (`gaugeWeight`, étiquette « poids »), à `GAUGE_LABEL_X` = `GAUGE_MAX_X` + 0,2 m. Depuis T-024, `iGauge` (milieu du bord haut de la jauge I, étiquette « Terme intégral I » puis « I : … N ») et `iGaugeVisible` (vrai au niveau 2) complètent les ancres ; au niveau 2, `gaugeMax` et `gaugeWeight` se placent à `GAUGE_I_LABEL_X` = `GAUGE_I_MAX_X` + 0,2 m. `main.ts` copie `iGauge` et lit `iGaugeVisible` par un accesseur, car la valeur change d'une image à l'autre. Ces ancres sont un objet réutilisé, réécrit à chaque image (`session.anchors()`). `main.ts` les transmet à `src/ui` sous forme de données, car `src/ui` n'a pas le droit d'importer `src/render`.
 
 ## Mesures
 
 | Grandeur | Valeur | Source |
 |---|---|---|
-| JavaScript du build | 907,79 kB, **252,84 kB gzip** (un seul fichier) ; 907,32 kB et 252,72 kB à `119519b` ; 885,25 kB et 246,57 kB à `566a8a3` | `npm.cmd run build` au commit `08908b6` (rédacteur, code de sortie 0) |
-| CSS du build | 7,30 kB, 2,42 kB gzip ; 5,86 kB et 2,09 kB à `566a8a3` | idem |
+| JavaScript du build | 909,76 kB, **253,52 kB gzip** (un seul fichier) ; 907,79 kB et 252,84 kB à `08908b6` ; 907,32 kB et 252,72 kB à `119519b` ; 885,25 kB et 246,57 kB à `566a8a3` | `npm.cmd run build` au commit `a308ada` (rédacteur, code de sortie 0) |
+| CSS du build | 7,51 kB, 2,45 kB gzip ; 7,30 kB et 2,42 kB à `08908b6` ; 5,86 kB et 2,09 kB à `566a8a3` | idem |
 | budget JS initial | 400 ko gzip | spec T-001 §7 |
 | polices | 23 944 + 20 112 octets (woff2) | `public/fonts/` |
 | appels de dessin | 4 à l'état initial (e2e), 7 au plus | `render.spec.ts`, `level-view.ts` |
-| triangles des lots | 2 638 à l'état initial ; 3 504 à la victoire (Kp = 2500 N/m) | script du rédacteur, commit `119519b` (le peintre n'a changé depuis qu'en commentaire : T-022 y a seulement remesuré les capacités des lots) |
+| triangles des lots | 2 638 à l'état initial ; 3 504 à la victoire (Kp = 2500 N/m) | script du rédacteur, commit `119519b` (niveau 1 ; le peintre n'a changé depuis qu'en commentaire jusqu'à T-022, puis T-024 a ajouté la jauge I au niveau 2 seulement, voir plus haut) |
 
 Vite affiche l'avertissement « Some chunks are larger than 500 kB after minification » : three/webgpu fait l'essentiel du fichier. Aucun découpage n'est fait.
 
@@ -277,4 +286,4 @@ Valeurs des constantes du papier : tableau de la section « Papier millimétré 
 
 ## Tests
 
-Tests Vitest de `tests/render/` (122) et tests e2e de `tests/e2e/render.spec.ts`, `level.spec.ts`, `level2.spec.ts`, `failure.spec.ts`, `saturation.spec.ts` et `ui.spec.ts` : voir [tests.md](tests.md). Justification des choix : [ADR-010](decisions/ADR-010-rendu-crayon.md).
+Tests Vitest de `tests/render/` (128) et tests e2e de `tests/e2e/render.spec.ts`, `level.spec.ts`, `level2.spec.ts`, `failure.spec.ts`, `saturation.spec.ts` et `ui.spec.ts` : voir [tests.md](tests.md). Justification des choix : [ADR-010](decisions/ADR-010-rendu-crayon.md).

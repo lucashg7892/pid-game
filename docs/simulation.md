@@ -1,6 +1,6 @@
 # Noyau de simulation (`src/sim`)
 
-À quoi sert cette page : expliquer comment le noyau calcule un pas de simulation, ce qu'exporte `src/sim/index.ts` et quelles règles garantissent le déterminisme. Elle décrit le noyau validé (T-003, T-004, T-004b), complété par le contrôleur PI de T-021a (état du commit `08908b6` ; `src/sim` n'a pas changé depuis `119519b`). La physique de l'ascenseur est dans [physique/ascenseur.md](physique/ascenseur.md).
+À quoi sert cette page : expliquer comment le noyau calcule un pas de simulation, ce qu'exporte `src/sim/index.ts` et quelles règles garantissent le déterminisme. Elle décrit le noyau validé (T-003, T-004, T-004b), complété par le contrôleur PI de T-021a (état du commit `a308ada` ; `src/sim` n'a pas changé depuis `119519b`). La physique de l'ascenseur est dans [physique/ascenseur.md](physique/ascenseur.md).
 
 ## Rôle du noyau
 
@@ -236,7 +236,7 @@ Propriétés (tests `tests/sim/pi.test.ts`, 14 tests, et `tests/sim/pi-determini
 - `RangeError` si Kp ou Ki n'est pas fini ou est négatif ; aucune allocation dans `update` (le test vérifie l'identité des objets, pas le tas).
 - `createElevatorPiLoop({ kp, ki, … })` assemble la boucle et ajoute `controller` à l'objet de la boucle (`Object.assign`) ; il ne faut pas appeler `controller.update` ni `controller.reset` soi-même, la boucle s'en charge.
 
-Validation : tests unitaires et de déterminisme seulement. L'oracle MATLAB du PI et le test d'oracle exact TypeScript (`tests/sim/pi-exact.test.ts`) sont reportés (K28). Mesures du noyau PI : [physique/ascenseur.md](physique/ascenseur.md#niveau-2--contrôleur-pi).
+Validation : tests unitaires et de déterminisme (T-021a), puis oracle exact MATLAB du PI (`validation/matlab/t018_*.m`) et test d'oracle exact TypeScript `tests/sim/pi-exact.test.ts` (22 tests, sans MATLAB), faits en T-023 (K28 corrigé) : 0 désaccord noyau / exact sur 113 valeurs de Ki, pire écart 1,5e-7 m sur y, 1,524e-6 m/s sur ẏ et 2,144e-4 N sur I (journal `orchestration/logs/T-023.md`) ; détails dans [physique/ascenseur.md](physique/ascenseur.md#niveau-2--contrôleur-pi) et [tests.md](tests.md#oracle-exact-du-pi-testssimpi-exacttestts). `src/sim` n'a pas été modifié par T-023.
 
 ## Le piège de `LoopSample`
 

@@ -4,10 +4,15 @@
 
 ## Correspondance tâche → commit
 
-Sortie de `git log --oneline 88ae23c` (18 commits) pour les lignes jusqu'à `88ae23c`. Les quatre lignes de `13e8b7e` à `a165a14` viennent de `git log --oneline 88ae23c..13e8b7e` (branche `migration`) ; les douze lignes du haut (de `119519b` à `a001622`) viennent de `git log --oneline a001622..119519b`, plus `a001622` lui-même. Les commits de documentation et de protocole qui s'intercalent entre `88ae23c` et `13e8b7e` (T-013, P-001 à P-004) n'y figurent pas.
+Sortie de `git log --oneline 88ae23c` (18 commits) pour les lignes jusqu'à `88ae23c`. Les quatre lignes de `13e8b7e` à `a165a14` viennent de `git log --oneline 88ae23c..13e8b7e` (branche `migration`) ; les douze lignes de `119519b` à `a001622` viennent de `git log --oneline a001622..119519b`, plus `a001622` lui-même ; les cinq lignes du haut (de `a5b4bec` à `a308ada`) viennent de `git log --oneline a5b4bec..a308ada`, plus `a5b4bec` lui-même (commit de D-016). Les commits de documentation et de protocole qui s'intercalent entre `88ae23c` et `13e8b7e` (T-013, P-001 à P-004) n'y figurent pas.
 
 | Commit | Contenu |
 |---|---|
+| `a308ada` | P-010 (N1) : version 0.2.0 (`package.json` et racine du lockfile) |
+| `0459420` | T-025 (N1) : captures périmées régénérées (K35) |
+| `1da298f` | T-024 (N2) : jauge du terme intégral au niveau 2 (K30), étiquettes FR/EN, légende, e2e et captures |
+| `badab42` | T-023 (N3) : oracle MATLAB du contrôleur PI et test d'oracle exact (K28) |
+| `a5b4bec` | D-016 (N1) : documentation du trajet de 10 s, du Kp par défaut 2000 et du correctif K32 |
 | `08908b6` | T-022 (N3) : trajet de 10 s, Kp par défaut 2000, tolérance du niveau 2 à 0,10 m (K32), oracle MATLAB relancé |
 | `87eaf09` | P-009 (N1) : décisions D27 à D30 au registre (10 s, Kp par défaut 2000, K32, K26 reporté) |
 | `dfc5849` | D-015 (N1) : documentation des tâches P-006 à T-021b (écrans, niveau 1 retouché, PI, niveau 2), ADR-015 et ADR-016 |
@@ -50,7 +55,42 @@ Les neuf premiers commits ont été créés après coup, à la suite, à partir 
 
 ## Versions
 
-- **v0.1 — validée avec réserves le 2026-11-13** (rapport [validation/T-012-v0.1.md](validation/T-012-v0.1.md), bilan [bilan-v0.1.md](bilan-v0.1.md)). Le champ `version` de `package.json` valait `0.0.0` au commit de la validation (K22) ; il vaut `0.1.0` depuis P-005 (`a165a14`).
+- **v0.2.0 — version courante, état du commit `a308ada` (2026-11-14)**. `package.json` et la racine de `package-lock.json` valent `0.2.0` depuis P-010 (`a308ada`). **Aucun rapport de validation finale n'existe pour la v0.2** : il n'y a pas de verdict global. Quatre tâches N3 ont chacune été validées indépendamment par un validateur (T-020, T-021a, T-022, T-023) ; les autres tâches de la version sont de niveau N1 ou N2, vérifiées par l'orchestrateur. Contenu, par rapport à la v0.1 (état `88ae23c`) :
+  - **Écran titre et menu des niveaux** (T-017 : machine d'écrans `src/app`, écrans DOM, bouton « Menu », mention de copyright contre `LICENSE`).
+  - **Niveau 1 retouché** (T-020, T-022) : fenêtre de réussite Kp ∈ [1000 ; 5000] N/m, poutre à 3,3626 m, tolérance de marche 0,5 m, trajet de 10 s (1200 pas), Kp par défaut 2000 (un lancement sans réglage gagne au pas 262), bulle d'ouverture et vocabulaire « plateau d'arrivée », étiquettes permanentes de la jauge de force (T-019).
+  - **Niveau 2 « La mémoire »** (T-021a, T-021b, T-022) : contrôleur PI du noyau (Ki = 0 identique au P bit à bit, pas d'anti-windup), Kp fixé à 2500 N/m, Ki réglable de 0 à 8000 N/(m·s) par pas de 100 (défaut 2000, qui heurte la poutre), tolérance d'arrivée de 0,10 m ; issues : victoire, choc, trop court, trop lent.
+  - **Oracle exact du PI** (T-023) : `validation/matlab/t018_*.m` et `tests/sim/pi-exact.test.ts` ; 0 désaccord noyau / exact sur 113 valeurs de Ki.
+  - **Jauge du terme intégral I** au niveau 2 (T-024).
+  - **Défauts corrigés depuis la v0.1** (`orchestration/DEFAUTS-CONNUS.md`) : K1, K2, K3 (P-005), K6 (T-020 puis T-022), K16, K17 (T-014), K18, K23, K24 (T-017), K19, K21 (T-015), K20 (T-016), K28 (T-023), K30 (T-024), K32 (T-022), K35 (T-025) ; K22 en partie (version 0.2.0, `prefers-reduced-motion` reste lu au démarrage). K25 (portrait 390 px, mesures rognées) n'est pas corrigé.
+  - **Défauts restants** : K4, K5, K7 à K15, K22 (partie `prefers-reduced-motion`), K25, K26, K27, K29, K31, K33, K34, K36, K37, K38 ; voir [defauts-connus.md](defauts-connus.md).
+- **v0.1 — validée avec réserves le 2026-11-13** (rapport [validation/T-012-v0.1.md](validation/T-012-v0.1.md), bilan [bilan-v0.1.md](bilan-v0.1.md)). Le champ `version` de `package.json` valait `0.0.0` au commit de la validation (K22) ; il valait `0.1.0` depuis P-005 (`a165a14`), il vaut `0.2.0` depuis P-010 (`a308ada`).
+
+## D-017 — Clôture de la v0.2 : documentation des tâches T-023 à P-010 (2026-11-14)
+
+Documentation de quatre commits, `badab42` (T-023), `1da298f` (T-024), `0459420` (T-025) et `a308ada` (P-010, version 0.2.0), à la suite de D-016 (`a5b4bec`), sur l'état figé `a308ada` (branche `migration`, arbre propre). Aucun code, aucune configuration, aucune PNG de `docs/img/` modifiés ; le rédacteur n'a exécuté ni l'e2e (il réécrit les captures) ni MATLAB. Source des mesures : `orchestration/logs/T-023.md` (vérifiées par un validateur indépendant), `orchestration/DEFAUTS-CONNUS.md`, le code et les tests du commit.
+
+Tâches documentées, avec leur commit :
+
+- **T-023** (`badab42`, N3, validateur indépendant, « validé avec réserves », réserve R1 levée) : oracle MATLAB du contrôleur PI (`validation/matlab/t018_*.m`, 8 fichiers), `validation/data/pi_traj_dt120.csv` et `pi_sweep_summary.csv`, test d'oracle exact `tests/sim/pi-exact.test.ts` (22 tests). 0 désaccord noyau / exact sur 113 Ki ; pire écart y 1,5e-7 m, ẏ 1,524e-6 m/s, I 2,144e-4 N ; tolérances du test y 1e-6 m, ẏ 1e-5 m/s, I 1e-3 N ; bornes exactes de Ki (Kp = 2500, tolérance 0,10 m, 1200 pas) : step → slow 128,3759, première victoire 138,5864, choc 841,3209 (841,0670 avec y entre deux pas) ; Ki critique échantillonné 18 310,30 N/(m·s), soit 0,9155 fois la limite continue 8·Kp. K28 corrigé, K34 précisé. `src/sim` inchangé.
+- **T-024** (`1da298f`, N2) : jauge du terme intégral I au niveau 2 (K30) : seconde jauge à droite de la jauge de force, même échelle (0 à 5000 N), repère m·g, remplissage |I| ; constantes `GAUGE_I_MIN_X` = 6 et `GAUGE_I_MAX_X` = 6,42 ; étiquettes « Terme intégral I » puis « I : {i} N » ; ligne de légende `level2.legend.integral` ; ligne « Terme I » du panneau de mesures pour les lecteurs d'écran ; ancres `iGauge` et `iGaugeVisible` ; « 5000 N max » et « poids » à droite de la jauge I au niveau 2 ; décalages de 6 px en portrait au niveau 2 (`GAUGE_TITLE_LIFT`, `DIMENSION_NUDGE`) ; niveau 1 identique ; quatre clés de texte ajoutées ; captures `docs/img/t024-niveau2-jauge-i.png` et `t024-niveau2-jauge-i-portrait.png`. K30 corrigé ; K36, K37 et K38 ajoutés ; K31 reste reporté.
+- **T-025** (`0459420`, N1) : captures régénérées par l'e2e (K35 corrigé) : `t008-paper-1280x720`, `t009-01`, `t009-02`, `t009-06`, `t010-01`, `t010-06`, `t021-niveau2-reglage`, `-victoire`, `-choc` et `-portrait` ; `t019-approche-fr` et `t019-portrait-fr` refaites à la main (script ponctuel, `?e2e=1&screen=level1&lang=fr`, aucun test ne les écrit) : elles montrent Kp = 2000 N/m ; `t010-02`, `t010-03` et `t010-05` non touchées.
+- **P-010** (`a308ada`, N1) : version 0.2.0 (`package.json` et racine du lockfile).
+
+Chiffres relevés au commit `a308ada` :
+
+| Mesure | Valeur | Avant (`08908b6`) |
+|---|---|---|
+| `npm.cmd test` | 47 fichiers, 649 tests verts | 45 fichiers, 602 tests |
+| `npx.cmd playwright test --list` | 74 tests dans 7 fichiers (non exécutés par le rédacteur) | 70 tests dans 7 fichiers |
+| `npm.cmd run lint:arch` | 67 modules, 178 dépendances, 0 violation | idem |
+| clés de texte par langue (script) | 163 | 159 |
+| `npm.cmd run test:cov` | `src/sim` 100 % (192/192 instructions, 102/102 branches, 38/38 fonctions, 178/178 lignes) | idem |
+| `npm.cmd run build` | JavaScript 909,76 kB (253,52 kB gzip), CSS 7,51 kB (2,45 kB gzip) | 907,79 kB (252,84 kB gzip), CSS 7,30 kB (2,42 kB gzip) |
+
+- **Pages mises à jour** : `simulation.md`, `physique/ascenseur.md`, `jeu.md`, `rendu.md` (jauge I, ancres), `interface.md` (section de la jauge I, captures t024), `architecture.md`, `i18n-accessibilite.md`, `tests.md` (section « Oracle exact du PI »), `developpement.md`, `tutoriel-lancer-en-local.md`, ADR-006 et ADR-016 (oracle du PI fait, K28 fermé), `defauts-connus.md` (K1 à K38 : K28, K30 et K35 corrigés, K34 précisé, K36 à K38 ajoutés, K31 reporté), `specs/T-018` (retouches de T-023 à T-025), `README.md` et ce journal.
+- **ADR** : aucune nouvelle ; les ADR-006 et ADR-016 consignent l'oracle du PI.
+- **Valeurs historiques conservées** (datées) : les nombres de tests (602, 586, 439), de tests e2e (70, 69), de clés (159, 158), les tailles de build d'avant et le texte de `bilan-v0.1.md` (état `88ae23c`) restent là où ils sont donnés comme mesures d'un commit précédent.
+- **Non confirmé** : e2e et MATLAB non exécutés par le rédacteur (les mesures de T-023 viennent de son journal) ; triangles de `rendu.md` mesurés au commit `119519b`, non remesurés pour la jauge I ; WebGPU réel (K8).
 
 ## D-016 — Documentation des tâches P-009 et T-022 (2026-11-14)
 
@@ -89,7 +129,7 @@ Tâches documentées, avec leur commit :
 - **T-019** (`c5c0235`, N2) : bulle d'ouverture `level1.goal` réécrite, « quai » devient « plateau d'arrivée » en français, étiquettes permanentes de la jauge de force (« Force du moteur », « 5000 N max », « poids »), ancres de rendu `gaugeMax` et `gaugeWeight`.
 - **T-020** (`c3a9f04`, N3, validateur indépendant) : niveau 1 : `TRIP_MAX_STEPS` 720 (6 s), `STEP_TOLERANCE` 0,5 m, `BEAM_HEIGHT` 3,3626 m, `KP_DEFAULT` 500, fenêtre de réussite [1000 ; 5000] N/m (marges : 1,74 mm sous la poutre à 5000, 1,79 mm au-dessus à 5100, 9,5 mm de tolérance à 1000 ; victoire la plus lente au pas 301) ; cadrage fixé par `PLAY_ZONE_TOP` = 5,5 m (remplace `PLAY_ZONE_ABOVE_BEAM`) ; oracle MATLAB relancé (0 désaccord sur 80) ; textes 0,5 m et 3,36 m ; K6 corrigé, K7 mis à jour. Verdict « validé avec réserves » (R1 corrigée par l'orchestrateur).
 - **T-017abc** (`7e61f7d`, N2) : module pur `src/app` (machine d'écrans titre, menu, niveau), `attachLevel` et `detachLevel` de la session de rendu, `Ui.destroy()`, K23 et K24 corrigés. **T-017d** (`6aef101`) : écrans titre et menu (`src/ui/screens*.ts`, `screen-keys.ts`), copyright égal à `LICENSE` (test). **T-017e** (`e9ce171`) : composition dans `main.ts` (paramètre `screen` du mode `?e2e=1`), bouton « Menu » en pause et à l'issue, K18 corrigé (`ResizeObserver`).
-- **T-021a** (`99324fd`, N3, validateur indépendant) : `createProportionalIntegralController` et `createElevatorPiLoop`, Ki = 0 identique au P bit à bit, pas d'anti-windup ; oracle MATLAB du PI et test d'oracle exact TypeScript reportés (K28). Verdict « validé, sans réserve ».
+- **T-021a** (`99324fd`, N3, validateur indépendant) : `createProportionalIntegralController` et `createElevatorPiLoop`, Ki = 0 identique au P bit à bit, pas d'anti-windup ; oracle MATLAB du PI et test d'oracle exact TypeScript reportés (K28 ; faits en T-023, voir plus haut). Verdict « validé, sans réserve ».
 - **T-021b** (`119519b`, N2) : niveau 2 « La mémoire » (`createLevel2`, machine commune `src/game/elevator-level.ts`, Kp fixé à 2500, réglage de Ki, issues choc, trop court et trop lent, `LEVEL2_ARRIVAL_TOLERANCE`), menu à deux entrées. Point documenté honnêtement à l'époque (corrigé depuis par T-022, voir [D-016](#d-016--documentation-des-tâches-p-009-et-t-022-2026-11-14)) : avec la tolérance de 0,5 m, Ki = 0 gagnait et aucun Ki de 0 à 8000 ne donnait « trop court » ni « trop lent » (K32).
 
 Chiffres relevés au commit `119519b` :
@@ -108,7 +148,7 @@ Dans les logs de l'orchestrateur : `npm run check` vert avec 454 tests et 41 e2e
 - **Pages mises à jour** : `jeu.md`, `physique/ascenseur.md`, `simulation.md`, `rendu.md`, `interface.md`, `architecture.md`, `i18n-accessibilite.md`, `tests.md`, `developpement.md`, `tutoriel-lancer-en-local.md`, `defauts-connus.md` (K25 à K33 ; K6, K18, K23 et K24 corrigés ; K7 avec ses nouvelles marges), `bilan-v0.1.md` (mentions datées ; la v0.1 reste décrite à `88ae23c`), `README.md` et ce journal. ADR-006, ADR-009 et ADR-011 reçoivent une ligne datée ; `specs/T-001-errata.md` une note de mise à jour.
 - **ADR créées** : [ADR-015](decisions/ADR-015-etat-application-machine-ecrans.md) (machine d'écrans pure, session de rendu unique) et [ADR-016](decisions/ADR-016-controleur-pi-sans-anti-windup.md) (PI sans anti-windup, validation unitaire seulement, tolérance du niveau 2).
 - **Specs** : section « Écarts à la réalisation » ajoutée en fin de [T-017](specs/T-017-ecran-titre-et-menu.md) et de [T-018](specs/T-018-niveau-2-ascenseur-ki.md) ; le reste de ces specs n'est pas modifié.
-- **Captures** : t009-05, t009-06, t010-01, t010-02 et t010-05 n'ont pas été régénérées depuis le changement des tests qui les produisent ; leurs légendes dans `rendu.md` et `interface.md` le disent. `t019-approche-fr.png` (prise avant T-020) montre encore Kp = 1000 N/m.
+- **Captures** : t009-05, t009-06, t010-01, t010-02 et t010-05 n'ont pas été régénérées depuis le changement des tests qui les produisent ; leurs légendes dans `rendu.md` et `interface.md` le disent. `t019-approche-fr.png` et `t019-portrait-fr.png` ont été refaites au commit `a308ada` et montrent Kp = 2000 N/m.
 - **Non confirmé** : le résultat des e2e depuis T-017e (jamais exécutés par le rédacteur) ; la mesure des appels de dessin en papier seul (titre et menu) ; la couverture de `src/render` et de `src/ui` (non refaite).
 - Rédacteur seul, aucun code modifié. Commit : à venir.
 

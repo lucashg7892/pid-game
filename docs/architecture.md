@@ -1,6 +1,6 @@
 # Architecture
 
-À quoi sert cette page : présenter les modules du code, qui a le droit d'importer qui, le déroulement d'une image et les garde-fous automatiques. État au commit `08908b6` : tous les modules sont validés, le jeu s'ouvre sur un écran titre puis un menu, et deux niveaux sont jouables dans un navigateur (le niveau 2 « La mémoire » est venu avec T-021b).
+À quoi sert cette page : présenter les modules du code, qui a le droit d'importer qui, le déroulement d'une image et les garde-fous automatiques. État au commit `a308ada` : tous les modules sont validés, le jeu s'ouvre sur un écran titre puis un menu, et deux niveaux sont jouables dans un navigateur (le niveau 2 « La mémoire » est venu avec T-021b, sa jauge du terme intégral avec T-024).
 
 ## Modules
 
@@ -41,7 +41,7 @@ public/      favicon.svg  fonts/ (Patrick Hand, OFL.txt)
    - **titre** : `createTitleScreen` (bouton « Jouer » → `machine.play()`) ; canvas `aria-hidden` ;
    - **menu** : `createMenuScreen` (un niveau → `machine.openLevel(id)`, « Retour » ou Échap → `machine.back()`) ; le focus revient sur le niveau qu'on vient de quitter ;
    - **niveau** : crée un niveau **neuf** (`createLevel1()` ou `createLevel2()`), l'attache au rendu (`session.attachLevel`), crée l'interface (`createUi`, avec l'action « Menu » → `machine.leaveLevel()`), branche le clavier (`bindKeyboard`) et la géométrie de l'écran. Au démontage : retrait dans l'ordre inverse (clavier, `ResizeObserver`, écouteur `resize`, `ui.destroy()`, conteneur `#ui`, `session.detachLevel()`), chaque retrait étant indépendant des autres.
-4. Géométrie de l'écran pour l'interface (`UiGeometry`) : calculée à partir du cadrage du rendu, recalculée sur `resize` **et** par un `ResizeObserver` sur le canvas (K18, corrigé par T-017e), avec les ancres de la session (`session.anchors()`, dont `gaugeMax` et `gaugeWeight`) : l'interface reçoit des nombres, sans importer le rendu.
+4. Géométrie de l'écran pour l'interface (`UiGeometry`) : calculée à partir du cadrage du rendu, recalculée sur `resize` **et** par un `ResizeObserver` sur le canvas (K18, corrigé par T-017e), avec les ancres de la session (`session.anchors()`, dont `gaugeMax` et `gaugeWeight` et, depuis T-024, `iGauge` et `iGaugeVisible` pour la jauge du terme intégral du niveau 2 ; `main.ts` lit `iGaugeVisible` par un accesseur) : l'interface reçoit des nombres, sans importer le rendu.
 5. Écrit dans `document.body.dataset` le backend (`backend`), et, après la première image, `drawCalls` et `triangles`.
 
 **Crochet de test** : seulement avec `?e2e=1` dans l'URL, `window.__huygens` expose la machine d'application (`app` : `state`, `play`, `openLevel`, `back`, `leaveLevel`), les commandes du niveau courant (`commands`, dont `setKp` et `setKi` : chacune renvoie `'ignored'` si le niveau ne règle pas cette grandeur, ou hors niveau), une copie de l'instantané, une avance déterministe du temps (`advance(secondes)`, par images fixes de 1/60 s), les compteurs de rendu, `detachLevel()` et `attachLevel()` (essai du cycle de vie de la vue) et `crashNextFrame()`, qui provoque une exception à l'image suivante (essai de la page de repli d'erreur). Dans ce mode, le temps réel ne fait plus avancer le niveau. Le paramètre `&screen=title|menu|level1|level2` choisit l'écran de départ (défaut `level1` : les e2e d'avant T-017 restent valables sans réécriture) ; il est ignoré sans `?e2e=1`. Sans `?e2e=1`, `window.__huygens` n'existe pas (test e2e (h) de `level.spec.ts`) et le jeu s'ouvre sur le titre : les e2e qui n'utilisent pas `e2e=1` (par exemple `ui.spec.ts`) cliquent désormais « Jouer » puis le premier niveau.
@@ -161,7 +161,7 @@ x 2 dependency violations (2 errors, 0 warnings). 6 modules, 4 dependencies crui
 
 (Chemin vers `node_modules` raccourci : la copie pointait vers le `node_modules` du projet.)
 
-Sur le dépôt réel, au commit `08908b6` (même résultat à `119519b` ; `npm.cmd run lint:arch`, arbre propre, relevé par le rédacteur) :
+Sur le dépôt réel, au commit `a308ada` (même résultat à `08908b6` et à `119519b` : T-023 à T-025 n'ont ajouté aucun fichier de `src/` ; `npm.cmd run lint:arch`, arbre propre, relevé par le rédacteur) :
 
 ```text
 ✔ no dependency violations found (67 modules, 178 dependencies cruised)

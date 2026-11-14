@@ -1,6 +1,6 @@
 # Tutoriel : lancer le projet sur son PC (Windows)
 
-À quoi sert cette page : guider pas à pas, sous Windows et dans PowerShell, l'installation d'une copie du projet, son lancement dans le navigateur, une partie du niveau 1 (et un mot du niveau 2), les tests et la validation MATLAB. Aucune connaissance en développement n'est supposée. État décrit : commit `08908b6` (les durées et les sorties de terminal recopiées plus bas datent de `566a8a3`, sauf mention ; elles n'ont pas été relancées).
+À quoi sert cette page : guider pas à pas, sous Windows et dans PowerShell, l'installation d'une copie du projet, son lancement dans le navigateur, une partie du niveau 1 (et un mot du niveau 2), les tests et la validation MATLAB. Aucune connaissance en développement n'est supposée. État décrit : commit `a308ada` (les durées et les sorties de terminal recopiées plus bas datent de `566a8a3`, sauf mention ; elles n'ont pas été relancées).
 
 > **Statut des commandes.** Sous Windows, l'utilisateur a exécuté avec succès le clone, `npm.cmd ci` et `npm.cmd run dev` le 2026-11-13 (décision D16 du registre), puis a joué le niveau. La validation MATLAB (étape 6) a été exécutée sous Windows par le rédacteur. Les autres commandes (`git pull`, `npm run test`, `npm run test:cov`, `npm run check`, réinstallation) ont été exécutées sous Linux seulement et restent marquées « non exécuté sous Windows ».
 >
@@ -83,7 +83,7 @@ L'onglet s'appelle « Huygens’s world ». Le jeu s'ouvre sur un **écran titre
 
 ![Titre](img/t017-titre-fr.png)
 
-![Début du niveau 1 (capture de T-019, prise avant T-020 : l'étiquette de Kp y affiche encore 1000 N/m, elle affiche 2000 N/m au commit `08908b6`)](img/t019-approche-fr.png)
+![Début du niveau 1 (capture de T-019, refaite au commit `a308ada` : l'étiquette de Kp affiche 2000 N/m)](img/t019-approche-fr.png)
 
 ### Jouer
 
@@ -130,13 +130,13 @@ Ces commandes ne sont pas nécessaires pour jouer. Elles vérifient le code.
 
 | Commande | Durée indicative | Ce qu'elle montre |
 |---|---|---|
-| `npm run test` | ≈ 30 s | les 602 tests unitaires (45 fichiers) au commit `08908b6` (relevé par le rédacteur sous Windows, `npm.cmd test`) ; la fin doit afficher `Test Files  45 passed (45)` et `Tests  602 passed (602)`. Les lignes `T1`, `REF`, `EXACT` comparent la simulation aux formules et à la solution exacte |
+| `npm run test` | ≈ 30 s | les 649 tests unitaires (47 fichiers) au commit `a308ada` (relevé par le rédacteur sous Windows, `npm.cmd test`) ; la fin doit afficher `Test Files  47 passed (47)` et `Tests  649 passed (649)`. Les lignes `T1`, `REF`, `EXACT` comparent la simulation aux formules et à la solution exacte |
 | `npm run test:cov` | ≈ 40 s | les mêmes tests, puis un tableau de couverture de `src/sim` : 100 % partout. Échoue sous 95 % des lignes |
 | `npm run check` | ≈ 1 à 2 min | toute la chaîne : vérification des types, lint, formatage, règles d'architecture, tests, construction du site dans `dist\`. Doit se terminer sans erreur |
 
 Durées mesurées sous Linux ; non exécuté sous Windows. Détail des tests : [tests.md](tests.md).
 
-Les tests de bout en bout (`npm run e2e`, 70 tests dans un vrai navigateur au commit `08908b6`) demandent d'abord `npx playwright install chromium`, qui télécharge un navigateur. Non exécuté sous Windows ; voir [tests.md](tests.md#tests-de-bout-en-bout-playwright).
+Les tests de bout en bout (`npm run e2e`, 74 tests dans un vrai navigateur au commit `a308ada`) demandent d'abord `npx playwright install chromium`, qui télécharge un navigateur. Non exécuté sous Windows ; voir [tests.md](tests.md#tests-de-bout-en-bout-playwright).
 
 ## 6. Relancer la validation MATLAB
 
@@ -158,6 +158,14 @@ T005 : FIN SANS ERREUR
 ```
 
 Exécuté sous Windows le 2026-11-12 dans `PID_GAME` : MATLAB 25.1 (R2025a), « T005 : FIN SANS ERREUR », 1,1 s. Mode d'emploi complet : [validation/README.md](../validation/README.md). T-020 l'a relancé le 2026-11-13 sur le nouveau réglage (log T-020) : même ligne finale.
+
+**Contrôleur PI (niveau 2, T-023).** Un second oracle valide la boucle PI :
+
+```matlab
+run('validation/matlab/t018_run_all.m')
+```
+
+La dernière ligne doit être `T018 : FIN SANS ERREUR` ; le script annonce aussi « 0 sur 113 » (désaccords entre le noyau et l'oracle exact sur 113 valeurs de Ki). Ces sorties sont celles du journal `orchestration/logs/T-023.md` (relancé par le réalisateur, le validateur et l'orchestrateur) ; le rédacteur n'a pas lancé MATLAB. Le test TypeScript équivalent, `tests/sim/pi-exact.test.ts`, tourne sans MATLAB avec `npm run test`.
 
 ## 7. Dépannage
 

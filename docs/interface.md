@@ -1,6 +1,6 @@
 # Interface du joueur (`src/ui`)
 
-À quoi sert cette page : décrire ce que le joueur voit et ce qu'il peut faire, phase par phase : textes, panneau de réglage, touches, accessibilité, disposition à l'écran, police. Elle décrit le commit `08908b6` (interface validée en T-010, corrigée par P-005, T-014, T-015, puis étendue par T-017 : écrans titre et menu, bouton « Menu », destruction de l'interface du niveau ; T-019 : étiquettes de la jauge ; T-021b : niveau 2 ; T-022 : trajet de 10 s, Kp par défaut 2000, annonce « trop court » du niveau 2). Les captures de `docs/img/` prises avant T-022 montrent des valeurs périmées (K35) : leur légende le dit. Le dessin de la scène est dans [rendu.md](rendu.md), les règles du niveau dans [jeu.md](jeu.md).
+À quoi sert cette page : décrire ce que le joueur voit et ce qu'il peut faire, phase par phase : textes, panneau de réglage, touches, accessibilité, disposition à l'écran, police. Elle décrit le commit `a308ada` (interface validée en T-010, corrigée par P-005, T-014, T-015, puis étendue par T-017 : écrans titre et menu, bouton « Menu », destruction de l'interface du niveau ; T-019 : étiquettes de la jauge ; T-021b : niveau 2 ; T-022 : trajet de 10 s, Kp par défaut 2000, annonce « trop court » du niveau 2 ; T-024 : jauge du terme intégral I au niveau 2). T-025 a régénéré les captures périmées par T-022 (K35 corrigé) ; celles qui montrent encore une ancienne valeur (t019, t010-02, t010-05) le disent dans leur légende. Le dessin de la scène est dans [rendu.md](rendu.md), les règles du niveau dans [jeu.md](jeu.md).
 
 ## Principe
 
@@ -61,9 +61,9 @@ En permanence, la barre du haut montre le titre « Huygens’s world », l'**ét
 
 Une bulle rappelle l'objectif ; le bandeau indique d'avancer vers la console. Arrivé à la console, la bulle invite à l'utiliser. Depuis T-019, la bulle d'ouverture (`level1.goal`) dit : « Pour traverser, monte en ascenseur jusqu’au plateau d’en face, 3 m plus haut. Plus la cabine est loin de cette hauteur, plus le moteur tire fort. » Le mot « quai » est remplacé par « plateau d'arrivée » dans les textes français du niveau (les nombres de ces textes suivent T-020 : 0,5 m et 3,36 m).
 
-![Approche (capture de T-019, périmée : bulle réécrite et étiquettes de la jauge ; l'étiquette de Kp affiche 1000 N/m, valeur par défaut d'avant T-020, alors que le défaut est 2000 N/m depuis T-022 ; K35)](img/t019-approche-fr.png)
+![Approche (capture de T-019, refaite au commit `a308ada` : l'étiquette de Kp affiche le défaut de 2000 N/m)](img/t019-approche-fr.png)
 
-![Approche à l'ancien réglage : bulle d'avant T-019 et sans étiquettes de la jauge, Kp = 1000 N/m (capture de T-010 non régénérée, périmée ; le test (a) de ui.spec.ts les produit maintenant avec Kp = 2000 N/m ; K35)](img/t010-01-aide.png)
+![Approche, 1280 × 720 : bulle d'ouverture et étiquettes de la jauge, Kp = 2000 N/m (capture e2e de T-010, régénérée par T-025)](img/t010-01-aide.png)
 
 ### Réglage
 
@@ -113,6 +113,26 @@ En portrait étroit (≤ 700 px), pour que les quatre boutons de la barre du hau
 
 Dès le lancement du trajet, la légende cède la place à « Force : … N » (`ui-force`) ; « 5000 N max » et « poids » restent. Les trois étiquettes sont `aria-hidden` (le panneau des mesures et le nom de la jauge disent déjà la même chose) et cachées tant que la géométrie manque. La disposition leur réserve `GAUGE_LABELS_ROOM` = 84 px à droite de la jauge (les mesures se posent au-delà) et, en portrait, `GAUGE_TITLE_BAND` = 18 px au-dessus de la scène : la bulle et les mesures s'arrêtent plus haut (`layout.ts`, `tests/ui/layout.test.ts`).
 
+## Jauge du terme intégral I, niveau 2 (T-024)
+
+Au niveau 2 seulement (`level.snapshot.levelId === 'level2'`, constante `hasIntegral` de `createUi`), une seconde jauge se dresse à droite de la jauge de force. Elle a la même échelle (0 à 5000 N), le même repère du poids m·g et se remplit à |I| (valeur absolue du terme intégral, `iTerm` du snapshot) ; le dessin est décrit dans [rendu.md](rendu.md#jauge-du-terme-intégral-niveau-2). Côté interface, `src/ui` ajoute :
+
+| Élément | Français | Anglais | Clé |
+|---|---|---|---|
+| légende au-dessus du cadre (approche, réglage) | Terme intégral I | Integral term I | `hud.igauge.title` |
+| valeur pendant le trajet et à l'issue | I : 331 N | I: 331 N | `hud.igauge.value` (paramètre `{i}`) |
+| ligne des mesures, pour les lecteurs d'écran seulement | Terme I : 331 N | I term: 331 N | `hud.readout.iTerm` (paramètre `{i}`) |
+| ligne de la légende des mesures | Jauge I : la mémoire du terme intégral, comparée au poids m·g (à l’équilibre, I vaut m·g = 490,5 N) | I gauge: the memory of the integral term, compared with the weight m·g (at equilibrium, I equals m·g = 490.5 N) | `level2.legend.integral` |
+
+- Dès le lancement, « Terme intégral I » cède la place à « I : … N » (comme « Force du moteur » à « Force : … N »), posé à l'ancre `iGauge` (étiquettes `aria-hidden`, comme celles de la jauge de force) ; la valeur reste affichée à l'issue. La valeur est arrondie au newton, signée par le vrai signe moins, mémoïsée par le modèle de vue (`integral` et `integralReadout` de `ViewModel`, `view-model.ts`).
+- La ligne « Terme I : … N » du panneau de mesures est une `p` de classe `ui-sr` (invisible à l'écran, lue par les lecteurs d'écran) ; elle est cachée au niveau 1. La ligne de légende `ui-legend-integral` a une pastille hachurée (45°) cernée de gris ; elle n'existe qu'au niveau 2 (cinq lignes de légende au lieu de quatre).
+- Les étiquettes « 5000 N max » et « poids » passent **à droite de la jauge I** au niveau 2 (`GAUGE_I_LABEL_X`, voir [rendu.md](rendu.md#interpolation-et-ancres-pour-linterface)). Le niveau 1 est inchangé : ni étiquette, ni trait dans la bande de la jauge I (test e2e (k) de `level2.spec.ts`).
+- Disposition (`layout.ts`) : l'étiquette de la jauge I est posée une rangée (`GAUGE_TITLE_ROW` = 22 px) au-dessus de celle de la force, car les deux se chevaucheraient sinon. En portrait, la bande réservée au-dessus de la scène s'allonge de `GAUGE_TITLE_ROW` + `GAUGE_TITLE_LIFT` (6 px) au niveau 2, et la cote chiffrée descend de `DIMENSION_NUDGE` = 6 px. Deux défauts du niveau 1 en portrait restent ouverts (K36 : le titre « Force du moteur » touche « 5000 N max » d'environ 4 px ; K37 : la cote « e = 0,00 m » touche « poids » de 3 px) ; K38 : au niveau 2 en paysage, l'étiquette « Terme intégral I » monte à environ 54 px, presque la barre du haut (56 px), et le panneau de mesures n'a plus qu'environ 180 px de large.
+
+![Niveau 2, Ki = 800, à 0,2 s : le moteur est saturé (« Force : 5000 N », jauge de force rouge, « Saturé ») pendant que la jauge I, à droite, se remplit (« I : 331 N ») ; la légende des mesures détaille la ligne « Jauge I » (capture e2e de T-024)](img/t024-niveau2-jauge-i.png)
+
+![Niveau 2 en portrait 390 × 844, Ki = 800, à 0,2 s : « I : 331 N » une rangée au-dessus de « Force : 5000 N », « 5000 N max » et « poids » à droite de la jauge I (capture e2e de T-024)](img/t024-niveau2-jauge-i-portrait.png)
+
 ## Niveau 2 : La mémoire (T-021b)
 
 Le niveau 2 réutilise la même interface : `createUi` lit `level.tuning` (`param`, `min`, `max`, `step`) et `level.snapshot.levelId` pour choisir les textes et la grandeur réglée. Ce qui change :
@@ -122,21 +142,22 @@ Le niveau 2 réutilise la même interface : `createUi` lit `level.tuning` (`para
 - **Touches** : les mêmes qu'au niveau 1 (`+`, `−`, Page préc., Page suiv.), qui appellent `level.adjustTuning` ; le bandeau dit « régler Ki » (`hud.hint.tuneKi`) puis « Ki est verrouillé » (`hud.hint.lockedKi`) pendant le trajet ; l'aide des commandes cite Ki (`controls.help.ki`, `controls.help.pauseKi`, `controls.help.touchKi`).
 - **Annonces** : `hud.status.readyKi`, `hud.status.launchKi` (Kp et Ki), `level2.saturation` à la première saturation, `hud.status.winKi`, `hud.status.fail.stepKi` (T-022 : « Échec : au bout de 10 s, la cabine est encore {e} m sous le plateau d’arrivée, plus loin que les 0,1 m permis. », à la place de `hud.status.fail.step` du niveau 1), `hud.status.fail.slow` (« … n’a pas fini de se stabiliser en 10 s »), `hud.status.resetKi`.
 - **Issues** : « Niveau réussi ! » (`level2.win`), « Trop court » (`level2.failTitle.step`, avec l'erreur), « Trop lent » (`level2.failTitle.slow`), « Choc contre la poutre » (`level2.failTitle.bonk`, qui explique le windup : « Trop de mémoire ! … Baisse Ki. »). Le teaser et le message « Le niveau 2 t'attend dans le menu » du niveau 1 ne s'affichent qu'au niveau 1.
-- **Pas encore là** : la jauge du terme intégral, les annotations du windup, la loupe de la bande de tolérance et la courbe I(t) (K30 et K31).
+- **Jauge du terme intégral I** (T-024, K30) : voir [la section précédente](#jauge-du-terme-intégral-i-niveau-2-t-024).
+- **Pas encore là** : les annotations détaillées du windup, la loupe de la bande de tolérance et la courbe I(t) (K31, reportés).
 
 Textes de T-022 : `level2.goal` annonce la tolérance (« la cabine doit s’arrêter à 0,1 m près et Kp seul n’y suffit pas »), `level2.fail.step` et `level2.fail.slow` parlent de 10 s (et de 0,1 m pour le premier), `level2.win` dit que le terme I « amène la cabine pile au plateau d’arrivée » (l'ancienne phrase « plus Ki est grand, plus la cabine s'arrête près » n'est pas monotone).
 
-Les captures de T-021b (prises avec le Ki par défaut de l'époque, 500 : leur étiquette et leur valeur initiale sont périmées depuis T-022, K35 ; Ki = 2000 aujourd'hui) :
+Les captures de T-021b, régénérées par T-025 (K35 corrigé) avec le Ki par défaut de 2000 (le menu n'a pas changé) :
 
-![Menu à deux entrées (capture e2e de T-021b, Ki par défaut 500 d'alors, périmée : K35)](img/t021-menu.png)
+![Menu à deux entrées (capture e2e de T-021b)](img/t021-menu.png)
 
-![Niveau 2, réglage de Ki à 800 (capture e2e de T-021b, Ki par défaut 500 d'alors, périmée : K35)](img/t021-niveau2-reglage.png)
+![Niveau 2, réglage de Ki à 800 ; depuis T-024, les deux jauges sont dessinées dès l'approche (capture e2e de T-021b, régénérée par T-025)](img/t021-niveau2-reglage.png)
 
-![Niveau 2, victoire (capture e2e de T-021b, Ki par défaut 500 d'alors, périmée : K35)](img/t021-niveau2-victoire.png)
+![Niveau 2, victoire à Ki = 800 N/(m·s) : « I : 498 N » et « Force : 491 N » (capture e2e de T-021b, régénérée par T-025)](img/t021-niveau2-victoire.png)
 
-![Niveau 2, choc à Ki = 2500 N/(m·s) (capture e2e de T-021b, Ki par défaut 500 d'alors, périmée : K35)](img/t021-niveau2-choc.png)
+![Niveau 2, choc à Ki = 2500 N/(m·s) (capture e2e de T-021b, régénérée par T-025)](img/t021-niveau2-choc.png)
 
-![Niveau 2 en portrait 390 × 844 : le panneau défile en interne et « Lancer » n'est pas visible sans défiler (K33)](img/t021-niveau2-portrait.png)
+![Niveau 2 en portrait 390 × 844 : le panneau défile en interne et « Lancer » n'est pas visible sans défiler (K33 ; capture régénérée par T-025)](img/t021-niveau2-portrait.png)
 
 Les captures de T-022 montrent l'issue « Trop court » des deux niveaux après 10 s, avec l'interface visible :
 
@@ -267,7 +288,7 @@ Chaque événement est consommé une seule fois. Le canvas porte `role="img"` et
 
 Sur un écran en portrait de moins de 700 px de large, une invite propose de tourner l'appareil (`app.rotateHint`), et la disposition passe en « bandes » (voir plus bas). À 390 px de large, la scène est petite (17 m dans la largeur). Depuis P-005, la barre du haut y mesure 76 px (`TOP_BAR_PORTRAIT` : le titre et l'étiquette de Kp passent sur deux lignes, mesuré à 390 px de large) et l'invite de rotation est posée plus bas (`.ui-rotate { top: 80px }`, hauteur réservée `ROTATE_BAR` = 48) : l'étiquette de Kp n'est plus masquée (K2). La capture ci-dessous date de T-010 et montre l'ancienne disposition. En trajet, à 390 px, le panneau de mesures et le panneau de réglage sont rognés en bas (défilement interne) et la dernière ligne de la légende (« Jauge ») n'est pas visible sans défiler (K25, vu sur les captures de T-019) ; au niveau 2, le panneau de réglage défile en interne (231 px visibles pour 341 px de contenu) et « Lancer » n'est pas visible sans défiler : la touche Entrée et le bouton « Action » restent (K33). Ces défauts s'ajoutent à K5 (scène minuscule).
 
-![Portrait 390 × 844 avec l'invite de rotation (capture e2e de T-010)](img/t010-06-portrait.png)
+![Portrait 390 × 844 avec l'invite de rotation (capture e2e de T-010, régénérée par T-025)](img/t010-06-portrait.png)
 
 ## Disposition
 
@@ -334,6 +355,9 @@ Constantes de disposition exportées par `layout.ts` (pixels CSS, sauf mention) 
 | `BANNER_RESERVE` | 76 | hauteur réservée au bandeau d'aide |
 | `GAUGE_LABELS_ROOM` | 84 | largeur réservée aux étiquettes « 5000 N max » et « poids » à droite de la jauge (T-019 ; exportée par `layout.ts`, pas par `index.ts`) |
 | `GAUGE_TITLE_BAND` | 18 | hauteur prise par la légende de la jauge au-dessus de la scène en portrait (T-019 ; idem) |
+| `GAUGE_TITLE_ROW` | 22 | décalage vertical de l'étiquette de la jauge I au-dessus de celle de la force, au niveau 2 (T-024 ; idem) |
+| `GAUGE_TITLE_LIFT` | 6 | relèvement des étiquettes de titre des jauges en portrait au niveau 2 (T-024 ; idem) |
+| `DIMENSION_NUDGE` | 6 | descente de la cote chiffrée en portrait au niveau 2 (T-024 ; idem) |
 | `MIN_SIDE` | 240 | largeur libre minimale de chaque côté de la cage pour la disposition « côtés » |
 | `MIN_BANNER_BAND` | 56 | hauteur minimale sous la scène pour y poser le bandeau |
 | `MIN_PANEL_BESIDE` | 280 | largeur minimale d'un panneau posé à gauche du bonhomme et de la console (sinon il est posé au-dessus) |

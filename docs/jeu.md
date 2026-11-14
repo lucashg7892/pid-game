@@ -1,6 +1,6 @@
 # Logique des niveaux (`src/game`)
 
-À quoi sert cette page : expliquer comment les niveaux de l'ascenseur décident de ce qui se passe : phases, commandes du joueur, règles de victoire et d'échec, données transmises au rendu et à l'interface. Le niveau 1 « Le vide » (contrôleur P, Kp réglé) a été validé en T-007 (commit `6259ccc`) ; T-020 a fixé ses valeurs de jeu et T-021b a extrait sa machine à états dans un noyau commun, qui sert aussi au niveau 2 « La mémoire » (contrôleur PI, Kp fixé, Ki réglé). Cette page décrit l'état du commit `08908b6` (T-022 : trajet de 10 s, Kp par défaut 2000, tolérance du niveau 2 à 0,10 m). Ce que le joueur voit et les touches sont dans [interface.md](interface.md) ; le dessin dans [rendu.md](rendu.md). La simulation sous-jacente est dans [simulation.md](simulation.md), la physique dans [physique/ascenseur.md](physique/ascenseur.md).
+À quoi sert cette page : expliquer comment les niveaux de l'ascenseur décident de ce qui se passe : phases, commandes du joueur, règles de victoire et d'échec, données transmises au rendu et à l'interface. Le niveau 1 « Le vide » (contrôleur P, Kp réglé) a été validé en T-007 (commit `6259ccc`) ; T-020 a fixé ses valeurs de jeu et T-021b a extrait sa machine à états dans un noyau commun, qui sert aussi au niveau 2 « La mémoire » (contrôleur PI, Kp fixé, Ki réglé). Cette page décrit l'état du commit `a308ada` (T-022 : trajet de 10 s, Kp par défaut 2000, tolérance du niveau 2 à 0,10 m ; `src/game` n'a pas changé depuis `08908b6`, T-023 à T-025 n'y ont pas touché). Ce que le joueur voit et les touches sont dans [interface.md](interface.md) ; le dessin dans [rendu.md](rendu.md). La simulation sous-jacente est dans [simulation.md](simulation.md), la physique dans [physique/ascenseur.md](physique/ascenseur.md).
 
 ## Rôle de `src/game`
 
@@ -151,7 +151,7 @@ Pas d'issue de référence, mesurés au commit `08908b6` par un script jetable d
 | 2000 (`KI_DEFAULT`) | `bonk` | 57 | −0,372257 | 29 |
 | 8000 | `bonk` | 51 | −0,429002 | 50 |
 
-Reste K34 : sur la grille de 100, `slow` n'arrive jamais (seul Ki = 130 le donne), donc `level2.fail.slow` et `hud.status.fail.slow` ne s'affichent à aucun joueur ; l'annonce « Il manque 0,10 m » apparaîtrait à Ki = 120 (e = 0,1046), valeur inatteignable au curseur. L'intégrale est mise à jour sans anti-windup : le windup se montre par l'échec (choc), voir [ADR-016](decisions/ADR-016-controleur-pi-sans-anti-windup.md). La marge de 0,384 mm à Ki = 840 est consignée en K29. Les mesures d'avant T-022 (tolérance 0,5 m, 720 pas : Ki gagnants [0 ; 800], chocs [900 ; 8000], aucune fin de temps) restent dans le log T-021a.
+Reste K34 : sur la grille de 100, `slow` n'arrive jamais (seul Ki = 130 le donne), donc `level2.fail.slow` et `hud.status.fail.slow` ne s'affichent à aucun joueur ; l'annonce « Il manque 0,10 m » apparaîtrait à Ki = 120 (e = 0,1046), valeur inatteignable au curseur. L'oracle exact du PI (T-023) précise la plage : « trop lent » pour Ki de 128,3759 à 138,5864, soit les entiers 129 à 138 (bornes mesurées dans `orchestration/logs/T-023.md`) ; la première victoire est à Ki = 138,5864 et la victoire la plus lente hors grille reste Ki = 140 (pas 1185 sur 1200). L'intégrale est mise à jour sans anti-windup : le windup se montre par l'échec (choc), voir [ADR-016](decisions/ADR-016-controleur-pi-sans-anti-windup.md). La marge de 0,384 mm à Ki = 840 est consignée en K29. Les mesures d'avant T-022 (tolérance 0,5 m, 720 pas : Ki gagnants [0 ; 800], chocs [900 ; 8000], aucune fin de temps) restent dans le log T-021a.
 
 ### Convention de pas
 
@@ -221,7 +221,7 @@ Lecture :
 | `alpha` | number | — | fraction de pas en attente dans l'horloge, dans [0, 1) |
 | `kp` | number | N/m | gain proportionnel courant (réglé au niveau 1, fixé à 2500 au niveau 2) |
 | `ki` | number | N/(m·s) | gain intégral courant : 0 au niveau 1, réglé au niveau 2 |
-| `iTerm` | number | N | terme intégral I lu sur le contrôleur après le dernier pas ; 0 au niveau 1 et hors trajet. Exposé, pas encore affiché (K30) |
+| `iTerm` | number | N | terme intégral I lu sur le contrôleur après le dernier pas ; 0 au niveau 1 et hors trajet. Affiché depuis T-024 par la jauge du terme intégral du niveau 2 (voir [rendu.md](rendu.md#jauge-du-terme-intégral-niveau-2) et [interface.md](interface.md)) |
 | `r` | number | m | consigne : 0 avant le lancement, 3 pendant le trajet et l'issue |
 | `e` | number | m | erreur r − `cabinY` |
 | `uSat` | number | N | force appliquée au dernier pas, après saturation ; 0 hors trajet |

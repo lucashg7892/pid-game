@@ -1,6 +1,6 @@
 # Internationalisation et accessibilité
 
-À quoi sert cette page : décrire le module de traduction FR/EN (`src/i18n`, validé en T-006 et complété en T-010) et la façon d'ajouter une clé ou une langue. La seconde partie décrit l'accessibilité réalisée et testée en T-010. État au commit `08908b6`.
+À quoi sert cette page : décrire le module de traduction FR/EN (`src/i18n`, validé en T-006 et complété en T-010) et la façon d'ajouter une clé ou une langue. La seconde partie décrit l'accessibilité réalisée et testée en T-010. État au commit `a308ada`.
 
 ## Partie 1 — i18n (validé, T-006)
 
@@ -24,7 +24,7 @@ Il est branché depuis T-010 : `src/main.ts` crée le traducteur avec `detectLoc
 ### Structure des locales
 
 - Un fichier JSON plat par langue : `{ "clé": "texte", … }`, sans imbrication.
-- 159 clés par langue, les mêmes dans les deux fichiers (comptage par script au commit `08908b6` ; 158 à `119519b` ; 115 au commit `13e8b7e`, 111 à `566a8a3`, T-014 en avait ajouté 4 ; parité vérifiée par `tests/i18n/catalogs.test.ts`). T-006 en avait créé 89 ; T-010 en a ajouté 22 (liste plus bas) ; T-017d, T-019, T-021b et T-022 en ont ajouté 44 (section « Clés ajoutées depuis T-017 »).
+- 163 clés par langue, les mêmes dans les deux fichiers (comptage par script au commit `a308ada` ; 159 à `08908b6` ; 158 à `119519b` ; 115 au commit `13e8b7e`, 111 à `566a8a3`, T-014 en avait ajouté 4 ; parité vérifiée par `tests/i18n/catalogs.test.ts`). T-006 en avait créé 89 ; T-010 en a ajouté 22 (liste plus bas) ; T-017d, T-019, T-021b, T-022 et T-024 en ont ajouté 48 (section « Clés ajoutées depuis T-017 »).
 - Fins de ligne LF, aucune clé dupliquée, aucune valeur vide (tests).
 
 ### Convention de clés
@@ -43,8 +43,8 @@ Exemples : `level1.fail.noLift`, `hud.status.win`. Aucune clé n'est le préfixe
 | `title.` | écran titre : bouton « Jouer », copyright, licence (T-017d) | 3 |
 | `menu.` | menu des niveaux : titre, retour, nom de la liste, annonces d'écran (T-017d) | 5 |
 | `level1.` | textes du niveau 1 : objectif, Kp, échecs, victoire | 25 |
-| `level2.` | textes du niveau 2 : objectif, Kp fixé, Ki, échecs, victoire (T-021b) | 18 |
-| `hud.` | courbes, légende, jauge, valeurs affichées, messages d'état, bandeau d'aide, étiquettes de Kp et de Ki | 49 |
+| `level2.` | textes du niveau 2 : objectif, Kp fixé, Ki, échecs, victoire (T-021b), légende de la jauge I (T-024) | 19 |
+| `hud.` | courbes, légende, jauge, valeurs affichées, messages d'état, bandeau d'aide, étiquettes de Kp et de Ki, jauge du terme intégral (T-024) | 53 |
 | `controls.` | boutons, aide des commandes, noms des touches | 30 |
 | `a11y.` | noms accessibles et descriptions pour lecteurs d'écran | 7 |
 | `fallback.` | page de repli : sans WebGPU ni WebGL2, contexte GPU perdu (`fallback.lost.*`), erreur inattendue (`fallback.error.*`) | 11 |
@@ -84,7 +84,7 @@ Dans `hud.hint.item`, l'espace avant « : » est U+00A0 en français. Aucune cl�
 
 ### Clés ajoutées depuis T-017
 
-44 clés ajoutées (159 − 115), identiques en nombre dans les deux langues. Textes et valeurs : `src/i18n/locales/fr.json` et `en.json`, décrits par page : [interface.md](interface.md) (écrans, jauge, niveau 2), [jeu.md](jeu.md) (règles du niveau 2).
+48 clés ajoutées (163 − 115), identiques en nombre dans les deux langues. Textes et valeurs : `src/i18n/locales/fr.json` et `en.json`, décrits par page : [interface.md](interface.md) (écrans, jauge, niveau 2), [jeu.md](jeu.md) (règles du niveau 2).
 
 | Tâche | Préfixe | Clés |
 |---|---|---|
@@ -96,6 +96,8 @@ Dans `hud.hint.item`, l'espace avant « : » est U+00A0 en français. Aucune cl�
 | T-021b | `hud.` | `status.readyKi`, `status.launchKi`, `status.winKi`, `status.fail.slow`, `status.resetKi`, `ki.tag`, `hint.tuneKi`, `hint.lockedKi` |
 | T-021b | `controls.` | `kiDecrease`, `kiIncrease`, `help.ki`, `help.pauseKi`, `help.touchKi` |
 | T-022 | `hud.` | `status.fail.stepKi` (annonce « trop court » du niveau 2, paramètre `{e}`) |
+| T-024 | `hud.` | `igauge.title` (« Terme intégral I »), `igauge.value` (« I : {i} N »), `readout.iTerm` (« Terme I : {i} N », ligne réservée aux lecteurs d'écran) |
+| T-024 | `level2.` | `legend.integral` (ligne de légende de la jauge I) |
 
 Valeurs modifiées sans nouvelle clé : T-019 et T-020 (vocabulaire « plateau d'arrivée » à la place de « quai » en français, nombres 0,5 m et 3,36 m dans `level1.fail.step`, `level1.fail.bonk`, `hud.status.fail.step`, `hud.status.fail.bonk` ; `level1.goal` réécrit ; `hud.legend.setpoint`, `hud.status.win`, `level1.win`), T-021b (`level1.comingSoon` : « Le niveau 2 t’attend dans le menu : merci d’avoir joué ! »), P-006 (`fallback.lost.explanation` et `fallback.error.explanation` : « recommencer » au lieu de « reprendre »). T-022 (D27 et D29) : `level2.fail.step` (10 s, 0,1 m), `level2.fail.slow` et `hud.status.fail.slow` (10 s), `level2.goal` (tolérance de 0,1 m), `level2.win` (reformulé : le terme I amène la cabine pile au plateau). Le test des nombres physiques cités (`catalogs.test.ts`) a été mis à jour en conséquence ; depuis T-022, il vérifie aussi que la durée (10 s) et la tolérance (0,1 m) du niveau 2 citées égalent les constantes du jeu.
 
@@ -124,7 +126,7 @@ Les messages d'erreur citent la clé d'origine quand elle est connue.
 
 - `MessageKey` est dérivé de `fr.json` (`keyof typeof fr`). Une clé absente du français ne compile pas.
 - Le catalogue anglais est typé `Catalog` contre le français : une clé manquante en anglais ne compile pas.
-- `MESSAGE_PARAMS` liste les paramètres de chaque clé qui en a (23 clés au commit `08908b6`, 22 à `119519b` ; 15 avant T-017 : T-010 avait ajouté `hud.kp.value` et `hud.hint.item`). Un test vérifie que cette table correspond exactement aux `{…}` des deux catalogues.
+- `MESSAGE_PARAMS` liste les paramètres de chaque clé qui en a (25 clés au commit `a308ada`, 23 à `08908b6`, 22 à `119519b` ; T-024 a ajouté `hud.igauge.value` et `hud.readout.iTerm`, paramètre `{i}` ; 15 avant T-017 : T-010 avait ajouté `hud.kp.value` et `hud.hint.item`). Un test vérifie que cette table correspond exactement aux `{…}` des deux catalogues.
 - `t` a deux surcharges :
 
 ```ts
@@ -245,7 +247,7 @@ Liste complète au commit `c00e678`, inchangée à `119519b` (seul le type `Unit
 Le code suppose aujourd'hui deux langues. Étapes :
 
 1. Ajouter l'étiquette BCP 47 à `SUPPORTED_LOCALES` (`src/i18n/catalogs.ts`).
-2. Créer `src/i18n/locales/<langue>.json` avec les 159 clés, l'importer dans `catalogs.ts`, le typer `Catalog` et l'ajouter à `CATALOGS`.
+2. Créer `src/i18n/locales/<langue>.json` avec les 163 clés, l'importer dans `catalogs.ts`, le typer `Catalog` et l'ajouter à `CATALOGS`.
 3. Revoir `otherLocale` : il renvoie l'autre langue d'une paire. Avec trois langues, la bascule doit devenir un choix.
 4. Revoir `formatQuantity` : le collage de `%` est codé pour l'anglais seulement.
 5. Ajouter les règles typographiques de la langue dans `tests/i18n/catalogs.test.ts` (les tests actuels traitent FR et EN nommément).
@@ -269,6 +271,7 @@ Réalisée en T-010 (`src/ui`), testée par les scénarios e2e (d), (e) et (f) d
 | écrans titre et menu (T-017) | deux `<main>` nommés par leur titre ; boutons natifs d'au moins 44 px ; focus posé à l'arrivée (« Jouer », ou le niveau quitté) ; phrase annoncée dans une région `aria-live` de l'écran (`menu.announce.title`, `menu.announce.menu`) ; canvas `aria-hidden` hors d'un niveau, son nom rétabli à l'entrée dans un niveau ; ↑ ↓ et Échap au menu ; aucune animation | e2e `screens.spec.ts` (FR et EN) ; `tests/ui/screen-keys.test.ts`, `screens-model.test.ts` ; **pas d'essai avec un vrai lecteur d'écran** |
 | aide ouverte (T-017abc) | papier opaque (K23) ; commandes du niveau suspendues tant que l'aide est ouverte (K24) | e2e (o) et (p) de `ui.spec.ts` |
 | étiquettes de la jauge (T-019) | `aria-hidden` : le panneau des mesures et le nom de la jauge portent la même information | e2e (a) de `ui.spec.ts` |
+| jauge du terme intégral (T-024, niveau 2) | les étiquettes « Terme intégral I » et « I : … N » sont `aria-hidden`, comme celles de la jauge de force (elles passent par `gaugeLabel`) ; le panneau des mesures porte en plus une ligne « Terme I : … N » (`hud.readout.iTerm`, classe `ui-sr`) lue par les lecteurs d'écran, absente (cachée) au niveau 1 ; la jauge se distingue par son motif (hachures, repère m·g) et jamais par le rouge | e2e (i) et (k) de `level2.spec.ts` ; `tests/ui/level2-view-model.test.ts` |
 | couleurs : motif en plus de la teinte | consigne en pointillés, hauteur en trait plein, erreur hachurée ; seul le rouge de la jauge saturée est une couleur | captures ; [rendu.md](rendu.md#courbe-yt) |
 | contrastes ≥ 4,5:1 | texte ≈ 14:1, secondaire ≈ 9:1, rouge ≈ 7:1, déclarés dans `src/ui/ui.css` | **non mesuré par un test** |
 | mouvement réduit | « boiling » figé (`prefers-reduced-motion`), transitions CSS supprimées ; il n'y a pas de secousse de caméra ; les écrans titre et menu n'ont aucune animation | `tests/render/noise.test.ts`, `level-painter.test.ts` ; non testé en e2e (K13 ; la spec T-017 prévoyait un e2e en mouvement réduit émulé, il n'existe pas dans la liste des tests) |

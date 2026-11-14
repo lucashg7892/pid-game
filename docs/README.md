@@ -1,12 +1,12 @@
 # Documentation technique de Huygens’s world (dépôt `pid-game`)
 
-À quoi sert cette page : servir d'index et expliquer comment lire la documentation. La documentation décrit l'état réel du commit `08908b6` (branche `migration`) : la v0.1 a été validée avec réserves au commit `88ae23c` (rapport T-012) ; depuis, les tâches P-005 à T-022 ont corrigé des défauts connus et ajouté un écran titre, un menu, des valeurs de jeu réglées pour le niveau 1 (T-020) et un second niveau, « La mémoire » (contrôleur PI, T-021a et T-021b), puis un trajet de 10 s, un Kp par défaut de 2000 et une tolérance de 0,10 m au niveau 2 (T-022). Les pages mises à jour par la dernière passe (voir le [CHANGELOG](CHANGELOG.md), entrée D-016) citent `08908b6` ; celles que D-016 n'a pas touchées citent encore leur commit d'origine, dont le code qu'elles décrivent n'a pas changé. La page [bilan-v0.1.md](bilan-v0.1.md) reste celle de la v0.1 (état `88ae23c`). Elle est rédigée en français.
+À quoi sert cette page : servir d'index et expliquer comment lire la documentation. La documentation décrit l'état réel du commit `a308ada` (branche `migration`, version 0.2.0) : la v0.1 a été validée avec réserves au commit `88ae23c` (rapport T-012) ; depuis, les tâches P-005 à T-025 ont corrigé des défauts connus et ajouté un écran titre, un menu, des valeurs de jeu réglées pour le niveau 1 (T-020), un second niveau, « La mémoire » (contrôleur PI, T-021a et T-021b), un trajet de 10 s, un Kp par défaut de 2000 et une tolérance de 0,10 m au niveau 2 (T-022), l'oracle MATLAB du contrôleur PI (T-023) et la jauge du terme intégral (T-024). La v0.2 n'a pas de rapport de validation finale : quatre tâches N3 (T-020, T-021a, T-022, T-023) ont chacune été validées indépendamment, les autres sont vérifiées par l'orchestrateur (voir le [CHANGELOG](CHANGELOG.md), section « Versions »). Les pages mises à jour par la dernière passe (entrée D-017 du CHANGELOG) citent `a308ada` ; celles que D-017 n'a pas touchées citent encore leur commit d'origine, dont le code qu'elles décrivent n'a pas changé. La page [bilan-v0.1.md](bilan-v0.1.md) reste celle de la v0.1 (état `88ae23c`). Elle est rédigée en français.
 
 ## Par où commencer
 
 Pour lancer le projet sur un PC Windows, sans être développeur : [tutoriel-lancer-en-local.md](tutoriel-lancer-en-local.md).
 
-Pour comprendre le noyau en un quart d'heure : [simulation.md](simulation.md) (schéma d'un pas, piège de `LoopSample`, contrôleur PI), puis [physique/ascenseur.md](physique/ascenseur.md) (formules et valeurs des niveaux 1 et 2), puis [jeu.md](jeu.md) (phases du niveau et règles d'issue).
+Pour comprendre le noyau en un quart d'heure : [simulation.md](simulation.md) (schéma d'un pas, piège de `LoopSample`, contrôleur PI et son oracle exact), puis [physique/ascenseur.md](physique/ascenseur.md) (formules et valeurs des niveaux 1 et 2), puis [jeu.md](jeu.md) (phases du niveau et règles d'issue).
 
 Pour un tour d'horizon de la version : [bilan-v0.1.md](bilan-v0.1.md), puis [defauts-connus.md](defauts-connus.md).
 
@@ -17,15 +17,15 @@ Pour comprendre ce qui est affiché : [rendu.md](rendu.md) (dessin au crayon) et
 | Page | Contenu |
 |---|---|
 | [bilan-v0.1.md](bilan-v0.1.md) | bilan de la v0.1 : contenu, chiffres clés, méthode, leçons, suite du parcours (état `88ae23c`, avec des mentions datées) |
-| [defauts-connus.md](defauts-connus.md) | défauts connus K1 à K35, par thème, avec gravité et piste de correction ; défauts corrigés |
+| [defauts-connus.md](defauts-connus.md) | défauts connus K1 à K38, par thème, avec gravité et piste de correction ; défauts corrigés |
 | [architecture.md](architecture.md) | modules (dont `src/app`), règles de dépendances, rôle de `main.ts`, flux d'une image, garde-fous automatiques |
 | [simulation.md](simulation.md) | noyau de simulation : algorithme d'un pas, exports, horloge, RK4, saturation, contrôleur PI, déterminisme, procédures d'ajout |
 | [physique/ascenseur.md](physique/ascenseur.md) | modèle de l'ascenseur, formules, valeurs mesurées, fenêtre de réussite [1000 ; 5000], stabilité, boucle PI du niveau 2 |
 | [jeu.md](jeu.md) | logique des niveaux 1 et 2 : phases, commandes, règles d'issue, valeurs de jeu, instantané, événements, géométrie, contrats pour le rendu et l'interface |
-| [rendu.md](rendu.md) | rendu au crayon : démarrage WebGPU/WebGL2, cycle de vie de la session, cadrage, papier millimétré, traits, lots et budget, courbe, bonhomme, jauge, mesures |
-| [interface.md](interface.md) | interface du joueur : écrans titre et menu, phases, bandeau d'aide, panneau de réglage, niveau 2, table des touches, annonces, disposition, police |
-| [i18n-accessibilite.md](i18n-accessibilite.md) | i18n FR/EN (159 clés par langue) et accessibilité |
-| [tests.md](tests.md) | inventaire des tests unitaires et e2e, oracle, tolérances, couverture, tests de pixels, validation MATLAB, intégration continue |
+| [rendu.md](rendu.md) | rendu au crayon : démarrage WebGPU/WebGL2, cycle de vie de la session, cadrage, papier millimétré, traits, lots et budget, courbe, bonhomme, jauge de force, jauge du terme intégral, mesures |
+| [interface.md](interface.md) | interface du joueur : écrans titre et menu, phases, bandeau d'aide, panneau de réglage, jauge du terme intégral, niveau 2, table des touches, annonces, disposition, police |
+| [i18n-accessibilite.md](i18n-accessibilite.md) | i18n FR/EN (163 clés par langue) et accessibilité |
+| [tests.md](tests.md) | inventaire des tests unitaires et e2e, oracle (dont l'oracle exact du PI), tolérances, couverture, tests de pixels, validation MATLAB, intégration continue |
 | [developpement.md](developpement.md) | prérequis, installation, scripts npm, conventions de code, intégration continue, déploiement |
 | [tutoriel-lancer-en-local.md](tutoriel-lancer-en-local.md) | pas à pas Windows/PowerShell : copie, installation, lancement, jouer, tests, validation MATLAB, dépannage (dont `npm.cmd`) |
 | [CHANGELOG.md](CHANGELOG.md) | une entrée par tâche validée, correspondance tâche → commit |
@@ -45,7 +45,7 @@ Pour comprendre ce qui est affiché : [rendu.md](rendu.md) (dessin au crayon) et
 | [ADR-003](decisions/ADR-003-noyau-pur.md) | noyau de simulation pur et ses trois garde-fous |
 | [ADR-004](decisions/ADR-004-orchestration.md) | travail par orchestrateur, sous-agents et certificats (remplacé en partie par l'ADR-014) |
 | [ADR-005](decisions/ADR-005-rk4-bloqueur.md) | intégration RK4 à dt = 1/120 s avec bloqueur d'ordre zéro |
-| [ADR-006](decisions/ADR-006-oracle-matlab.md) | validation par oracle exact MATLAB, hors du site |
+| [ADR-006](decisions/ADR-006-oracle-matlab.md) | validation par oracle exact MATLAB, hors du site (niveau 1, puis contrôleur PI en T-023) |
 | [ADR-007](decisions/ADR-007-i18n-maison.md) | i18n maison typée, sans bibliothèque |
 | [ADR-008](decisions/ADR-008-licence-mit.md) | licence MIT |
 | [ADR-009](decisions/ADR-009-machine-a-etats.md) | niveau en machine à états pure, instantané réutilisé et file d'événements |
@@ -55,11 +55,11 @@ Pour comprendre ce qui est affiché : [rendu.md](rendu.md) (dessin au crayon) et
 | [ADR-013](decisions/ADR-013-ci-et-pages-manuel.md) | CI à chaque push, déploiement Pages manuel tant que le dépôt est privé |
 | [ADR-014](decisions/ADR-014-protocole-allege.md) | protocole allégé : autonomie, vérification proportionnée, outils natifs de Claude Code |
 | [ADR-015](decisions/ADR-015-etat-application-machine-ecrans.md) | état d'application : machine d'écrans pure (`src/app`), session de rendu unique, niveau jeté au retour au menu |
-| [ADR-016](decisions/ADR-016-controleur-pi-sans-anti-windup.md) | contrôleur PI sans anti-windup, validation unitaire seulement (oracle reporté), tolérance du niveau 2 |
+| [ADR-016](decisions/ADR-016-controleur-pi-sans-anti-windup.md) | contrôleur PI sans anti-windup, validé par tests puis par l'oracle exact de T-023, tolérance du niveau 2 |
 
 ### Captures
 
-Les images de `img/` sont produites par les tests e2e (T-008 à T-010, T-016, T-017, T-020, T-021b, T-022), dans Chrome headless avec rendu logiciel ; `t019-*.png` date de T-019. Plusieurs captures viennent de tests dont le réglage a changé depuis (t009-05, t009-06, t010-01, t010-02, t010-05, puis, avec le Kp par défaut de 2000 et le trajet de 10 s de T-022, `t008-paper-1280x720`, `t009-01`, `t009-02`, `t010-06`, `t009-06-trop-court` et `t021-*`, défaut K35) : celles que les pages intègrent portent la mention dans leur légende. Les deux captures de T-022 (`t022-niveau1-trop-court.png`, `t022-niveau2-trop-court.png`) sont à jour. Elles servent de référence visuelle : l'orchestrateur les regarde à chaque exécution (leçon L9). Les pages les intègrent par des liens relatifs.
+Les images de `img/` sont produites par les tests e2e (T-008 à T-010, T-016, T-017, T-020, T-021b, T-022, T-024), dans Chrome headless avec rendu logiciel ; `t019-*.png` est produit par un script ponctuel (aucun test ne l'écrit) et a été refait au commit `a308ada`. T-025 a régénéré les captures périmées par le Kp par défaut de 2000 et le trajet de 10 s de T-022 (K35 corrigé) : `t008-paper-1280x720`, `t009-01`, `t009-02`, `t009-06`, `t010-01`, `t010-06` et `t021-niveau2-*`. Les captures `t009-05`, `t010-02` et `t010-05` viennent de tests dont le réglage a changé depuis et n'ont pas été régénérées : les pages qui les intègrent le disent dans leur légende. Les deux captures de T-022 (`t022-niveau1-trop-court.png`, `t022-niveau2-trop-court.png`) et les deux de T-024 (`t024-niveau2-jauge-i.png`, `t024-niveau2-jauge-i-portrait.png`) sont à jour. Elles servent de référence visuelle : l'orchestrateur les regarde à chaque exécution (leçon L9). Les pages les intègrent par des liens relatifs.
 
 ### Pages prévues
 

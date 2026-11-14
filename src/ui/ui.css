@@ -339,6 +339,7 @@
 
 /* Étiquettes posées sur la scène. */
 .ui-force,
+.ui-gauge-title,
 .ui-dimension {
   position: absolute;
   margin: 0;
@@ -350,8 +351,29 @@
   pointer-events: none;
 }
 
-.ui-force {
+.ui-force,
+.ui-gauge-title {
   transform: translate(-50%, -100%);
+}
+
+/* `.ui p` (plus spécifique) ajoute une marge : sans elle, l'ancre ne tombe pas au bord de l'étiquette. */
+.ui .ui-force,
+.ui .ui-gauge-title,
+.ui .ui-gauge-tag {
+  margin: 0;
+}
+
+/* Étiquettes de l'échelle de la jauge : à droite, centrées sur le niveau visé. */
+.ui-gauge-tag {
+  position: absolute;
+  margin: 0;
+  padding: 0 0.2em;
+  border-radius: 4px;
+  background: rgb(251 247 236 / 85%);
+  font-size: 0.8em;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateY(-50%);
 }
 
 .ui-dimension {

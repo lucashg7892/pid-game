@@ -45,6 +45,10 @@ export interface UiGeometry {
   readonly walkerHead: ScreenXY;
   /** Milieu du bord haut de la jauge de force. */
   readonly forceGauge: ScreenXY;
+  /** Bord gauche, au niveau du haut de l'échelle de la jauge (« 5000 N max »). */
+  readonly gaugeMax: ScreenXY;
+  /** Bord gauche, au niveau du repère du poids m·g (« poids »). */
+  readonly gaugeWeight: ScreenXY;
   /** Milieu de la cote d'erreur. */
   readonly errorDimension: ScreenXY;
   /** Ordonnée écran du dessus du quai d'arrivée. */
@@ -85,6 +89,10 @@ export interface UiLayout {
   readonly help: PanelBox;
   /** Étiquette de force : milieu du bord bas. */
   readonly force: { x: number; y: number };
+  /** Étiquette « max » : bord gauche et milieu vertical. */
+  readonly gaugeMax: { x: number; y: number };
+  /** Étiquette « poids » : bord gauche et milieu vertical. */
+  readonly gaugeWeight: { x: number; y: number };
   /** Cote chiffrée : bord gauche et milieu vertical. */
   readonly dimension: { x: number; y: number };
 }
@@ -102,6 +110,16 @@ export const TOP_BAR_PORTRAIT = 76;
 export const ROTATE_BAR = 48;
 /** Hauteur réservée au bandeau d'aide (px). */
 export const BANNER_RESERVE = 76;
+/**
+ * Largeur réservée (px) aux étiquettes « 5000 N max » et « poids » à droite de la jauge : les
+ * mesures du trajet se posent au-delà (mesuré : « 5000 N max » fait environ 75 px).
+ */
+export const GAUGE_LABELS_ROOM = 84;
+/**
+ * Hauteur (px) que l'étiquette de la jauge prend au-dessus de la scène en portrait, où le haut
+ * de la jauge touche le haut de la scène : la bulle et les mesures s'arrêtent plus haut.
+ */
+export const GAUGE_TITLE_BAND = 18;
 /** Largeur minimale d'un côté pour y poser des panneaux (px). */
 export const MIN_SIDE = 240;
 /** Hauteur minimale de la bande sous la scène pour y poser le bandeau (px). */
@@ -140,6 +158,8 @@ export function createLayout(): UiLayout {
     readout: box(),
     help: box(),
     force: { x: 0, y: 0 },
+    gaugeMax: { x: 0, y: 0 },
+    gaugeWeight: { x: 0, y: 0 },
     dimension: { x: 0, y: 0 },
   };
 }
@@ -284,7 +304,13 @@ export function computeLayout(g: UiGeometry, out: UiLayout): UiLayout {
 
   // Étiquettes ancrées.
   out.force.x = Math.round(g.forceGauge.x);
-  out.force.y = Math.round(g.forceGauge.y - 4);
+  // Le haut de la jauge touche le haut de la scène en portrait : l'étiquette (large de ~110 px,
+  // plus que la jauge) déborderait sur la cage ; on la tient au-dessus du haut de la zone de jeu.
+  out.force.y = Math.round(Math.min(g.forceGauge.y - 4, scene.top - 2));
+  out.gaugeMax.x = Math.round(g.gaugeMax.x);
+  out.gaugeMax.y = Math.round(g.gaugeMax.y);
+  out.gaugeWeight.x = Math.round(g.gaugeWeight.x);
+  out.gaugeWeight.y = Math.round(g.gaugeWeight.y);
   out.dimension.x = Math.round(Math.max(g.errorDimension.x + 10, cage.right + 6));
   out.dimension.y = Math.round(g.errorDimension.y);
 
@@ -311,7 +337,7 @@ export function computeLayout(g: UiGeometry, out: UiLayout): UiLayout {
       head - TOP_BAR,
     );
     // Mesures : à droite de la jauge de force si la place suffit, sinon sous le quai d'arrivée.
-    const besideGauge = Math.max(rightMin, g.forceGauge.x + 0.45 * g.pixelsPerMeter + MARGIN);
+    const besideGauge = Math.max(rightMin, g.gaugeMax.x + GAUGE_LABELS_ROOM + MARGIN);
     const rw = Math.min(MAX_WIDTH.readout, width - MARGIN - besideGauge);
     const limit = rightLimit;
     if (rw >= 160) {
@@ -333,10 +359,17 @@ export function computeLayout(g: UiGeometry, out: UiLayout): UiLayout {
       MARGIN,
       Math.min(MAX_WIDTH.bubble * 1.5, full),
       'bottom',
-      scene.top - MARGIN,
-      bandTop,
+      scene.top - MARGIN - GAUGE_TITLE_BAND,
+      bandTop - GAUGE_TITLE_BAND,
     );
-    set(out.readout, MARGIN, Math.min(MAX_WIDTH.readout * 1.5, full), 'top', topBand, bandTop);
+    set(
+      out.readout,
+      MARGIN,
+      Math.min(MAX_WIDTH.readout * 1.5, full),
+      'top',
+      topBand,
+      bandTop - GAUGE_TITLE_BAND,
+    );
     set(out.panel, MARGIN, Math.min(MAX_WIDTH.panel * 1.5, full), 'top', below, belowRoom);
     set(out.outcome, MARGIN, Math.min(MAX_WIDTH.outcome * 1.5, full), 'top', below, belowRoom);
   }

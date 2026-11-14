@@ -13,9 +13,12 @@ import {
   WALKER_SPAWN_X,
 } from '../../src/game';
 import { PLAY_ZONE, computeFrame, worldXToPixel, worldYToPixel } from '../../src/render/camera';
-import { CONSOLE_ANCHOR_Y, WALKER_HEAD_TOP } from '../../src/render/level-display';
+import { GAUGE_WEIGHT_Y } from '../../src/render/gauge';
+import { CONSOLE_ANCHOR_Y, GAUGE_LABEL_X, WALKER_HEAD_TOP } from '../../src/render/level-display';
 import { DIMENSION_X, GAUGE_MAX_X, GAUGE_MAX_Y, GAUGE_MIN_X } from '../../src/render/pencil-style';
 import {
+  GAUGE_LABELS_ROOM,
+  GAUGE_TITLE_BAND,
   boxExtent,
   computeLayout,
   consoleRect,
@@ -52,6 +55,8 @@ function geometry(width: number, height: number, walkerX = WALKER_SPAWN_X): UiGe
     console: { x: x(CONSOLE_X), y: y(CONSOLE_ANCHOR_Y) },
     walkerHead: { x: x(walkerX), y: y(WALKER_HEAD_TOP) },
     forceGauge: { x: x((GAUGE_MIN_X + GAUGE_MAX_X) / 2), y: y(GAUGE_MAX_Y) },
+    gaugeMax: { x: x(GAUGE_LABEL_X), y: y(GAUGE_MAX_Y) },
+    gaugeWeight: { x: x(GAUGE_LABEL_X), y: y(GAUGE_WEIGHT_Y) },
     errorDimension: { x: x(DIMENSION_X), y: y(2.9) },
     arrivalLedgeY: y(ARRIVAL_LEDGE_HEIGHT),
     groundY: y(START_LEDGE_HEIGHT),
@@ -140,6 +145,43 @@ describe('computeLayout', () => {
     expect(boxExtent(l.outcome).top).toBeGreaterThan(g.scene.bottom);
     expect(boxExtent(l.bubble).bottom).toBeLessThan(g.scene.top);
     expect(boxExtent(l.readout).bottom).toBeLessThan(g.scene.top);
+  });
+
+  it('étiquettes de la jauge : posées à droite de la jauge, mesures au-delà (paysage)', () => {
+    const g = geometry(1280, 720);
+    const l = computeLayout(g, createLayout());
+    expect(l.gaugeMax.x).toBe(Math.round(g.gaugeMax.x));
+    expect(l.gaugeMax.x).toBeGreaterThan(g.forceGauge.x);
+    expect(l.gaugeWeight.y).toBeGreaterThan(l.gaugeMax.y);
+    expect(l.force.y).toBeLessThan(l.gaugeMax.y);
+    expect(l.readout.left).toBeGreaterThanOrEqual(l.gaugeMax.x + GAUGE_LABELS_ROOM);
+    // Les étiquettes (boîtes approchées : 84 px de large, 20 px de haut) ne coupent ni la cage,
+    // ni la console, ni le bonhomme, ni les panneaux de la disposition.
+    const tags = [l.gaugeMax, l.gaugeWeight].map((p) => ({
+      left: p.x,
+      right: p.x + GAUGE_LABELS_ROOM,
+      top: p.y - 10,
+      bottom: p.y + 10,
+    }));
+    for (const tag of tags) {
+      expect(intersects(tag, g.cage)).toBe(false);
+      expect(intersects(tag, consoleRect(g))).toBe(false);
+      // L'aide est une fenêtre modale : elle couvre déjà tout ce qu'elle veut, hors sujet ici.
+      for (const name of PANELS.filter((n) => n !== 'help')) {
+        expect(intersects(tag, boxExtent(l[name])), name).toBe(false);
+      }
+    }
+  });
+
+  it('portrait : la bulle et les mesures laissent la place à l’étiquette de la jauge', () => {
+    const g = geometry(390, 844);
+    const l = computeLayout(g, createLayout());
+    const label = l.force.y - GAUGE_TITLE_BAND;
+    expect(boxExtent(l.bubble).bottom).toBeLessThanOrEqual(label);
+    expect(boxExtent(l.readout).bottom).toBeLessThanOrEqual(label);
+    // « 5000 N max » et « poids » restent dans l'écran, à droite de la cage.
+    expect(l.gaugeMax.x + GAUGE_LABELS_ROOM).toBeLessThanOrEqual(g.width);
+    expect(l.gaugeMax.x).toBeGreaterThan(g.cage.right);
   });
 
   it('côté gauche trop étroit à gauche du bonhomme : réglage posé au-dessus de lui', () => {

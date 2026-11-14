@@ -162,6 +162,10 @@ async function checkPanelsAvoidCage(
     ]);
   }
   const report: string[] = [];
+  type Box = { x: number; y: number; width: number; height: number };
+  const hits = (a: Box, r: { x: number; y: number; right: number; bottom: number }): boolean =>
+    a.x < r.right && r.x < a.x + a.width && a.y < r.bottom && r.y < a.y + a.height;
+  const panels: [string, Box][] = [];
   for (const selector of [
     '.ui-banner',
     '.ui-bubble',
@@ -175,14 +179,44 @@ async function checkPanelsAvoidCage(
     const b = await node.boundingBox();
     expect(b, selector).not.toBeNull();
     if (b === null) continue;
+    panels.push([selector, b]);
     report.push(
       `${selector} [${b.x.toFixed(0)}, ${b.y.toFixed(0)}, ${(b.x + b.width).toFixed(0)}, ${(b.y + b.height).toFixed(0)}]`,
     );
     for (const [name, r] of obstacles) {
-      const hit = b.x < r.right && r.x < b.x + b.width && b.y < r.bottom && r.y < b.y + b.height;
       expect(
-        hit,
+        hits(b, r),
         `${selector} coupe ${name} [${r.x.toFixed(0)}–${r.right.toFixed(0)}] × [${r.y.toFixed(0)}–${r.bottom.toFixed(0)}]`,
+      ).toBe(false);
+    }
+  }
+  // Étiquettes de la jauge (légende ou « Force : … N », « max », « poids ») : mêmes obstacles,
+  // et jamais sous un panneau (l'aide, fenêtre modale, est exclue).
+  const labels = page.locator('#ui .ui-force, #ui .ui-gauge-title, #ui .ui-gauge-tag');
+  for (let i = 0; i < (await labels.count()); i += 1) {
+    const node = labels.nth(i);
+    if (!(await node.isVisible())) continue;
+    const b = await node.boundingBox();
+    expect(b, `étiquette ${String(i)}`).not.toBeNull();
+    if (b === null) continue;
+    const text = (await node.textContent()) ?? '';
+    report.push(
+      `« ${text} » [${b.x.toFixed(0)}, ${b.y.toFixed(0)}, ${(b.x + b.width).toFixed(0)}, ${(b.y + b.height).toFixed(0)}]`,
+    );
+    expect(b.x, `« ${text} » dans l'écran`).toBeGreaterThanOrEqual(0);
+    expect(b.x + b.width, `« ${text} » dans l'écran`).toBeLessThanOrEqual(width);
+    expect(b.y, `« ${text} » dans l'écran`).toBeGreaterThanOrEqual(0);
+    for (const [name, r] of obstacles) {
+      expect(
+        hits(b, r),
+        `« ${text} » [${b.x.toFixed(0)}, ${b.y.toFixed(0)}, ${(b.x + b.width).toFixed(0)}, ${(b.y + b.height).toFixed(0)}] coupe ${name} [${r.x.toFixed(0)}, ${r.y.toFixed(0)}, ${r.right.toFixed(0)}, ${r.bottom.toFixed(0)}]`,
+      ).toBe(false);
+    }
+    for (const [selector, p] of panels) {
+      if (selector === '.ui-help') continue;
+      expect(
+        hits(b, { x: p.x, y: p.y, right: p.x + p.width, bottom: p.y + p.height }),
+        `« ${text} » coupe ${selector}`,
       ).toBe(false);
     }
   }
@@ -198,6 +232,11 @@ test('(a) FR, clavier réel : aide, marche, panneau Kp, + ×15, Entrée, victoir
   await expect(banner.locator('kbd', { hasText: 'D' })).toBeVisible();
   await expect(banner.locator('kbd', { hasText: '→' })).toBeVisible();
   await expect(page.locator('#ui .ui-bubble')).toHaveText(FR('level1.goal'));
+  // Étiquettes permanentes de la jauge dès l'approche ; « Force : … N » n'apparaît qu'au trajet.
+  await expect(page.locator('#ui .ui-gauge-title')).toHaveText('Force du moteur');
+  await expect(page.locator('#ui .ui-gauge-tag').nth(0)).toHaveText(`5000${NB}N max`);
+  await expect(page.locator('#ui .ui-gauge-tag').nth(1)).toHaveText('poids');
+  await expect(page.locator('#ui .ui-force')).toBeHidden();
   await expect(page.locator('#ui .ui-kp-tag')).toHaveText(`Kp = 1000${NB}N/m`);
   await expect(page.locator('#ui .ui-title')).toHaveText('Huygens’s world');
   await capture(page, 't010-01-aide.png');
@@ -228,7 +267,7 @@ test('(a) FR, clavier réel : aide, marche, panneau Kp, + ×15, Entrée, victoir
 
   const live = page.locator('[aria-live="polite"]');
   await expect(live).toContainText(
-    `Réussi\u202F! La cabine s’est stabilisée 0,20${NB}m sous le quai.`,
+    `Réussi\u202F! La cabine s’est stabilisée 0,20${NB}m sous le plateau d’arrivée.`,
     {
       timeout: 10_000,
     },

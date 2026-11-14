@@ -17,6 +17,7 @@ import {
   type LevelSnapshot,
 } from '../game';
 import { worldXToPixel, worldYToPixel, type Frame } from './camera';
+import { GAUGE_WEIGHT_Y } from './gauge';
 import {
   CONSOLE_POST_HEIGHT,
   DIMENSION_X,
@@ -36,6 +37,12 @@ export const WALKER_HEAD_TOP =
   HIP_HEIGHT + TORSO_LENGTH + NECK_TO_HEAD + HEAD_RADIUS + HAT_DOME_RADIUS;
 /** Hauteur de l'ancre de la console : dessus du pupitre (m). */
 export const CONSOLE_ANCHOR_Y = CONSOLE_POST_HEIGHT + 0.3;
+
+/**
+ * Abscisse (m) du bord gauche des étiquettes de l'échelle de la jauge (« max », « poids ») : à
+ * droite de la jauge et du petit poids dessiné au repère de m·g.
+ */
+export const GAUGE_LABEL_X = GAUGE_MAX_X + 0.2;
 
 /** État affiché, réécrit en place par {@link computeDisplay}. */
 export interface LevelDisplay {
@@ -145,6 +152,10 @@ export interface LevelAnchors {
   readonly walkerHead: ScreenPoint;
   /** Milieu du bord haut de la jauge de force (étiquette « force » / « N »). */
   readonly forceGauge: ScreenPoint;
+  /** Bord gauche, au niveau du haut de l'échelle de la jauge (étiquette « 5000 N max »). */
+  readonly gaugeMax: ScreenPoint;
+  /** Bord gauche, au niveau du repère du poids m·g (étiquette « poids »). */
+  readonly gaugeWeight: ScreenPoint;
   /** Vrai si la cote d'erreur est dessinée. */
   errorDimensionVisible: boolean;
 }
@@ -157,6 +168,8 @@ export function createAnchors(): LevelAnchors {
     errorDimension: { x: 0, y: 0 },
     walkerHead: { x: 0, y: 0 },
     forceGauge: { x: 0, y: 0 },
+    gaugeMax: { x: 0, y: 0 },
+    gaugeWeight: { x: 0, y: 0 },
     errorDimensionVisible: false,
   };
 }
@@ -209,5 +222,7 @@ export function computeAnchors(
     display.walkerGround + WALKER_HEAD_TOP,
   );
   place(out.forceGauge, frame, widthPx, heightPx, (GAUGE_MIN_X + GAUGE_MAX_X) / 2, GAUGE_MAX_Y);
+  place(out.gaugeMax, frame, widthPx, heightPx, GAUGE_LABEL_X, GAUGE_MAX_Y);
+  place(out.gaugeWeight, frame, widthPx, heightPx, GAUGE_LABEL_X, GAUGE_WEIGHT_Y);
   out.errorDimensionVisible = display.phase === 'outcome' && s.outcome === 'win';
 }

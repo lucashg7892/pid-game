@@ -28,7 +28,7 @@ describe('annonces', () => {
     expect(drain(level, 'fr')).toEqual([
       `Lancement avec Kp = 2500${NB}N/m${NB}: la consigne passe de 0 à 3${NB}m.`,
       `Moteur à fond\u202F! Il ne peut pas fournir plus de 5000${NB}N${NB}: c’est la saturation.`,
-      `Réussi\u202F! La cabine s’est stabilisée 0,20${NB}m sous le quai.`,
+      `Réussi\u202F! La cabine s’est stabilisée 0,20${NB}m sous le plateau d’arrivée.`,
     ]);
     expect(drain(level, 'fr')).toEqual([]);
   });

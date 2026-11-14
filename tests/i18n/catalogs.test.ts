@@ -30,6 +30,7 @@ const IDENTICAL_ALLOWED: Readonly<Record<string, string>> = {
   'controls.action': 'la spec §6 nomme le bouton tactile « Action » ; même mot en anglais.',
   'level1.dimension': 'cote mathématique « e = … m » : notation identique, seul {e} varie.',
   'app.title': 'titre du jeu « Huygens’s world » (décision D15), nom propre non traduit.',
+  'hud.gauge.max': 'notation « 5000 N max » : nombre et unité SI identiques, seul {n} varie.',
   'hud.kp.value': 'notation « Kp = … N/m » : symbole et unité SI identiques, seul {kp} varie.',
 };
 

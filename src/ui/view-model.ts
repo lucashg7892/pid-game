@@ -5,7 +5,7 @@
  * sinon la même chaîne est gardée : en régime établi, la couche DOM compare les références et
  * n'écrit rien, et le modèle n'alloue que lorsqu'un chiffre affiché change.
  */
-import type { LevelPhase, LevelSnapshot, TripOutcome } from '../game';
+import { ELEVATOR_MAX_FORCE, type LevelPhase, type LevelSnapshot, type TripOutcome } from '../game';
 import { otherLocale, type Locale, type Translator } from '../i18n';
 import { ERROR_DIGITS, formatError, formatKp } from './announce';
 import { chooseHint, hintLine, type HintId, type HintLine } from './hints';
@@ -76,6 +76,12 @@ export interface StaticTexts {
   readonly legendLines: readonly string[];
   /** Nom de la jauge de force. */
   readonly gaugeLabel: string;
+  /** Légende de la jauge avant le lancement (« Force du moteur »). */
+  readonly gaugeTitle: string;
+  /** Haut de l'échelle de la jauge (« 5000 N max »). */
+  readonly gaugeMax: string;
+  /** Repère du poids m·g à droite de la jauge (« poids »). */
+  readonly gaugeWeight: string;
   /** Teaser du terme I. */
   readonly teaser: string;
   /** « Ce niveau arrive bientôt ». */
@@ -223,6 +229,11 @@ export function staticTexts(tr: Translator): StaticTexts {
       tr.t('hud.legend.force'),
     ],
     gaugeLabel: tr.t('a11y.forceGauge'),
+    gaugeTitle: tr.t('hud.gauge.title'),
+    gaugeMax: tr.t('hud.gauge.max', {
+      n: tr.formatNumber(ELEVATOR_MAX_FORCE, { maximumFractionDigits: 0 }),
+    }),
+    gaugeWeight: tr.t('hud.gauge.weight'),
     teaser: tr.t('level1.teaser'),
     comingSoon: tr.t('level1.comingSoon'),
     rotateHint: tr.t('app.rotateHint'),

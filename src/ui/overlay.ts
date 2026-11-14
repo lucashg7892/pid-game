@@ -321,6 +321,23 @@ export function createUi(options: UiOptions): Ui {
   const forceNode = el('p', 'ui-force num', root);
   const force = new TextSlot(forceNode);
   const forcePoint = new PointSlot(forceNode);
+  // Étiquettes permanentes de la jauge (aria-hidden : le panneau des mesures et le nom de la
+  // jauge disent déjà la même chose aux lecteurs d'écran). Cachées tant que la géométrie manque.
+  const gaugeLabel = (className: string): HTMLParagraphElement => {
+    const node = el('p', className, root);
+    node.setAttribute('aria-hidden', 'true');
+    node.hidden = true;
+    return node;
+  };
+  const gaugeTitleNode = gaugeLabel('ui-gauge-title');
+  const gaugeTitle = new TextSlot(gaugeTitleNode);
+  const gaugeTitlePoint = new PointSlot(gaugeTitleNode);
+  const gaugeMaxNode = gaugeLabel('ui-gauge-tag');
+  const gaugeMax = new TextSlot(gaugeMaxNode);
+  const gaugeMaxPoint = new PointSlot(gaugeMaxNode);
+  const gaugeWeightNode = gaugeLabel('ui-gauge-tag');
+  const gaugeWeight = new TextSlot(gaugeWeightNode);
+  const gaugeWeightPoint = new PointSlot(gaugeWeightNode);
 
   // --- Issue ---
   const outcome = el('section', 'ui-paper ui-outcome', root);
@@ -378,6 +395,7 @@ export function createUi(options: UiOptions): Ui {
   let previousPhase = '';
   let previousPaused = false;
   let previousOutcome = false;
+  let gaugeTitleVisible = true;
 
   const announce = (text: string): void => {
     const line = document.createElement('p');
@@ -495,6 +513,11 @@ export function createUi(options: UiOptions): Ui {
     show(forceNode, vm.readoutVisible);
     force.set(vm.force);
     forceNode.classList.toggle('is-saturated', vm.saturated);
+    // La légende de la jauge cède la place à « Force : … N » dès le lancement.
+    gaugeTitle.set(t.gaugeTitle);
+    gaugeMax.set(t.gaugeMax);
+    gaugeWeight.set(t.gaugeWeight);
+    gaugeTitleVisible = !vm.readoutVisible;
 
     // Issue.
     show(outcome, vm.outcomeVisible);
@@ -547,6 +570,12 @@ export function createUi(options: UiOptions): Ui {
     helpBox.apply(layout.help, h);
     forcePoint.apply(layout.force.x, layout.force.y);
     dimensionPoint.apply(layout.dimension.x, layout.dimension.y);
+    gaugeTitlePoint.apply(layout.force.x, layout.force.y);
+    gaugeMaxPoint.apply(layout.gaugeMax.x, layout.gaugeMax.y);
+    gaugeWeightPoint.apply(layout.gaugeWeight.x, layout.gaugeWeight.y);
+    show(gaugeTitleNode, gaugeTitleVisible);
+    show(gaugeMaxNode, true);
+    show(gaugeWeightNode, true);
   };
 
   const update = (g?: Readonly<UiGeometry>): void => {

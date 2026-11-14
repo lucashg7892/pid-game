@@ -15,6 +15,7 @@ export const MESSAGE_PARAMS = {
   'hud.kp.value': ['kp'],
   'hud.hint.item': ['keys', 'action'],
   'hud.force.value': ['u'],
+  'hud.gauge.max': ['n'],
   'hud.error.value': ['e'],
   'hud.time.value': ['t'],
   'hud.status.launch': ['kp'],

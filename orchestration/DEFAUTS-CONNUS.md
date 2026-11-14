@@ -28,3 +28,4 @@ Liste tenue par l'orchestrateur. Rien ici n'est bloquant pour la v0.1.
 | K22 | `package.json` en version 0.0.0 ; `prefers-reduced-motion` lu seulement au démarrage | T-012 (V-8, V-10) | mineur → version corrigée (P-005) ; `prefers-reduced-motion` toujours lu au démarrage seulement |
 | K23 | Aide ouverte pendant un trajet : les mesures (Temps, Erreur, Légende) transparaissent faiblement sous le papier translucide de l'aide (z-index ajouté en T-015 pour la lisibilité) | T-015 | mineur |
 | K24 | Cliquer « Reprendre » alors que l'aide est ouverte relance le jeu derrière l'aide ; l'aide ne reprend pas à la fermeture | T-015 | mineur |
+| K25 | Portrait 390 px en trajet : le panneau de mesures et le panneau Kp sont rognés en bas (défilement interne) et la dernière ligne de la légende (« Jauge ») n'est pas visible sans défiler ; vu sur les captures de T-019 | T-019 | mineur (voir K5) |

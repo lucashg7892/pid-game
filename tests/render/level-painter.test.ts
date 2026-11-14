@@ -10,6 +10,7 @@ import {
 import { computeFrame, worldXToPixel, worldYToPixel } from '../../src/render/camera';
 import {
   CONSOLE_ANCHOR_Y,
+  GAUGE_LABEL_X,
   WALKER_HEAD_TOP,
   choosePose,
   computeAnchors,
@@ -19,6 +20,7 @@ import {
   effectivePhase,
 } from '../../src/render/level-display';
 import { BATCH_CAPACITY, LevelPainter } from '../../src/render/level-painter';
+import { GAUGE_WEIGHT_Y } from '../../src/render/gauge';
 import { DIMENSION_X, GAUGE_MAX_X, GAUGE_MAX_Y, GAUGE_MIN_X } from '../../src/render/pencil-style';
 import { CURVE_ORIGIN_X, CURVE_SPAN } from '../../src/render/curve';
 
@@ -252,6 +254,13 @@ describe('état affiché et ancres', () => {
       9,
     );
     expect(a.forceGauge.y).toBeCloseTo(worldYToPixel(frame, 720, GAUGE_MAX_Y), 9);
+    // Étiquettes de l'échelle : à droite de la jauge, au haut de l'échelle et au repère du poids.
+    expect(a.gaugeMax.x).toBeCloseTo(worldXToPixel(frame, 1280, GAUGE_LABEL_X), 9);
+    expect(a.gaugeMax.y).toBeCloseTo(worldYToPixel(frame, 720, GAUGE_MAX_Y), 9);
+    expect(a.gaugeWeight.x).toBeCloseTo(a.gaugeMax.x, 9);
+    expect(a.gaugeWeight.y).toBeCloseTo(worldYToPixel(frame, 720, GAUGE_WEIGHT_Y), 9);
+    expect(a.gaugeWeight.y).toBeGreaterThan(a.gaugeMax.y);
+    expect(GAUGE_LABEL_X).toBeGreaterThan(GAUGE_MAX_X);
     expect(WALKER_HEAD_TOP).toBeGreaterThan(1.6);
     expect(WALKER_HEAD_TOP).toBeLessThan(1.9);
   });

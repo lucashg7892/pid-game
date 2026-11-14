@@ -194,6 +194,8 @@ function uiGeometry(width: number, height: number, anchors: Readonly<LevelAnchor
     console: anchors.console,
     walkerHead: anchors.walkerHead,
     forceGauge: anchors.forceGauge,
+    gaugeMax: anchors.gaugeMax,
+    gaugeWeight: anchors.gaugeWeight,
     errorDimension: anchors.errorDimension,
     arrivalLedgeY: worldYToPixel(frame, height, ARRIVAL_LEDGE_HEIGHT),
     groundY: worldYToPixel(frame, height, START_LEDGE_HEIGHT),

@@ -4,7 +4,7 @@
  * théorique (formule) aux bons endroits ; mémoïsation (mêmes chaînes tant que rien ne change).
  */
 import { describe, expect, it } from 'vitest';
-import { createLevel1, type Level1 } from '../../src/game';
+import { ELEVATOR_MAX_FORCE, createLevel1, type Level1 } from '../../src/game';
 import { CATALOGS } from '../../src/i18n';
 import { chooseHint, hintLine, hintText, type HintId } from '../../src/ui/hints';
 import {
@@ -77,6 +77,19 @@ describe('bandeau d’aide : chaque phase, FR et EN', () => {
     trip.pause();
     expect(chooseHint(trip.snapshot, false)).toBe('paused');
     expect(chooseHint(finished(2500).snapshot, false)).toBe('outcome');
+  });
+});
+
+describe('étiquettes de la jauge', () => {
+  it('légende, haut d’échelle (tiré de ELEVATOR_MAX_FORCE) et repère du poids, FR et EN', () => {
+    const fr = staticTexts(tr('fr'));
+    const en = staticTexts(tr('en'));
+    expect(fr.gaugeTitle).toBe('Force du moteur');
+    expect(en.gaugeTitle).toBe('Motor force');
+    expect(fr.gaugeMax).toBe(`${String(ELEVATOR_MAX_FORCE)}${NB}N max`);
+    expect(en.gaugeMax).toBe(`${String(ELEVATOR_MAX_FORCE)}${NB}N max`);
+    expect(fr.gaugeWeight).toBe('poids');
+    expect(en.gaugeWeight).toBe('weight');
   });
 });
 

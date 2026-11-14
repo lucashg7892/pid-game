@@ -10,10 +10,13 @@
  * - champ numérique : comportement natif pour tout sauf Échap ;
  * - bouton (ou autre contrôle activable) : Entrée et Espace restent natifs ;
  * - curseur : flèches, Début et Fin restent natives (elles règlent la valeur) ;
+ * - aide ouverte (K24) : aucune commande du jeu ; seuls Échap, Tab et le comportement natif des
+ *   contrôles de l'aide (Entrée, Espace sur un bouton) passent ;
  * - toute touche du jeu, et les touches qui feraient défiler la page, sont bloquées
  *   (`preventDefault`).
  */
 import type { LevelPhase } from '../game';
+import { commandsBlocked } from './help';
 
 /** Ce qui a le focus au moment de la frappe. */
 export type FocusTarget =
@@ -148,6 +151,21 @@ function useIntentOf(phase: LevelPhase, repeat: boolean): KeyIntent {
   return 'block';
 }
 
+/** Intention quand l'aide est ouverte : touches du jeu et de défilement bloquées, le reste natif. */
+function blockedIntentOf(code: string, key: string, focus: FocusTarget): KeyIntent {
+  const isActivation = code === 'Enter' || code === 'NumpadEnter' || code === 'Space';
+  if (isActivation && focus === 'button') {
+    return 'none';
+  }
+  const isGameKey =
+    code === 'KeyE' ||
+    code === 'KeyR' ||
+    isActivation ||
+    walkSideOf(code) !== null ||
+    kpIntentOf(code, key) !== 'none';
+  return isGameKey || SCROLL_CODES.has(code) ? 'block' : 'none';
+}
+
 /**
  * Traduit une frappe en intention (fonction pure).
  * @param input champs de l'événement clavier et contexte.
@@ -167,6 +185,9 @@ export function keyToIntent(input: KeyInput): KeyIntent {
       return 'closeTuning';
     }
     return phase === 'paused' ? 'resume' : 'pause';
+  }
+  if (commandsBlocked(input.helpOpen)) {
+    return blockedIntentOf(code, key, focus);
   }
   if (focus === 'number') {
     return 'none';

@@ -769,6 +769,54 @@ test('(p) K23 : l’aide est opaque, les mesures ne transparaissent pas', async 
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });
 
+test('(r) K24 : aide ouverte, le clavier ne commande plus le jeu ; il le commande après fermeture', async ({
+  page,
+}) => {
+  const problems = await open(page, '?renderer=webgl&e2e=1&lang=fr');
+  const showHelp = page.getByRole('button', { name: FR('controls.help.show') });
+  const dialog = page.getByRole('dialog', { name: FR('controls.help.title') });
+  const snap = (): Promise<unknown> => page.evaluate(() => window.__huygens?.snapshot());
+
+  // Niveau « approche » : D (marche), E (interaction), R n'ont aucun effet.
+  await showHelp.click();
+  await expect(dialog).toBeVisible();
+  const approach = await snap();
+  await page.keyboard.down('d');
+  await run(page, [['advance', 1.0]]);
+  await page.keyboard.up('d');
+  await page.keyboard.press('e');
+  await page.keyboard.press('r');
+  await run(page, [['advance', 1.0]]);
+  expect(await snap()).toEqual(approach);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await page.keyboard.down('d');
+  await run(page, [['advance', 1.0]]);
+  await page.keyboard.up('d');
+  expect(((await snap()) as { walkerX: number }).walkerX).toBeGreaterThan(
+    (approach as { walkerX: number }).walkerX,
+  );
+
+  // Niveau « réglage » : +, Page préc., E (lancement) et R n'ont aucun effet.
+  await run(page, [['stop'], ...TO_CONSOLE, ['setKp', 2500]]);
+  await showHelp.click();
+  await expect(dialog).toBeVisible();
+  const tuning = await snap();
+  expect((tuning as { phase: string }).phase).toBe('tuning');
+  for (const key of ['+', 'PageUp', 'PageDown', '-', 'e', 'r']) {
+    await page.keyboard.press(key);
+  }
+  await run(page, [['advance', 1.0]]);
+  expect(await snap()).toEqual(tuning);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await page.keyboard.press('+');
+  expect((await run(page, [])).kp).toBe(2600);
+  await page.keyboard.press('PageUp');
+  expect((await run(page, [])).kp).toBe(3600);
+  expect(problems, CONSOLE_FAILURE).toEqual([]);
+});
+
 test('(q) cycle de vie de la vue : attach, detach, attach sans fuite ni erreur', async ({
   page,
 }) => {

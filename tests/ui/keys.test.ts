@@ -185,7 +185,47 @@ describe('keyToIntent : règles transverses', () => {
         expect(intent(ESCAPE, phase, focus, { helpOpen: true })).toBe('closeHelp');
       }
     }
-    expect(intent(KEY_E, 'tuning', 'none', { helpOpen: true })).toBe('launch');
+  });
+
+  it('aide ouverte (K24) : aucune commande du jeu au clavier, quelle que soit la phase et le focus', () => {
+    const GAME_INTENTS: readonly KeyIntent[] = [
+      'walkLeft',
+      'walkRight',
+      'interact',
+      'launch',
+      'kpUp',
+      'kpDown',
+      'kpUpBig',
+      'kpDownBig',
+      'restart',
+      'pause',
+      'resume',
+      'closeTuning',
+    ];
+    for (const key of ALL_KEYS) {
+      for (const phase of PHASES) {
+        for (const focus of FOCUSES) {
+          const got = intent(key, phase, focus, { helpOpen: true });
+          expect(GAME_INTENTS, `${key.code}/${phase}/${focus}`).not.toContain(got);
+        }
+      }
+    }
+    // Touches du jeu : bloquées (preventDefault), même répétées.
+    for (const key of [KEY_E, KEY_D, KEY_A, ARROW_LEFT, PLUS, MINUS, PAGE_UP, PAGE_DOWN, KEY_R]) {
+      expect(intent(key, 'tuning', 'none', { helpOpen: true }), key.code).toBe('block');
+      expect(intent(key, 'approach', 'button', { helpOpen: true }), key.code).toBe('block');
+    }
+    // Entrée et Espace sur un bouton de l'aide (« Fermer ») : comportement natif.
+    for (const key of [ENTER, NUMPAD_ENTER, SPACE]) {
+      expect(intent(key, 'trip', 'button', { helpOpen: true }), key.code).toBe('none');
+      expect(intent(key, 'trip', 'none', { helpOpen: true }), key.code).toBe('block');
+    }
+    // Tab et Maj+Tab : non interceptés (le piège de focus est dans l'overlay).
+    for (const focus of FOCUSES) {
+      expect(intent(TAB, 'tuning', focus, { helpOpen: true })).toBe('none');
+    }
+    // Échap ferme toujours l'aide.
+    expect(intent(ESCAPE, 'tuning', 'button', { helpOpen: true })).toBe('closeHelp');
   });
 
   it('réglage ouvert, aide fermée : Échap referme le panneau sans lancer ni pause', () => {

@@ -45,8 +45,10 @@ const TOLERANCE_Y = 5e-7;
  * d'un facteur ≥ 2,5 pour chaque Kp, un intégrateur d'ordre 2 d'un facteur ≥ 150.
  */
 const TOLERANCE_V = 5e-6;
-/** Gains testés : régimes non saturé (500, 1500), saturé, bornes de la fenêtre (3800, 3900), max. */
+/** Gains testés : régimes non saturé (500, 1500), saturé, anciennes bornes (3800, 3900), max. */
 const GAINS = [500, 1500, 2500, 3800, 3900, 8000] as const;
+/** Bornes de la fenêtre du niveau 1 depuis T-020 : 1000 (basse), 5000 (haute) et 5100 (choc). */
+const WINDOW_GAINS = [1000, 5000, 5100] as const;
 
 /** Matrices exactes du bloqueur d'ordre zéro sur un pas h : Φ = [[1, phi01], [0, phi11]], Γ. */
 interface Zoh {
@@ -216,7 +218,7 @@ describe('forme fermée Φ, Γ du bloqueur d’ordre zéro (contrôles de l’or
 });
 
 describe('trajectoire RK4 de la boucle de jeu = solution exacte échantillonnée (D-6)', () => {
-  it.each(GAINS)(
+  it.each([...GAINS, ...WINDOW_GAINS])(
     'Kp = %i : 1200 pas à dt = 1/120, |Δy| ≤ 5e-7 m et |Δẏ| ≤ 5e-6 m/s à chaque pas',
     (kp) => {
       const gaps = gapsToExact(createElevatorLoop({ kp }), kp, STEPS);

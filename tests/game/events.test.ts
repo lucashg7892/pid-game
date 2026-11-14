@@ -60,9 +60,9 @@ describe('CA-6 : événements', () => {
     expect(second.map((e) => e.type)).toEqual(['launch', 'firstSaturation', 'outcome']);
   });
 
-  it('Kp = 1500 : aucun événement de saturation', () => {
+  it('Kp = 800 : aucun événement de saturation', () => {
     const level = createLevel1();
-    level.setKp(1500);
+    level.setKp(800);
     reachConsole(level);
     drain(level);
     const r = finishTrip(level);

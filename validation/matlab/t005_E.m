@@ -1,8 +1,9 @@
 %T005_E Point E : fenêtre de jeu avec l'oracle EXACT (saturation ±5000 N, sol, dt = 1/120).
 %   Pour Kp = 100..8000 par pas de 100 : issue selon la spec §6 (t005_issue) et règle
-%   simplifiée de l'ordre de mission (|e| final > 0,25 m => marche ; y_max > 3,30 m => choc).
-%   Comparaison avec l'issue calculée sur les trajectoires TypeScript
-%   (validation/data/ts_sweep_summary.csv). Marges à la poutre à Kp = 3800 et 3900.
+%   simplifiée de l'ordre de mission (|e| final > tolérance de marche => marche ; y_max > poutre
+%   => choc). Comparaison avec l'issue calculée sur les trajectoires TypeScript
+%   (validation/data/ts_sweep_summary.csv). Règles d'issue de T-020 (t005_params) : poutre
+%   3,3626 m, marche 0,5 m, horizon 720 pas. Marges à la poutre à Kp = 5000 et 5100.
 P = t005_params();
 addpath(fileparts(mfilename('fullpath')));
 TS = readtable(fullfile(P.root, 'validation', 'data', 'ts_sweep_summary.csv'), 'TextType', 'string');
@@ -23,30 +24,36 @@ for i = 1:n
     if TS.issue(j) ~= issue(i) || TS.k_issue(j) ~= kIss(i), nDesaccord = nDesaccord + 1; end
 end
 win = KPS(issue == "victoire");
+fprintf('E. Règles : poutre %.4f m, marche %.2f m, horizon %d pas (%.1f s)\n', ...
+    P.hPoutre, P.tolMarche, P.kMax, P.kMax*P.dt);
 fprintf('E. Fenêtre de victoire (spec §6, oracle exact) : Kp in [%d ; %d], %d valeurs, contiguë : %s\n', ...
     min(win), max(win), numel(win), string(isequal(win, min(win):100:max(win))));
 fprintf('   Règle simplifiée (ordre de mission) identique à la règle §6 : %s\n', string(all(issue == issueSimple)));
 fprintf('   Désaccords TS / exact (issue ou pas de l''issue) : %d sur %d ; max |y_max TS - exact| = %.3e m\n', ...
     nDesaccord, n, max(dyMaxTS));
-fprintf('\n%6s | %-12s %5s | %12s | %12s | %10s\n', 'Kp', 'issue', 'pas', 'y_max éch.', 'y_max inter', '3,30-y_max');
-for Kp = [100 200 1500 1800 1900 2000 2100 2500 3500 3700 3800 3900 4000 4500 8000]
+fprintf('   Victoire la plus lente : pas %d (Kp = %s) ; marge avant l''horizon : %d pas\n', ...
+    max(kIss(issue == "victoire")), strjoin(string(KPS(issue == "victoire" & kIss == max(kIss(issue == "victoire")))), ', '), ...
+    P.kMax - max(kIss(issue == "victoire")));
+fprintf('\n%6s | %-12s %5s | %12s | %12s | %10s\n', 'Kp', 'issue', 'pas', 'y_max éch.', 'y_max inter', 'poutre-y_max');
+for Kp = [100 200 800 900 1000 1100 2500 3800 4000 4900 5000 5100 5200 6000 8000]
     i = find(KPS == Kp);
     fprintf('%6d | %-12s %5d | %12.9f | %12.9f | %+9.3f mm\n', Kp, issue(i), kIss(i), yMax(i), ...
         yInt(i), 1000*(P.hPoutre - yMax(i)));
 end
-% Bornes continues de la fenêtre (Kp réel) : y_max(Kp) = 3,30 m et premier Kp gagnant.
+% Bornes continues de la fenêtre (Kp réel) : y_max(Kp) = poutre et premier Kp gagnant.
 fy = @(K) max(t005_oracle(P, K, P.dt, P.kMax, P.Umax).y) - P.hPoutre;
-KhautEch = fzero(fy, [3800 3900]);
+KhautEch = fzero(fy, [5000 5100]);
 fyi = @(K) max(t005_oracle(P, K, P.dt, P.kMax, P.Umax).yInter) - P.hPoutre;
-KhautInt = fzero(fyi, [3800 3900]);
-lo = 1900; hi = 2000;
+KhautInt = fzero(fyi, [4900 5100]);
+lo = 900; hi = 1000;
 for it = 1:40
     mid = (lo + hi)/2; S = t005_oracle(P, mid, P.dt, P.kMax, P.Umax);
     if t005_issue(P, mid, S.y, S.v) == "victoire", hi = mid; else, lo = mid; end
 end
-fprintf('\nBorne haute continue (y_max échantillonné = 3,30 m) : Kp = %.2f N/m\n', KhautEch);
-fprintf('Borne haute continue (y_max entre échantillons = 3,30 m) : Kp = %.2f N/m\n', KhautInt);
-fprintf('Borne basse continue (première victoire §6) : Kp = %.2f N/m (m.g/0,25 = %.1f)\n', hi, P.m*P.g/0.25);
-i38 = KPS == 3800; i39 = KPS == 3900;
-fprintf('Marge à 3800 : %.3f mm ; à 3900 : %.3f mm ; écart TS/exact sur y_max à 3800 : %.2e m, à 3900 : %.2e m\n', ...
-    1000*(P.hPoutre - yMax(i38)), 1000*(P.hPoutre - yMax(i39)), dyMaxTS(i38), dyMaxTS(i39));
+fprintf('\nBorne haute continue (y_max échantillonné = poutre) : Kp = %.2f N/m\n', KhautEch);
+fprintf('Borne haute continue (y_max entre échantillons = poutre) : Kp = %.2f N/m\n', KhautInt);
+fprintf('Borne basse continue (première victoire §6) : Kp = %.2f N/m (m.g/tolérance = %.1f)\n', hi, P.m*P.g/P.tolMarche);
+i50 = KPS == 5000; i51 = KPS == 5100;
+fprintf('Marge à 5000 : %.3f mm ; dépassement à 5100 : %.3f mm ; écart TS/exact sur y_max à 5000 : %.2e m, à 5100 : %.2e m\n', ...
+    1000*(P.hPoutre - yMax(i50)), 1000*(yMax(i51) - P.hPoutre), dyMaxTS(i50), dyMaxTS(i51));
+fprintf('Marge de tolérance à Kp = 1000 : tolérance - m.g/Kp = %.3f mm\n', 1000*(P.tolMarche - P.m*P.g/1000));

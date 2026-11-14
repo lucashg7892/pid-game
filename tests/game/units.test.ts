@@ -27,7 +27,7 @@ import {
 } from '../../src/game';
 
 describe('géométrie du niveau (spec §6)', () => {
-  it('quais, vide de 4 m, cage, poutre à 3,30 m, consigne 3,00 m', () => {
+  it('quais, vide de 4 m, cage, poutre à 3,3626 m, consigne 3,00 m', () => {
     expect(VOID_WIDTH).toBe(4);
     expect(VOID_MIN_X).toBe(START_LEDGE_MAX_X);
     expect(VOID_MAX_X - VOID_MIN_X).toBe(4);
@@ -35,7 +35,7 @@ describe('géométrie du niveau (spec §6)', () => {
     expect(CABIN_WIDTH).toBeLessThan(VOID_WIDTH);
     expect(CABIN_CENTER_X - CABIN_WIDTH / 2).toBeGreaterThanOrEqual(VOID_MIN_X);
     expect(CABIN_CENTER_X + CABIN_WIDTH / 2).toBeLessThanOrEqual(VOID_MAX_X);
-    expect(BEAM_HEIGHT).toBe(3.3);
+    expect(BEAM_HEIGHT).toBe(3.3626);
     expect(LEVEL1_SETPOINT).toBe(3);
     expect(ARRIVAL_LEDGE_HEIGHT).toBe(3);
     // Console sur le quai de départ et accessible au bonhomme.
@@ -83,18 +83,23 @@ describe("arbitre d'issue", () => {
     expect(j.holdSteps).toBe(WIN_HOLD_STEPS - 1);
     expect(j.evaluate(200, 2.8, 0.2, 2500)).toBeNull(); // vitesse trop grande
     expect(j.holdSteps).toBe(0);
-    for (let n = 1; n < WIN_HOLD_STEPS; n++) j.evaluate(n, 2.75, -0.1, 2500); // bornes incluses
-    expect(j.evaluate(300, 2.75, 0.1, 2500)).toBe('win');
+    for (let n = 1; n < WIN_HOLD_STEPS; n++) j.evaluate(n, 2.5, -0.1, 2500); // bornes incluses
+    expect(j.evaluate(300, 2.5, 0.1, 2500)).toBe('win');
+    j.reset();
+    expect(j.evaluate(1, 2.4999, 0, 2500)).toBeNull(); // 0,5001 m sous le plateau : hors tolérance
+    expect(j.holdSteps).toBe(0);
     j.reset();
     expect(j.holdSteps).toBe(0);
   });
 
-  it('choc strictement au-dessus de 3,30 m ; victoire au pas 1800 prioritaire ; NaN', () => {
+  it('choc strictement au-dessus de 3,3626 m ; victoire au pas 720 prioritaire ; NaN', () => {
     const j = createOutcomeJudge();
-    expect(j.evaluate(1, 3.3, 0, 4000)).toBeNull();
-    expect(j.evaluate(2, 3.3000001, 0, 4000)).toBe('bonk');
+    expect(j.evaluate(1, 3.3626, 0, 4000)).toBeNull();
+    expect(j.evaluate(2, 3.3626001, 0, 4000)).toBe('bonk');
     j.reset();
-    expect(j.evaluate(TRIP_MAX_STEPS, 1, 0, 1500)).toBe('step');
+    expect(TRIP_MAX_STEPS).toBe(720);
+    expect(j.evaluate(TRIP_MAX_STEPS - 1, 1, 0, 800)).toBeNull();
+    expect(j.evaluate(TRIP_MAX_STEPS, 1, 0, 800)).toBe('step');
     expect(j.evaluate(TRIP_MAX_STEPS, 0, 0, 100)).toBe('noLift');
     j.reset();
     for (let n = 1; n < WIN_HOLD_STEPS; n++) j.evaluate(n, 3, 0, 2500);

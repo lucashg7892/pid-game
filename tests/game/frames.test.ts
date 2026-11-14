@@ -26,7 +26,7 @@ function framings(): [string, () => () => number][] {
 }
 
 describe('CA-3 : indépendance au découpage en images', () => {
-  it.each([1500, 2500, 3800, 3900])(
+  it.each([800, 2500, 5000, 5100])(
     'Kp = %i : même issue, même pas, même erreur, même trace',
     (kp) => {
       const results: [string, TripResult][] = framings().map(([name, make]) => [

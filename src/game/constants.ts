@@ -6,7 +6,7 @@
  * droite ; hauteurs en m, sol du quai de départ = 0) :
  *
  *   x : −6 ─────── quai de départ (h = 0) ─────── 0 ── vide / cage (4 m) ── 4 ── quai d'arrivée (h = 3) ── 10
- *            spawn −5,5      console −1 (zone ±0,75)    cabine centrée en 2     poutre h = 3,30 au-dessus de la cage
+ *            spawn −5,5      console −1 (zone ±0,75)    cabine centrée en 2     poutre h = 3,3626 au-dessus de la cage
  *
  * Le « vide » de 4 m est la cage d'ascenseur elle-même : la cabine (plateau de 3,6 m) comble
  * le vide au niveau du quai de départ, puis monte jusqu'au quai d'arrivée.
@@ -21,11 +21,19 @@ export const LEVEL1_SETPOINT = ELEVATOR_SETPOINT;
 /**
  * Hauteur de la poutre (m) : choc immédiat dès que la hauteur y du plancher de la cabine
  * dépasse strictement cette valeur (le bonhomme s'y cogne la tête).
+ *
+ * Réglée (T-020) pour que la borne haute de la fenêtre soit Kp = 5000 N/m : à peu près au
+ * milieu des pics échantillonnés mesurés sur le noyau, 3,360855 m à Kp = 5000 (marge 1,74 mm)
+ * et 3,364391 m à Kp = 5100 (dépassement 1,79 mm).
  */
-export const BEAM_HEIGHT = 3.3;
+export const BEAM_HEIGHT = 3.3626;
 
-/** Tolérance de marche (m) : la cabine est « au quai » si |r − y| ≤ cette valeur. */
-export const STEP_TOLERANCE = 0.25;
+/**
+ * Tolérance de marche (m) : la cabine est « au quai » si |r − y| ≤ cette valeur. Borne basse
+ * de la fenêtre (D25, T-020) : à Kp = 1000 N/m, l'erreur statique m·g/Kp vaut 0,4905 m (marge 9,5 mm) ;
+ * à 900 N/m, 0,545 m.
+ */
+export const STEP_TOLERANCE = 0.5;
 
 /** Tolérance de vitesse (m/s) : la cabine est « arrêtée » si |ẏ| ≤ cette valeur. */
 export const SETTLE_SPEED_TOLERANCE = 0.1;
@@ -33,8 +41,11 @@ export const SETTLE_SPEED_TOLERANCE = 0.1;
 /** Nombre de pas consécutifs « au quai et arrêtée » exigés pour la victoire (120 pas = 1,0 s). */
 export const WIN_HOLD_STEPS = 120;
 
-/** Durée maximale d'un trajet, en pas de simulation (1800 pas = 15 s à dt = 1/120 s). */
-export const TRIP_MAX_STEPS = 1800;
+/**
+ * Durée maximale d'un trajet, en pas de simulation (720 pas = 6 s à dt = 1/120 s, D24). La
+ * victoire la plus lente de la fenêtre arrive au pas 301 (Kp = 4000 et 4100 N/m, mesuré T-020).
+ */
+export const TRIP_MAX_STEPS = 720;
 
 /** Poids de la cabine, bonhomme compris : m·g (N), calculé depuis les paramètres du noyau. */
 export const CABIN_WEIGHT = ELEVATOR_PARAMS.mass * ELEVATOR_PARAMS.gravity;
@@ -56,8 +67,11 @@ export const KP_MAX = 8000;
 /** Pas du réglage de Kp (N/m) : toute valeur est arrondie au multiple le plus proche. */
 export const KP_STEP = 100;
 
-/** Valeur de Kp au chargement du niveau (N/m). */
-export const KP_DEFAULT = 1000;
+/**
+ * Valeur de Kp au chargement du niveau (N/m), volontairement hors de la fenêtre de réussite
+ * [1000 ; 5000] : un lancement sans réglage échoue (« trop court »).
+ */
+export const KP_DEFAULT = 500;
 
 // ───────────────────────────────── Géométrie du niveau (m) ──────────────────────────────────
 

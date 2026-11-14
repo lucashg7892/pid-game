@@ -71,9 +71,9 @@ describe('LevelPainter', () => {
 
   for (const [kp, outcome, k] of [
     [2500, 'win', 291],
-    [4500, 'bonk', 58],
-    [1500, 'step', 1800],
-    [100, 'noLift', 1800],
+    [7000, 'bonk', 56],
+    [800, 'step', 720],
+    [100, 'noLift', 720],
   ] as const) {
     it(`Kp = ${String(kp)} : ${outcome} au pas ${String(k)}, sans débordement, budget tenu`, () => {
       const painter = new LevelPainter();
@@ -126,7 +126,7 @@ describe('LevelPainter', () => {
     const levelWin = createLevel1();
     playTrip(2500, win, levelWin);
     const step = new LevelPainter();
-    playTrip(1500, step);
+    playTrip(800, step);
     const anchors = createAnchors();
     const frame = computeFrame(1280, 720);
     computeAnchors(frame, 1280, 720, win.display, levelWin.snapshot, anchors);

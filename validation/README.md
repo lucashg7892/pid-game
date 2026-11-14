@@ -27,7 +27,7 @@ MATLAB sert uniquement à la validation : rien de ce dossier n'est importé par 
 | `matlab/t005_run_all.m`     | enchaîne A à E                                                                          |
 | `data/ts_traj_dt120.csv`    | trajectoires TS (y, ẏ) pour 12 Kp, dt = 1/120 s, 1200 pas, 17 chiffres significatifs    |
 | `data/ts_traj_dt240.csv`    | idem, dt = 1/240 s, 2400 pas (contrôle de l'ordre 4)                                    |
-| `data/ts_sweep_summary.csv` | balayage TS Kp = 100…8000 : y_max, état final, pas saturés, issue §6 et pas de l'issue  |
+| `data/ts_sweep_summary.csv` | balayage TS Kp = 100…8000 sur 720 pas : y_max, état final, pas saturés, issue, pas      |
 
 ## Relancer la validation
 
@@ -91,7 +91,7 @@ it('export', () => {
     let run = 0;
     let issue = '';
     let kIssue = -1;
-    for (let k = 1; k <= 1800; k++) {
+    for (let k = 1; k <= 720; k++) {
       const s = loop.step();
       if (s.saturated) sat++;
       const y = s.x[0] as number;
@@ -100,11 +100,11 @@ it('export', () => {
         kMax = k;
       }
       if (issue === '') {
-        if (y > 3.3) {
+        if (y > 3.3626) {
           issue = 'choc';
           kIssue = k;
         } else {
-          run = Math.abs(3 - y) <= 0.25 && Math.abs(s.x[1] as number) <= 0.1 ? run + 1 : 0;
+          run = Math.abs(3 - y) <= 0.5 && Math.abs(s.x[1] as number) <= 0.1 ? run + 1 : 0;
           if (run >= 120) {
             issue = 'victoire';
             kIssue = k;
@@ -114,7 +114,7 @@ it('export', () => {
     }
     if (issue === '') {
       issue = kp <= 163.5 ? 'decolle_pas' : 'trop_faible';
-      kIssue = 1800;
+      kIssue = 720;
     }
     lines.push(
       [kp, f(yMax), kMax, f(loop.x[0] as number), f(loop.x[1] as number), sat, issue, kIssue].join(

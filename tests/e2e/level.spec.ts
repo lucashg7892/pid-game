@@ -8,9 +8,10 @@
  * pratique, les hachures légères (encre 0,55 à 0,6 : luminance ≈ 145 à 160).
  */
 import { expect, test, type Page } from '@playwright/test';
-import type { LevelSnapshot } from '../../src/game';
+import { BEAM_HEIGHT, type LevelSnapshot } from '../../src/game';
 import { computeFrame, worldXToPixel, worldYToPixel, type Frame } from '../../src/render/camera';
 import { CURVE_ORIGIN_X, CURVE_SPAN } from '../../src/render/curve';
+import { BEAM_THICKNESS } from '../../src/render/pencil-style';
 import { WALKER_HEAD_TOP } from '../../src/render/level-display';
 import { ALLOWED_WEBGL, CONSOLE_FAILURE, watchConsole } from './console';
 import { hideUi } from './overlay';
@@ -87,6 +88,12 @@ async function waitTwoFrames(page: Page): Promise<void> {
         });
       }),
   );
+}
+
+/** Capture d'écran décodée, sans fichier (mesures seulement). */
+async function snap(page: Page): Promise<DecodedPng> {
+  await waitTwoFrames(page);
+  return decodePng(await page.screenshot());
 }
 
 async function capture(page: Page, name: string): Promise<DecodedPng> {
@@ -248,11 +255,11 @@ test('(b, c, d) console, trajet Kp = 2500, victoire au pas 291', async ({ page }
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });
 
-test('(e) Kp = 4500 : choc au pas 58', async ({ page }) => {
+test('(e) Kp = 7000 : choc au pas 56', async ({ page }) => {
   const problems = await openGame(page);
-  const s = await run(page, [...TO_CONSOLE, ['setKp', 4500], ['launch'], ['advance', 1.0]]);
+  const s = await run(page, [...TO_CONSOLE, ['setKp', 7000], ['launch'], ['advance', 1.0]]);
   expect(s.outcome).toBe('bonk');
-  expect(s.outcomeK).toBe(58);
+  expect(s.outcomeK).toBe(56);
   const image = await capture(page, 't009-05-choc.png');
   const report: string[] = [];
   checkFloor(image, computeFrame(WIDTH, HEIGHT), s.cabinY, report);
@@ -260,23 +267,23 @@ test('(e) Kp = 4500 : choc au pas 58', async ({ page }) => {
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });
 
-test('(f, g) Kp = 1500 : marche trop haute au pas 1800, courbe dans sa zone, budget', async ({
+test('(f, g) Kp = 800 : marche trop haute au pas 720, courbe dans sa zone, budget', async ({
   page,
 }) => {
   const problems = await openGame(page);
-  const s = await run(page, [...TO_CONSOLE, ['setKp', 1500], ['launch'], ['advance', 16]]);
+  const s = await run(page, [...TO_CONSOLE, ['setKp', 800], ['launch'], ['advance', 7]]);
   expect(s.outcome).toBe('step');
-  expect(s.outcomeK).toBe(1800);
+  expect(s.outcomeK).toBe(720);
   const image = await capture(page, 't009-06-trop-court.png');
   const frame = computeFrame(WIDTH, HEIGHT);
   const report: string[] = [];
   const points = await trace(page);
-  expect(points.length).toBe(1801);
+  expect(points.length).toBe(721);
   for (const [x, y] of points) {
     expect(x).toBeGreaterThanOrEqual(CURVE_ORIGIN_X - 1e-9);
     expect(x).toBeLessThanOrEqual(CURVE_ORIGIN_X + CURVE_SPAN + 1e-9);
     expect(y).toBeGreaterThanOrEqual(-1e-9);
-    expect(y).toBeLessThan(3.3);
+    expect(y).toBeLessThan(BEAM_HEIGHT);
   }
   checkCurve(image, frame, points, report);
   // Bandes de part et d'autre de la zone de la courbe (entre montant et plancher) : vierges.
@@ -311,5 +318,104 @@ test('(i) portrait 390×844 : victoire dessinée, sans erreur console', async ({
   const frame = computeFrame(390, 844);
   const floor = pixelAt(image, worldXToPixel(frame, 390, 3), worldYToPixel(frame, 844, s.cabinY));
   test.info().annotations.push({ type: 'plancher', description: describeRgb(floor) });
+  expect(problems, CONSOLE_FAILURE).toEqual([]);
+});
+
+/** Colonne de mesure de la poutre : milieu du corbeau gauche (m). */
+const BEAM_PROBE_X = 0.21;
+
+/**
+ * Bord bas de la poutre (corbeau gauche) : premier pixel de graphite en remontant depuis 0,2 m
+ * sous la poutre. Renvoie la ligne trouvée (−1 si aucune) et la ligne attendue.
+ */
+function beamBottomRow(image: DecodedPng, frame: Frame): { row: number; expected: number } {
+  const column = worldXToPixel(frame, image.width, BEAM_PROBE_X);
+  const expected = worldYToPixel(frame, image.height, BEAM_HEIGHT);
+  const start = Math.ceil(worldYToPixel(frame, image.height, BEAM_HEIGHT - 0.2));
+  for (let row = start; row >= Math.floor(expected) - 12; row -= 1) {
+    if (isGraphite(pixelAt(image, column, row))) return { row, expected };
+  }
+  return { row: -1, expected };
+}
+
+/**
+ * Bord haut de la poutre (corbeau gauche) : premier pixel de graphite en descendant depuis
+ * 0,25 m au-dessus de son sommet (BEAM_HEIGHT + BEAM_THICKNESS).
+ */
+function beamTopRow(image: DecodedPng, frame: Frame): { row: number; expected: number } {
+  const column = worldXToPixel(frame, image.width, BEAM_PROBE_X);
+  const expected = worldYToPixel(frame, image.height, BEAM_HEIGHT + BEAM_THICKNESS);
+  const start = Math.floor(worldYToPixel(frame, image.height, BEAM_HEIGHT + BEAM_THICKNESS + 0.25));
+  for (let row = start; row <= Math.ceil(expected) + 12; row += 1) {
+    if (isGraphite(pixelAt(image, column, row))) return { row, expected };
+  }
+  return { row: -1, expected };
+}
+
+/**
+ * Vérifie que la poutre est dessinée à BEAM_HEIGHT : bord haut à −4/+1 px de son sommet ; bord
+ * bas à −1/+4 px de BEAM_HEIGHT si `bottom` (faux au choc : la cabine recouvre le bord bas).
+ */
+function checkBeam(image: DecodedPng, frame: Frame, bottom: boolean, report: string[]): void {
+  const top = beamTopRow(image, frame);
+  report.push(
+    `poutre ${String(BEAM_HEIGHT)} m : sommet attendu au pixel ${top.expected.toFixed(1)}, trouvé en ${String(top.row)}`,
+  );
+  expect(top.row, 'bord haut de la poutre').toBeGreaterThanOrEqual(Math.floor(top.expected) - 4);
+  expect(top.row, 'bord haut de la poutre').toBeLessThanOrEqual(Math.ceil(top.expected) + 1);
+  if (!bottom) return;
+  const low = beamBottomRow(image, frame);
+  report.push(`bord bas attendu au pixel ${low.expected.toFixed(1)}, trouvé en ${String(low.row)}`);
+  expect(low.row, 'bord bas de la poutre').toBeGreaterThanOrEqual(Math.floor(low.expected) - 1);
+  expect(low.row, 'bord bas de la poutre').toBeLessThanOrEqual(Math.ceil(low.expected) + 4);
+}
+
+test('(j) T-020 : poutre à BEAM_HEIGHT, Kp = 5000 gagne sous la poutre, Kp = 5100 la heurte', async ({
+  page,
+}) => {
+  const problems = await openGame(page);
+  const frame = computeFrame(WIDTH, HEIGHT);
+  const report: string[] = [];
+  // Interface visible pour les captures documentaires, masquée pour les mesures de pixels.
+  await page.addStyleTag({ content: '#ui { visibility: visible !important; }' });
+
+  const win = await run(page, [...TO_CONSOLE, ['setKp', 5000], ['launch'], ['advance', 4.0]]);
+  expect(win.outcome).toBe('win');
+  expect(win.outcomeK).toBe(293);
+  await capture(page, 't020-poutre-fr.png');
+  await hideUi(page);
+  const winImage = await snap(page);
+  checkBeam(winImage, frame, true, report);
+  checkFloor(winImage, frame, win.cabinY, report);
+
+  await page.addStyleTag({ content: '#ui { visibility: visible !important; }' });
+  const bonk = await run(page, [['restart'], ['setKp', 5100], ['launch'], ['advance', 1.0]]);
+  expect(bonk.outcome).toBe('bonk');
+  expect(bonk.outcomeK).toBe(61);
+  expect(bonk.cabinY).toBeGreaterThan(BEAM_HEIGHT);
+  await capture(page, 't020-choc-fr.png');
+  await hideUi(page);
+  const bonkImage = await snap(page);
+  checkBeam(bonkImage, frame, false, report);
+  checkFloor(bonkImage, frame, bonk.cabinY, report);
+  test.info().annotations.push({ type: 'pixels', description: report.join(' | ') });
+  expect(problems, CONSOLE_FAILURE).toEqual([]);
+});
+
+test('(k) T-020 : portrait 390×844, la poutre reste dans le cadre et dessinée', async ({
+  page,
+}) => {
+  const problems = await openGame(page, 390, 844);
+  const frame = computeFrame(390, 844);
+  expect(frame.top).toBeGreaterThan(BEAM_HEIGHT + 0.2);
+  const image = await snap(page);
+  const report: string[] = [];
+  const { row, expected } = beamBottomRow(image, frame);
+  report.push(
+    `portrait : poutre attendue au pixel ${expected.toFixed(1)}, bord bas en ${String(row)}`,
+  );
+  test.info().annotations.push({ type: 'pixels', description: report.join(' | ') });
+  expect(row, 'poutre dessinée en portrait').toBeGreaterThan(0);
+  expect(Math.abs(row - expected), 'poutre à sa hauteur en portrait').toBeLessThanOrEqual(4);
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });

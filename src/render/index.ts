@@ -15,9 +15,9 @@ export {
 } from './bootstrap';
 export {
   PLAY_ZONE,
-  PLAY_ZONE_ABOVE_BEAM,
   PLAY_ZONE_BELOW_GROUND,
   PLAY_ZONE_MARGIN_X,
+  PLAY_ZONE_TOP,
   applyFrame,
   computeFrame,
   worldXToPixel,

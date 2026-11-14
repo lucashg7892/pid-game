@@ -149,17 +149,17 @@ describe('CA-2 : clés de la spec T-001 §6', () => {
   });
 
   it('les nombres physiques cités sont ceux de la spec §5', () => {
-    // m·g = 50 kg × 9,81 m/s² = 490,5 N ; Umax = 5000 N ; r = 3 m ; marche 0,25 m ; poutre 3,30 m.
+    // m·g = 50 kg × 9,81 m/s² = 490,5 N ; Umax = 5000 N ; r = 3 m ; marche 0,5 m ; poutre 3,3626 m (3,36 m dans le texte).
     expect(50 * 9.81).toBeCloseTo(490.5, 10);
     expect(FR['level1.fail.noLift']).toContain(`490,5${NBSP}N`);
     expect(EN['level1.fail.noLift']).toContain(`490.5${NBSP}N`);
     expect(FR['level1.fail.noLift']).toContain(`3${NBSP}m`);
     expect(FR['level1.saturation']).toContain(`5000${NBSP}N`);
     expect(EN['level1.saturation']).toContain(`5000${NBSP}N`);
-    expect(FR['level1.fail.step']).toContain(`0,25${NBSP}m`);
-    expect(EN['level1.fail.step']).toContain(`0.25${NBSP}m`);
-    expect(FR['level1.fail.bonk']).toContain(`3,30${NBSP}m`);
-    expect(EN['level1.fail.bonk']).toContain(`3.30${NBSP}m`);
+    expect(FR['level1.fail.step']).toContain(`(0,5${NBSP}m au plus)`);
+    expect(EN['level1.fail.step']).toContain(`(0.5${NBSP}m at most)`);
+    expect(FR['level1.fail.bonk']).toContain(`3,36${NBSP}m`);
+    expect(EN['level1.fail.bonk']).toContain(`3.36${NBSP}m`);
     expect(FR['level1.win']).toContain('m·g/Kp');
     expect(EN['level1.win']).toContain('m·g/Kp');
   });

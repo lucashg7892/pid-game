@@ -292,17 +292,17 @@ describe('trajet et CA-4 : restart', () => {
     const r = finishTrip(level);
     expect(r.outcomeK).toBe(291);
     level.restart();
-    level.setKp(4500);
+    level.setKp(7000);
     const b = finishTrip(level);
     expect(built).toBe(3);
     expect(b.outcome).toBe('bonk');
-    expect(b.outcomeK).toBe(58);
+    expect(b.outcomeK).toBe(56);
     expect(level.snapshot.attempt).toBe(3);
   });
 
   it('après l’issue, des images supplémentaires ne changent rien', () => {
     const level = createLevel1();
-    level.setKp(4500);
+    level.setKp(7000);
     reachConsole(level);
     finishTrip(level);
     const end = copy(level.snapshot);

@@ -223,7 +223,7 @@ async function checkPanelsAvoidCage(
   return report;
 }
 
-test('(a) FR, clavier réel : aide, marche, panneau Kp, + ×15, Entrée, victoire, R', async ({
+test('(a) FR, clavier réel : aide, marche, panneau Kp, + ×20, Entrée, victoire, R', async ({
   page,
 }) => {
   const problems = await open(page, '?renderer=webgl&lang=fr');
@@ -237,7 +237,7 @@ test('(a) FR, clavier réel : aide, marche, panneau Kp, + ×15, Entrée, victoir
   await expect(page.locator('#ui .ui-gauge-tag').nth(0)).toHaveText(`5000${NB}N max`);
   await expect(page.locator('#ui .ui-gauge-tag').nth(1)).toHaveText('poids');
   await expect(page.locator('#ui .ui-force')).toBeHidden();
-  await expect(page.locator('#ui .ui-kp-tag')).toHaveText(`Kp = 1000${NB}N/m`);
+  await expect(page.locator('#ui .ui-kp-tag')).toHaveText(`Kp = 500${NB}N/m`);
   await expect(page.locator('#ui .ui-title')).toHaveText('Huygens’s world');
   await capture(page, 't010-01-aide.png');
 
@@ -249,10 +249,10 @@ test('(a) FR, clavier réel : aide, marche, panneau Kp, + ×15, Entrée, victoir
   const slider = page.getByRole('slider', { name: FR('level1.kp.label') });
   await expect(slider).toBeFocused();
   const value = page.locator('#ui .ui-kp-value');
-  await expect(value).toHaveText(`1000${NB}N/m`);
+  await expect(value).toHaveText(`500${NB}N/m`);
   await expect(banner).toContainText('régler Kp');
   await expect(banner).toContainText('lancer');
-  for (let i = 0; i < 15; i += 1) await page.keyboard.press('+');
+  for (let i = 0; i < 20; i += 1) await page.keyboard.press('+');
   await expect(value).toHaveText(`2500${NB}N/m`);
   await expect(slider).toHaveValue('2500');
   await expect(page.locator('#ui .ui-kp-tag')).toHaveText(`Kp = 2500${NB}N/m`);
@@ -295,7 +295,7 @@ test('(a) FR, clavier réel : aide, marche, panneau Kp, + ×15, Entrée, victoir
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });
 
-test('(b) EN, clavier réel : Kp = 4500 (Page préc. ×3, + ×5), choc contre la poutre', async ({
+test('(b) EN, clavier réel : Kp = 7000 (Page préc. ×6, + ×5), choc contre la poutre', async ({
   page,
 }) => {
   const problems = await open(page, '?renderer=webgl&lang=en');
@@ -305,9 +305,9 @@ test('(b) EN, clavier réel : Kp = 4500 (Page préc. ×3, + ×5), choc contre la
   await page.keyboard.press('e');
   const slider = page.getByRole('slider', { name: EN('level1.kp.label') });
   await expect(slider).toBeFocused();
-  for (let i = 0; i < 3; i += 1) await page.keyboard.press('PageUp');
+  for (let i = 0; i < 6; i += 1) await page.keyboard.press('PageUp');
   for (let i = 0; i < 5; i += 1) await page.keyboard.press('+');
-  await expect(page.locator('#ui .ui-kp-value')).toHaveText(`4500${NB}N/m`);
+  await expect(page.locator('#ui .ui-kp-value')).toHaveText(`7000${NB}N/m`);
   await page.keyboard.press('Enter');
   const outcome = page.locator('#ui .ui-outcome');
   await expect(outcome).toContainText(EN('level1.fail.bonk'), { timeout: 10_000 });
@@ -709,7 +709,7 @@ test('(n) bouton Pause sans aria-pressed ; focus sur « Rejouer » à l’issue'
   await expect(replay).toBeHidden();
   expect((await run(page, [])).phase).toBe('tuning');
 
-  const bonk = await run(page, [['setKp', 4500], ['launch'], ['advance', 1.0]]);
+  const bonk = await run(page, [['setKp', 7000], ['launch'], ['advance', 1.0]]);
   expect(bonk.phase).toBe('outcome');
   await expect(replay).toBeFocused();
   expect(problems, CONSOLE_FAILURE).toEqual([]);

@@ -100,7 +100,7 @@ describe('modèle de vue par phase', () => {
     expect(fr.hintId).toBe('walk');
     expect(hintText(fr.hint)).toBe(HINTS.fr.walk);
     expect(fr.bubble).toBe(CATALOGS.fr['level1.goal']);
-    expect(fr.kpTag).toBe(`Kp = 1000${NB}N/m`);
+    expect(fr.kpTag).toBe(`Kp = 500${NB}N/m`);
     expect(fr.panelOpen).toBe(false);
     expect(fr.readoutVisible).toBe(false);
     expect(fr.outcomeVisible).toBe(false);
@@ -237,27 +237,27 @@ describe('issues : titres, messages pédagogiques complets, cote et formule', ()
     expect(vm.formula).not.toContain('0,31');
   });
 
-  it('marche trop haute à Kp = 1500 : message avec e mesurée (0,33 m)', () => {
-    const level = finished(1500);
+  it('marche trop haute à Kp = 800 : message avec e mesurée (0,61 m)', () => {
+    const level = finished(800);
     expect(level.snapshot.outcome).toBe('step');
     const fr = build(level, 'fr');
     expect(fr.outcomeTitle).toBe(CATALOGS.fr['level1.failTitle.step']);
-    expect(fr.outcomeMessage.startsWith(`Il manque 0,33${NB}m`)).toBe(true);
-    expect(fr.outcomeMessage).toBe(CATALOGS.fr['level1.fail.step'].replace('{e}', '0,33'));
+    expect(fr.outcomeMessage.startsWith(`Il manque 0,61${NB}m`)).toBe(true);
+    expect(fr.outcomeMessage).toBe(CATALOGS.fr['level1.fail.step'].replace('{e}', '0,61'));
     expect(fr.dimension).toBe('');
     expect(fr.formula).toBe('');
     expect(fr.outcomeButton).toBe(CATALOGS.fr['controls.restart']);
     const en = build(level, 'en');
-    expect(en.outcomeMessage.startsWith(`0.33${NB}m short`)).toBe(true);
+    expect(en.outcomeMessage.startsWith(`0.61${NB}m short`)).toBe(true);
   });
 
-  it('pas de décollage à Kp = 100 et choc à Kp = 4500 : titres et messages de la locale', () => {
+  it('pas de décollage à Kp = 100 et choc à Kp = 7000 : titres et messages de la locale', () => {
     const noLift = finished(100);
     expect(noLift.snapshot.outcome).toBe('noLift');
     expect(build(noLift, 'fr').outcomeTitle).toBe(CATALOGS.fr['level1.failTitle.noLift']);
     expect(build(noLift, 'fr').outcomeMessage).toBe(CATALOGS.fr['level1.fail.noLift']);
     expect(build(noLift, 'en').outcomeMessage).toBe(CATALOGS.en['level1.fail.noLift']);
-    const bonk = finished(4500);
+    const bonk = finished(7000);
     expect(bonk.snapshot.outcome).toBe('bonk');
     expect(build(bonk, 'fr').outcomeTitle).toBe(CATALOGS.fr['level1.failTitle.bonk']);
     expect(build(bonk, 'en').outcomeMessage).toBe(CATALOGS.en['level1.fail.bonk']);
@@ -286,8 +286,8 @@ describe('Kp toujours présent, langue et mémoïsation', () => {
       atConsole(),
       tuning(3000),
       finished(2500),
-      finished(4500),
-      finished(1500),
+      finished(7000),
+      finished(800),
     ];
     const trip = tuning(2700);
     trip.launch();

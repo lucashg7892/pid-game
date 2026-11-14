@@ -6,8 +6,10 @@
  *   (`LEVEL_MIN_X` = −6, apparition du bonhomme à −5,5) au bord droit du quai d'arrivée
  *   (`LEVEL_MAX_X` = 10), plus 0,5 m de marge de chaque côté ;
  * - y ∈ [−1,5 ; 5,5] m : 1,5 m sous le sol du quai de départ (épaisseur du sol, fond de la cage) et
- *   2,2 m au-dessus de la poutre (`BEAM_HEIGHT` = 3,30 m), de quoi voir un bonhomme d'environ
- *   1,7 m debout sur le quai d'arrivée (y = 3) et un dépassement de la cabine.
+ *   un haut fixe à 5,5 m, soit environ 2,1 m au-dessus de la poutre (`BEAM_HEIGHT` = 3,3626 m),
+ *   de quoi voir un bonhomme d'environ 1,7 m debout sur le quai d'arrivée (y = 3) et un
+ *   dépassement de la cabine. Le haut ne suit pas la poutre : le réglage fin de sa hauteur
+ *   (T-020) ne déplace pas le cadrage.
  *
  * Soit 17 m × 7 m (rapport 2,43). La spec indiquait « ~12 m × 6,75 m » : 12 m ne contiennent pas
  * les 16 m du décor (`LEVEL_MAX_X − LEVEL_MIN_X`) ; la zone est donc élargie.
@@ -18,7 +20,7 @@
  * de type uniquement, effacé à la compilation).
  */
 import type { OrthographicCamera } from 'three/webgpu';
-import { BEAM_HEIGHT, LEVEL_MAX_X, LEVEL_MIN_X } from '../game';
+import { LEVEL_MAX_X, LEVEL_MIN_X } from '../game';
 
 /** Rectangle en coordonnées monde (m). */
 export interface WorldRect {
@@ -42,15 +44,15 @@ export interface Frame {
 export const PLAY_ZONE_MARGIN_X = 0.5;
 /** Profondeur visible sous le sol du quai de départ (m). */
 export const PLAY_ZONE_BELOW_GROUND = 1.5;
-/** Hauteur visible au-dessus de la poutre (m). */
-export const PLAY_ZONE_ABOVE_BEAM = 2.2;
+/** Haut de la zone visible (m), fixe : ne suit pas `BEAM_HEIGHT` (au moins 2 m au-dessus). */
+export const PLAY_ZONE_TOP = 5.5;
 
 /** Zone qui doit toujours être entièrement visible : x ∈ [−6,5 ; 10,5], y ∈ [−1,5 ; 5,5] (m). */
 export const PLAY_ZONE: WorldRect = Object.freeze({
   minX: LEVEL_MIN_X - PLAY_ZONE_MARGIN_X,
   maxX: LEVEL_MAX_X + PLAY_ZONE_MARGIN_X,
   minY: -PLAY_ZONE_BELOW_GROUND,
-  maxY: BEAM_HEIGHT + PLAY_ZONE_ABOVE_BEAM,
+  maxY: PLAY_ZONE_TOP,
 });
 
 /**

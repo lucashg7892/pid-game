@@ -7,6 +7,7 @@ import {
   worldYToPixel,
   type Frame,
 } from '../../src/render/camera';
+import { BEAM_THICKNESS } from '../../src/render/pencil-style';
 
 const WINDOWS: readonly (readonly [number, number])[] = [
   [1920, 1080],
@@ -27,7 +28,7 @@ describe('zone de jeu', () => {
   it('contient tout le décor, la poutre et une marge sous le sol', () => {
     expect(PLAY_ZONE.minX).toBeLessThan(LEVEL_MIN_X);
     expect(PLAY_ZONE.maxX).toBeGreaterThan(LEVEL_MAX_X);
-    expect(PLAY_ZONE.maxY).toBeGreaterThanOrEqual(BEAM_HEIGHT + 1);
+    expect(PLAY_ZONE.maxY).toBeGreaterThanOrEqual(BEAM_HEIGHT + 2);
     expect(PLAY_ZONE.minY).toBeLessThanOrEqual(-1);
     expect(PLAY_ZONE).toEqual({ minX: -6.5, maxX: 10.5, minY: -1.5, maxY: 5.5 });
   });
@@ -42,6 +43,8 @@ describe('computeFrame', () => {
       expect(frame.right).toBeGreaterThanOrEqual(PLAY_ZONE.maxX - 1e-9);
       expect(frame.bottom).toBeLessThanOrEqual(PLAY_ZONE.minY + 1e-9);
       expect(frame.top).toBeGreaterThanOrEqual(PLAY_ZONE.maxY - 1e-9);
+      // La poutre (T-020 : BEAM_HEIGHT = 3,3626 m), épaisseur comprise, reste dans le cadre.
+      expect(frame.top).toBeGreaterThan(BEAM_HEIGHT + BEAM_THICKNESS + 1);
       // Même nombre de pixels par mètre en x et en y.
       const pxPerMeterX = width / (frame.right - frame.left);
       const pxPerMeterY = height / (frame.top - frame.bottom);

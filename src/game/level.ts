@@ -178,7 +178,7 @@ function defaultLoop(kp: number): SteppableClosedLoop {
 }
 
 /**
- * Crée le niveau 1 en phase `approach` : bonhomme à l'entrée, cabine au sol, Kp initial (défaut 1000 N/m),
+ * Crée le niveau 1 en phase `approach` : bonhomme à l'entrée, cabine au sol, Kp initial (défaut 500 N/m),
  * essai n° 1. Aucune allocation dans `update` (hors création de boucle au lancement, quand Kp
  * a changé) ; aucune référence conservée vers l'échantillon du noyau ni son état : les
  * nombres sont copiés.

@@ -34,13 +34,13 @@ describe('annonces', () => {
   });
 
   it('issues en anglais avec la valeur de e', () => {
-    const step = finished(1500);
+    const step = finished(800);
     expect(drain(step, 'en').at(-1)).toBe(
-      `Failed: the lift stopped 0.33${NB}m below the ledge, more than the 0.25${NB}m the stick figure can step up.`,
+      `Failed: the lift stopped 0.61${NB}m below the ledge, more than the 0.5${NB}m the stick figure can step up.`,
     );
-    const bonk = finished(4500);
+    const bonk = finished(7000);
     expect(drain(bonk, 'en').at(-1)).toBe(
-      `Failed: the lift went above 3.30${NB}m and hit the beam. Error: −0.31${NB}m`,
+      `Failed: the lift went above 3.36${NB}m and hit the beam. Error: −0.37${NB}m`,
     );
     const noLift = finished(100);
     expect(drain(noLift, 'fr').at(-1)).toBe(

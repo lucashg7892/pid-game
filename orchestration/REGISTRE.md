@@ -29,6 +29,9 @@ Tenu par l'orchestrateur. Les sous-agents ne modifient jamais ce fichier.
 | D21 | Enseignement (2026-11-13) | Pas de niveau 0 d'enseignement boucle ouverte/fermée pour l'instant |
 | D22 | Écrans (2026-11-13) | Écran titre avec un bouton Jouer et la mention de copyright, puis un menu avec la liste des niveaux |
 | D23 | Clavier (2026-11-13) | Échap ferme le panneau de réglage ; le bouton Pause est le seul moyen de pause à ce moment (K3, déjà appliqué en P-005) |
+| D24 | Niveau 1, durée (2026-11-13) | Après test de jeu : K6 passe à 6 s (`TRIP_MAX_STEPS` : 1800 vers 720) |
+| D25 | Niveau 1, fenêtre (2026-11-13) | Objectif de fenêtre de réussite du niveau 1 : Kp de 1000 à 5000 N/m (remplace [2000 ; 3800] de D9 une fois mis en œuvre) |
+| D26 | Niveau 2, Kp (2026-11-13) | Kp du niveau 2 fixé à 2500 N/m (Q1 de la spec T-018 validée) |
 
 ## 2. Protocole
 

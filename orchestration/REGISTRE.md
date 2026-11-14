@@ -65,6 +65,7 @@ Depuis D19 (ADR-014), les règles courantes sont dans `CLAUDE.md` : rôles dans 
 | T-022 | réalisateur + validateur | Trajet de 10 s, Kp par défaut 2000, tolérance du niveau 2 à 0,10 m (K32), oracle MATLAB relancé | VALIDÉ (réserves levées, N3) | logs/T-022.md |
 | T-023 | réalisateur + validateur | Oracle MATLAB du PI (`t018_*.m`), test d'oracle exact `pi-exact.test.ts` (K28) | VALIDÉ (réserve levée, N3) | logs/T-023.md |
 | T-024 | réalisateur | Niveau 2 : jauge du terme intégral I (K30), étiquettes FR/EN, ligne de légende, capture | VALIDÉ (N2) | — |
+| T-025 | orchestrateur | K35 : régénération des 10 captures périmées de `docs/img` (e2e, tri manuel) | FAIT (N1) | — |
 | T-000 | réalisateur | Pilote : git init, .gitignore, .gitattributes | VALIDÉ | logs/T-000.md |
 | T-001 | concepteur | Spec de la tranche verticale | VALIDÉ | logs/T-001.md |
 | T-002 | réalisateur | Socle outillé (npm, TS, Vite, lint, tests) | VALIDÉ (réserves) | logs/T-002.md |

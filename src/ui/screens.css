@@ -1,0 +1,87 @@
+/*
+ * Écrans titre et menu (T-017) : morceaux de papier crème sur le papier millimétré du canvas.
+ * Mêmes variables et mêmes boutons que l'interface du niveau (ui.css, classe .ui sur le
+ * conteneur). Mise en page de flux, centrée, qui défile dans l'écran en portrait : aucune
+ * animation ni transition.
+ */
+.ui-screen {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  max-height: 100dvh;
+  padding: 1rem;
+  overflow-y: auto;
+  pointer-events: auto;
+}
+
+.ui-screen-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  width: min(100%, 30rem);
+  flex: none;
+  padding: 1.4rem 1.5rem;
+  text-align: center;
+}
+
+.ui-screen-title {
+  margin: 0;
+  font-size: clamp(2rem, 9vw, 3rem);
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.ui-screen-tagline {
+  margin: 0;
+  color: var(--ui-ink-soft);
+}
+
+.ui-screen-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: stretch;
+}
+
+.ui-screen-btn {
+  min-width: 44px;
+  min-height: 48px;
+  padding: 0.3em 1em;
+}
+
+.ui-screen-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-screen-list .ui-screen-btn {
+  width: 100%;
+}
+
+.ui-screen-legal {
+  flex: none;
+  color: var(--ui-ink-soft);
+  font-size: 0.85em;
+  text-align: center;
+}
+
+.ui-screen-legal p {
+  margin: 0;
+}
+
+@media (orientation: portrait) {
+  .ui-screen {
+    justify-content: flex-start;
+    padding-top: 12vh;
+  }
+}

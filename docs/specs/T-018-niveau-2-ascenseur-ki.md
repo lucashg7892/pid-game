@@ -274,9 +274,9 @@ Section ajoutée par le rédacteur après la réalisation, sur l'état du commit
 |---|---|---|
 | Q1 : Kp fixé ou réglable | Kp **fixé à 2500 N/m** (`LEVEL2_KP`) | conforme à la recommandation A et à la valeur proposée |
 | Q3 : plage et pas de Ki | **mêmes bornes et même pas que Kp** : 0 à 8000 N/(m·s), pas de 100 (`KI_MIN`, `KI_MAX`, `KI_STEP`) | la spec laissait la plage à fixer après mesure |
-| Q3 : valeur initiale | `KI_DEFAULT` = `KP_DEFAULT` = 500 | non prévu par la spec |
-| Q3 : tolérance d'arrivée ε₂ | **`LEVEL2_ARRIVAL_TOLERANCE` = `STEP_TOLERANCE` = 0,5 m** (constante propre au niveau, égale à celle du niveau 1) | la spec recommandait 0,10 m et exigeait ε₂ < e_ss (0,196 m à Kp = 2500, §5.3) : **non respecté, d'où K32** |
-| Q7 : durée du trajet | 720 pas (6 s), comme le niveau 1 après T-020 (décision D24) | la spec proposait de garder 1800 pas |
+| Q3 : valeur initiale | `KI_DEFAULT` = `KP_DEFAULT` = 500 jusqu'à T-021b, **2000 depuis T-022** | non prévu par la spec |
+| Q3 : tolérance d'arrivée ε₂ | jusqu'à T-021b : **`LEVEL2_ARRIVAL_TOLERANCE` = `STEP_TOLERANCE` = 0,5 m** ; **depuis T-022 (D29) : 0,10 m** (constante propre au niveau) | la spec recommandait 0,10 m et exigeait ε₂ < e_ss (0,196 m à Kp = 2500, §5.3) : non respecté jusqu'à T-021b (K32), **respecté depuis T-022** |
+| Q7 : durée du trajet | 720 pas (6 s) jusqu'à T-021b (décision D24) ; **1200 pas (10 s) depuis T-022 (décision D27)**, comme le niveau 1 | la spec proposait de garder 1800 pas |
 | Q3 : poutre | `BEAM_HEIGHT` = 3,3626 m, la poutre du niveau 1 réglée par T-020 | la spec proposait de garder 3,30 m ; la poutre du niveau 1 a changé avant la réalisation du niveau 2 |
 | Q2 : anti-windup | **aucun** (option A : le windup se montre par l'échec) | conforme à la recommandation ; voir [ADR-016](../decisions/ADR-016-controleur-pi-sans-anti-windup.md) |
 | §6, Q6 : jauge de l'intégrale, annotations, loupe, courbe I(t) | **reportées** (K30, K31) ; l'instantané expose déjà `iTerm` | le rendu du niveau 2 est celui du niveau 1 |
@@ -299,12 +299,25 @@ Section ajoutée par le rédacteur après la réalisation, sur l'état du commit
 - **Réglage** : l'interface lit `level.tuning` (`TuningSpec` : `param`, `min`, `max`, `step`) et appelle `setTuning` et `adjustTuning` ; `createLevel1` garde `setKp` et `adjustKp`, `createLevel2` ajoute `setKi` et `adjustKi`.
 - **Retour au menu** : pas de bouton « niveau suivant » à la victoire du niveau 1 (§10) ; `level1.comingSoon` dit « Le niveau 2 t’attend dans le menu : merci d’avoir joué ! » et le bouton « Menu » du panneau d'issue (T-017e) ramène au menu.
 
-### Valeurs mesurées (Kp = 2500, poutre 3,3626 m, 720 pas)
+### Valeurs mesurées (Kp = 2500, poutre 3,3626 m, 720 pas, jusqu'à T-021b)
+
+Les mesures ci-dessous sont celles de l'état `119519b` (tolérance 0,5 m, 720 pas), conservées comme historique. Les mesures actuelles figurent dans la section suivante.
 
 - Avec la tolérance de 0,5 m : Ki gagnants [0 ; 800], chocs [900 ; 8000], **aucune** fin de temps ; Ki = 840 gagne (pic 3,362216 m, marge 0,384 mm), Ki = 850 heurte (pic 3,365122 m) (log T-021a, K29). Ki = 0 gagne (erreur finale 0,196407 m) ; `KI_DEFAULT` = 500 gagne (erreur finale 0,046204 m, script du rédacteur).
 - Avec une tolérance de 0,10 m (information, non retenue) : fins de temps [0 ; 200], gagnants [300 ; 800], chocs [900 ; 8000], et Ki = 0 ne gagne pas (log T-021a). C'est le correctif proposé en K32.
 - Pas saturés au départ : 23 à Ki = 0, 25 à Ki = 800, 26 à 1000, 36 à 4000 ; intégrale maximale 582,1 N (Ki 800), 724,8 N (1000), 2829,8 N (4000) ; I tend vers m·g = 490,5 N (log T-021a).
 - Les conjectures du §4.3 se vérifient en ordre de grandeur seulement : le seuil de choc heuristique (≈ 1360 N/(m·s), ou 1770 sans l'élan) est supérieur d'environ 60 % à celui mesuré (entre 840 et 850) ; la limite de stabilité Ki < c·Kp/m (§4.2) et le pôle lent n'ont pas été vérifiés (pas d'oracle, K28).
 - Ki = 0 identique au P bit à bit sur 1800 pas pour Kp ∈ {0, 150, 1000, 2500, 4500, 8000} ; empreinte SHA-256 du PI (Kp = 2500, Ki = 1000) : `0d9d331a5a4a9df28a188dd71b599a3559bd47ccc04f6d4ab78b7db5b725744b` ; empreinte du P inchangée (log T-021a).
+
+### Retouche de T-022 (commit `08908b6`, décisions D27 à D29)
+
+Source : `orchestration/logs/T-022.md` (mesures vérifiées par un validateur indépendant) et `src/game/constants.ts`.
+
+- **Tolérance d'arrivée** : `LEVEL2_ARRIVAL_TOLERANCE` = 0,10 m (K32 corrigé).
+- **Durée** : `TRIP_MAX_STEPS` = 1200 pas (10 s), pour les deux niveaux.
+- **Valeur initiale** : `KI_DEFAULT` = `KP_DEFAULT` = 2000, hors de la fenêtre gagnante : un lancement sans réglage heurte la poutre (pas 57).
+- **Plage mesurée** (Kp = 2500, 1200 pas), grille de Ki au pas de 100 : « trop court » de 0 à 100, victoire de 200 à 800, choc de 900 à 8000, aucun « trop lent ». Au pas de 10 : « trop court » de 0 à 120, « trop lent » à 130, victoire de 140 à 840, choc dès 850. Ki est nécessaire : le P seul s'arrête à 0,196 m.
+- **Victoire la plus lente** : Ki = 200 au pas 733 sur la grille (marge 467 pas) ; Ki = 140 au pas 1185 hors grille.
+- **Marges de la borne de choc** : 12,02 mm sous la poutre à Ki = 800, 17,03 mm au-dessus à 900 ; 0,384 mm à 840 et 2,522 mm à 850 hors grille.
 
 Documentation correspondante : [jeu.md](../jeu.md#niveau-2--arbitre-et-fin-de-temps), [physique/ascenseur.md](../physique/ascenseur.md#niveau-2--contrôleur-pi), [simulation.md](../simulation.md#contrôleur-pi-t-021a), [interface.md](../interface.md#niveau-2--la-mémoire-t-021b), [ADR-016](../decisions/ADR-016-controleur-pi-sans-anti-windup.md).

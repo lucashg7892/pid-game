@@ -1,6 +1,6 @@
 # Noyau de simulation (`src/sim`)
 
-À quoi sert cette page : expliquer comment le noyau calcule un pas de simulation, ce qu'exporte `src/sim/index.ts` et quelles règles garantissent le déterminisme. Elle décrit le noyau validé (T-003, T-004, T-004b), complété par le contrôleur PI de T-021a (état du commit `119519b`). La physique de l'ascenseur est dans [physique/ascenseur.md](physique/ascenseur.md).
+À quoi sert cette page : expliquer comment le noyau calcule un pas de simulation, ce qu'exporte `src/sim/index.ts` et quelles règles garantissent le déterminisme. Elle décrit le noyau validé (T-003, T-004, T-004b), complété par le contrôleur PI de T-021a (état du commit `08908b6` ; `src/sim` n'a pas changé depuis `119519b`). La physique de l'ascenseur est dans [physique/ascenseur.md](physique/ascenseur.md).
 
 ## Rôle du noyau
 
@@ -167,7 +167,7 @@ Le cas NaN s'écarte de la formule littérale de la spec (`saturated = uSat !== 
 - `clear()` vide l'enregistreur sans réallouer.
 - `push` et `forEach` n'allouent rien.
 
-L'enregistreur copie des nombres : il ne garde aucune référence vers l'échantillon. Il ne stocke pas ẏ ni uCmd. Capacité utilisée par le jeu : `TRIP_MAX_STEPS` = 720 échantillons, soit 6 s (`src/game/elevator-level.ts` ; 1800 échantillons, 15 s, avant T-020) ; le rendu y lit la courbe y(t) (T-009).
+L'enregistreur copie des nombres : il ne garde aucune référence vers l'échantillon. Il ne stocke pas ẏ ni uCmd. Capacité utilisée par le jeu : `TRIP_MAX_STEPS` = 1200 échantillons, soit 10 s (`src/game/elevator-level.ts` ; 720 échantillons, 6 s, de T-020 à T-021b ; 1800 échantillons, 15 s, avant T-020) ; le rendu y lit la courbe y(t) (T-009).
 
 ## Borne `MAX_SIM_DT` = 1/30 s
 

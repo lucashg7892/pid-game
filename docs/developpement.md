@@ -1,6 +1,6 @@
 # Développement
 
-À quoi sert cette page : installer le projet, connaître chaque script npm et les conventions de code. État au commit `119519b` pour le code ; intégration continue et déploiement au commit `88ae23c` (T-011). Pour un pas-à-pas sous Windows destiné à un non-développeur, voir le [tutoriel de lancement local](tutoriel-lancer-en-local.md).
+À quoi sert cette page : installer le projet, connaître chaque script npm et les conventions de code. État au commit `08908b6` pour le code ; intégration continue et déploiement au commit `88ae23c` (T-011). Pour un pas-à-pas sous Windows destiné à un non-développeur, voir le [tutoriel de lancement local](tutoriel-lancer-en-local.md).
 
 ## Prérequis
 
@@ -28,7 +28,7 @@ Pour les tests e2e, installez aussi Chromium pour Playwright : `npx playwright i
 
 ## Scripts npm
 
-Commandes exactes de `package.json` au commit `119519b` (11 scripts, inchangés depuis `7bcd9ce`). Sous PowerShell, écrire `npm.cmd` et `npx.cmd`.
+Commandes exactes de `package.json` au commit `08908b6` (11 scripts, inchangés depuis `7bcd9ce`). Sous PowerShell, écrire `npm.cmd` et `npx.cmd`.
 
 | Script | Commande | Usage |
 |---|---|---|
@@ -41,7 +41,7 @@ Commandes exactes de `package.json` au commit `119519b` (11 scripts, inchangés 
 | `npm run test:cov` | `vitest run --coverage` | tests unitaires et couverture de `src/sim` ; échoue sous 95 % des lignes ou 90 % des branches (voir [tests.md](tests.md#couverture)) |
 | `npm run build` | `vite build` | build de production dans `dist/` |
 | `npm run preview` | `vite preview` | sert le contenu de `dist/` |
-| `npm run e2e` | `playwright test` | tests de bout en bout (69 au commit `119519b`, relevés par `npx.cmd playwright test --list`) dans Chromium, contre le build servi par `vite preview` ; construit le site avant (voir [tests.md](tests.md#tests-de-bout-en-bout-playwright)) |
+| `npm run e2e` | `playwright test` | tests de bout en bout (70 au commit `08908b6`, 69 à `119519b`, relevés par `npx.cmd playwright test --list`) dans Chromium, contre le build servi par `vite preview` ; construit le site avant (voir [tests.md](tests.md#tests-de-bout-en-bout-playwright)) |
 | `npm run check` | `npm run typecheck && npm run lint && npm run test && npm run build` | vérification complète avant livraison |
 
 ### Tests de bout en bout et `PW_CHROME_PATH`
@@ -78,7 +78,7 @@ Le script `test:cov` a été ajouté par T-003 avec le paquet `@vitest/coverage-
 
 Cible de compilation : ES2023 (`tsconfig.json` et `build.target` de `vite.config.ts`).
 
-## Arborescence au commit `119519b`
+## Arborescence au commit `08908b6`
 
 Liste tirée de `git ls-files`.
 
@@ -99,7 +99,7 @@ tests/game/    7 fichiers de test + helpers.ts (outils partagés)
 tests/render/  10 fichiers de test
 tests/ui/      8 fichiers de test + helpers.ts
 tests/e2e/     7 fichiers .spec.ts + console.ts, overlay.ts, png.ts
-docs/img/      31 captures PNG (voir README.md, section Captures)
+docs/img/      33 captures PNG (voir README.md, section Captures)
 validation/    oracle MATLAB de T-005 : matlab/ (9 scripts), data/ (3 CSV), README.md
 docs/  orchestration/
 ```
@@ -140,5 +140,6 @@ Le site sera alors servi sous le chemin `/pid-game/`, qui correspond à la base 
 | socle T-002 | 812,66 kB | 219,75 kB | log T-002 |
 | `566a8a3` | 885,25 kB | **246,57 kB** | `npx vite build` sur une extraction de `566a8a3` (rédacteur, 2026-11-13) |
 | `119519b` | 907,32 kB | **252,72 kB** | `npm.cmd run build` (rédacteur, 2026-11-13, code de sortie 0) |
+| `08908b6` | 907,79 kB | **252,84 kB** | `npm.cmd run build` (rédacteur, 2026-11-14, code de sortie 0) |
 
-Un seul fichier JavaScript, dominé par `three/webgpu`. Feuille de style : 5,86 kB (2,09 kB gzip) à `566a8a3`, 7,30 kB (2,42 kB gzip) à `119519b`. Polices : 23 944 et 20 112 octets, chargées à la demande. Vite affiche l'avertissement « Some chunks are larger than 500 kB after minification ». Budget visé par la spec T-001 §7 : 400 ko gzip pour le JS initial, respecté.
+Un seul fichier JavaScript, dominé par `three/webgpu`. Feuille de style : 5,86 kB (2,09 kB gzip) à `566a8a3`, 7,30 kB (2,42 kB gzip) à `119519b` et `08908b6`. Polices : 23 944 et 20 112 octets, chargées à la demande. Vite affiche l'avertissement « Some chunks are larger than 500 kB after minification ». Budget visé par la spec T-001 §7 : 400 ko gzip pour le JS initial, respecté.

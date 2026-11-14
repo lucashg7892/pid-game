@@ -1,6 +1,6 @@
 # Bilan de la v0.1
 
-À quoi sert cette page : résumer pour un lecteur extérieur ce que contient la v0.1 de Huygens’s world, ses chiffres clés, la façon dont elle a été produite, les leçons tirées et la suite prévue. Verdict de la validation finale T-012 : **v0.1 validée avec réserves** le 2026-11-13 ([rapport](validation/T-012-v0.1.md)). État décrit : commit `88ae23c`, celui de la validation. Les chiffres qui ont changé depuis (tests, clés de texte, défauts connus) sont relevés au commit `13e8b7e` et marqués comme tels ; les autres restent ceux de `88ae23c`. **Cette page décrit la v0.1 : son état reste celui du commit `88ae23c`.** Les tâches validées depuis (T-017 à T-021b : écrans titre et menu, valeurs de jeu du niveau 1, niveau 2) sont décrites dans le [CHANGELOG](CHANGELOG.md) et dans les pages techniques ; les chiffres de cette page qui ne valent plus au commit `119519b` portent une mention datée.
+À quoi sert cette page : résumer pour un lecteur extérieur ce que contient la v0.1 de Huygens’s world, ses chiffres clés, la façon dont elle a été produite, les leçons tirées et la suite prévue. Verdict de la validation finale T-012 : **v0.1 validée avec réserves** le 2026-11-13 ([rapport](validation/T-012-v0.1.md)). État décrit : commit `88ae23c`, celui de la validation. Les chiffres qui ont changé depuis (tests, clés de texte, défauts connus) sont relevés au commit `13e8b7e` et marqués comme tels ; les autres restent ceux de `88ae23c`. **Cette page décrit la v0.1 : son état reste celui du commit `88ae23c`.** Les tâches validées depuis (T-017 à T-022 : écrans titre et menu, valeurs de jeu du niveau 1, niveau 2, trajet de 10 s et Kp par défaut 2000) sont décrites dans le [CHANGELOG](CHANGELOG.md) et dans les pages techniques ; les chiffres de cette page qui ne valent plus au commit `08908b6` portent une mention datée.
 
 ## Ce que contient la v0.1
 
@@ -18,16 +18,16 @@ Objectifs de la spec, d'après T-012 §C : O1 (niveau jouable) atteint ; O2 (voi
 
 | Mesure | Valeur | Source |
 |---|---|---|
-| Tests unitaires (Vitest) | 439 tests, 36 fichiers, tous verts au commit `13e8b7e` (426 tests, 34 fichiers à `88ae23c`) ; 586 tests, 45 fichiers au commit `119519b` | `npm test` aux commits `13e8b7e` et `119519b` ; rapport T-012 §A pour `88ae23c` |
-| Tests de bout en bout (Playwright) | 69 tests dans 7 fichiers au commit `119519b`, 39 dans 5 fichiers au commit `13e8b7e` (listes de `npx playwright test --list`) ; 28 tests dans 3 fichiers, verts en 1,7 min au commit `566a8a3` | exécution par l'orchestrateur, log `orchestration/logs/T-010.md`, pour les 28 premiers ; liste confirmée par T-012 §A. Les tests ajoutés depuis n'ont pas été exécutés par le rédacteur |
+| Tests unitaires (Vitest) | 439 tests, 36 fichiers, tous verts au commit `13e8b7e` (426 tests, 34 fichiers à `88ae23c`) ; 586 tests, 45 fichiers au commit `119519b` ; 602 tests, 45 fichiers au commit `08908b6` | `npm test` aux commits `13e8b7e`, `119519b` et `08908b6` ; rapport T-012 §A pour `88ae23c` |
+| Tests de bout en bout (Playwright) | 70 tests dans 7 fichiers au commit `08908b6` (69 à `119519b`), 39 dans 5 fichiers au commit `13e8b7e` (listes de `npx playwright test --list`) ; 28 tests dans 3 fichiers, verts en 1,7 min au commit `566a8a3` | exécution par l'orchestrateur, log `orchestration/logs/T-010.md`, pour les 28 premiers ; liste confirmée par T-012 §A. Les tests ajoutés depuis n'ont pas été exécutés par le rédacteur |
 | Couverture du noyau `src/sim` | 100 % des lignes, branches et fonctions (seuils 95 / 90) | `npm run test:cov`, rapport T-012 §A |
 | JavaScript du build | 885,25 kB, soit 246,57 kB gzip (budget de la spec : 400 kB gzip) | `npm run check`, rapport T-012 §A |
 | Polices (Patrick Hand, 2 fichiers woff2) | 23 944 et 20 112 octets, chargées à la demande | `stat` sur `public/fonts/` au commit `88ae23c` |
 | Écart simulation / modèle exact | 1,42e-7 m au pire sur la hauteur y | MATLAB, rapport T-012 §B |
-| Fenêtre de réussite | Kp ∈ [2000 ; 3800] N/m, contiguë ; 0 désaccord sur 80 issues (v0.1). **Depuis T-020 : [1000 ; 5000] N/m**, 41 valeurs contiguës, 0 désaccord sur 80 issues | MATLAB, rapport T-012 §B ; log T-020 |
+| Fenêtre de réussite | Kp ∈ [2000 ; 3800] N/m, contiguë ; 0 désaccord sur 80 issues (v0.1). **Depuis T-020 : [1000 ; 5000] N/m**, 41 valeurs contiguës, 0 désaccord sur 80 issues ; relancé à T-022 avec un horizon de 1200 pas (10 s) : même fenêtre, 0 désaccord sur 80 | MATLAB, rapport T-012 §B ; log T-020 |
 | Marges aux bornes hautes | +5,842 mm à Kp = 3800 ; −1,865 mm à Kp = 3900 (v0.1). **Depuis T-020 : +1,74 mm à Kp = 5000 ; −1,79 mm à Kp = 5100** (poutre 3,3626 m) | MATLAB, rapport T-012 §B ; log T-020 |
-| Textes traduits | 158 clés par langue au commit `119519b`, 115 au commit `13e8b7e` (111 à `88ae23c`), mêmes clés en FR et EN | comptage par script ; rapport T-012 §C et §F |
-| Défauts connus | 33 (K1 à K33) au commit `119519b`, dont 12 corrigés (K1, K2, K3, K6, K16, K17, K18, K19, K20, K21, K23, K24) et 1 corrigé en partie (K22) ; plus aucun majeur ouvert (24 dont 8 corrigés au commit `13e8b7e`) ; à `88ae23c` : 22, dont 1 majeur (K16), aucun bloquant | [defauts-connus.md](defauts-connus.md) |
+| Textes traduits | 159 clés par langue au commit `08908b6`, 158 à `119519b`, 115 au commit `13e8b7e` (111 à `88ae23c`), mêmes clés en FR et EN | comptage par script ; rapport T-012 §C et §F |
+| Défauts connus | 35 (K1 à K35) au commit `08908b6`, dont 13 corrigés (K1, K2, K3, K6, K16, K17, K18, K19, K20, K21, K23, K24, K32) ; 33 (K1 à K33) à `119519b`, dont 12 corrigés et 1 corrigé en partie (K22) ; plus aucun majeur ouvert (24 dont 8 corrigés au commit `13e8b7e`) ; à `88ae23c` : 22, dont 1 majeur (K16), aucun bloquant | [defauts-connus.md](defauts-connus.md) |
 
 ## Comment elle a été produite
 

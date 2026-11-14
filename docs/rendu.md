@@ -1,6 +1,6 @@
 # Rendu au crayon (`src/render`)
 
-À quoi sert cette page : expliquer comment le jeu dessine la scène : démarrage du moteur graphique, cadrage, papier millimétré, traits de crayon, bonhomme, courbe et jauge, budget de dessin. Elle décrit le commit `119519b` (rendu validé en T-008 et T-009 ; échecs en cours de route ajoutés par T-014 ; cadrage fixé et ancres de la jauge par T-019 et T-020 ; session de rendu réutilisable entre les écrans par T-017). Les textes posés par-dessus la scène sont dans [interface.md](interface.md).
+À quoi sert cette page : expliquer comment le jeu dessine la scène : démarrage du moteur graphique, cadrage, papier millimétré, traits de crayon, bonhomme, courbe et jauge, budget de dessin. Elle décrit le commit `08908b6` (rendu validé en T-008 et T-009 ; échecs en cours de route ajoutés par T-014 ; cadrage fixé et ancres de la jauge par T-019 et T-020 ; session de rendu réutilisable entre les écrans par T-017 ; trajet de 10 s et courbe sur 1201 points par T-022). Les textes posés par-dessus la scène sont dans [interface.md](interface.md).
 
 ![Le niveau 1 en cours de trajet, 1280 × 720 (capture e2e de T-010)](img/t010-03-trajet.png)
 
@@ -115,7 +115,7 @@ La grille est en coordonnées **monde** : une ligne de mètre passe par chaque e
 
 Papier `#f7f0de`, grain discret (± 1,5 %) par cellules de 1 cm, sans texture ni image.
 
-![Papier seul, 1280 × 720 (capture de référence de T-008)](img/t008-paper-1280x720.png)
+![Papier seul, 1280 × 720 (capture de référence de T-008, périmée : sa scène montre l'ancien réglage de Kp ; K35)](img/t008-paper-1280x720.png)
 
 **Anticrénelage.** La distance au trait le plus proche est convertie en pixels par `fwidth` (dérivée écran). Un trait plus fin qu'un pixel est dessiné sur un pixel avec une intensité réduite d'autant. Anti-moiré : une famille s'estompe quand son pas à l'écran tombe sous 6 px et disparaît sous 2,5 px.
 
@@ -203,11 +203,11 @@ La courbe est tracée sur le mur de la cage. L'axe vertical est la **hauteur ré
 x(t) = 0,2 + t × échelle
 ```
 
-Raison (log T-009, chiffres mis à jour par T-020) : les issues qui s'apprennent sur la forme de la courbe sont courtes (choc avant 0,53 s, victoire vers 2,0 à 2,5 s) et se lisent en grand. Les trajets de 6 s (marche trop haute, cabine au sol) n'ont qu'une montée puis un palier, lisibles même resserrés (0,6 m/s à 6 s ; c'était 0,24 m/s à 15 s avant T-020). L'échelle fixe de la spec (0,4 m/s) donnerait 2,4 m pour 6 s, et seulement 0,2 m pour la montée (6 m pour 15 s avant T-020).
+Raison (log T-009, chiffres mis à jour par T-020 puis T-022, d'après le commentaire de `src/render/curve.ts`) : les issues qui s'apprennent sur la forme de la courbe sont courtes au niveau 1 (choc avant 0,53 s, victoire vers 2,2 à 2,5 s) et se lisent en grand. Les trajets qui vont au bout des 10 s (`TRIP_MAX_STEPS` = 1200 pas : marche trop haute, cabine au sol, niveau 2 « trop court ») n'ont qu'une montée puis un palier ou une lente approche, lisibles même resserrés : 3,6 / 10 = 0,36 m/s à 10 s, un trait de seconde tous les 0,36 m (0,6 m/s à 6 s de T-020 à T-021b ; 0,24 m/s à 15 s avant T-020). L'échelle fixe de la spec (0,4 m/s) donnerait 4 m pour 10 s, plus que le plancher (2,4 m pour 6 s, 6 m pour 15 s).
 
 La consigne r est en pointillés (tirets de 0,12 m, vides de 0,08 m) ; l'erreur e est hachurée entre la courbe et la consigne, avec un angle différent des hachures du décor. À la victoire, une cote d'atelier mesure la marche résiduelle.
 
-Les points viennent de `level.signals` (valeurs **avant** chaque pas) ; la pointe est interpolée jusqu'à la position affichée de la cabine. Capacité : `CURVE_CAPACITY` = `TRIP_MAX_STEPS` + 1 = 721 points (1 801 avant T-020).
+Les points viennent de `level.signals` (valeurs **avant** chaque pas) ; la pointe est interpolée jusqu'à la position affichée de la cabine. Capacité : `CURVE_CAPACITY` = `TRIP_MAX_STEPS` + 1 = 1201 points (721 de T-020 à T-021b, 1 801 avant T-020).
 
 ## Bonhomme
 
@@ -248,12 +248,12 @@ L'embarquement dans la cabine et la sortie après la victoire ne sont pas animé
 
 | Grandeur | Valeur | Source |
 |---|---|---|
-| JavaScript du build | 907,32 kB, **252,72 kB gzip** (un seul fichier) ; 885,25 kB et 246,57 kB à `566a8a3` | `npm.cmd run build` au commit `119519b` (rédacteur) |
+| JavaScript du build | 907,79 kB, **252,84 kB gzip** (un seul fichier) ; 907,32 kB et 252,72 kB à `119519b` ; 885,25 kB et 246,57 kB à `566a8a3` | `npm.cmd run build` au commit `08908b6` (rédacteur, code de sortie 0) |
 | CSS du build | 7,30 kB, 2,42 kB gzip ; 5,86 kB et 2,09 kB à `566a8a3` | idem |
 | budget JS initial | 400 ko gzip | spec T-001 §7 |
 | polices | 23 944 + 20 112 octets (woff2) | `public/fonts/` |
 | appels de dessin | 4 à l'état initial (e2e), 7 au plus | `render.spec.ts`, `level-view.ts` |
-| triangles des lots | 2 638 à l'état initial ; 3 504 à la victoire (Kp = 2500 N/m) | script du rédacteur, commit `119519b` |
+| triangles des lots | 2 638 à l'état initial ; 3 504 à la victoire (Kp = 2500 N/m) | script du rédacteur, commit `119519b` (le peintre n'a changé depuis qu'en commentaire : T-022 y a seulement remesuré les capacités des lots) |
 
 Vite affiche l'avertissement « Some chunks are larger than 500 kB after minification » : three/webgpu fait l'essentiel du fichier. Aucun découpage n'est fait.
 
@@ -271,7 +271,7 @@ Liste complète au commit `119519b`, comptée par script (86 noms : 58 exports n
 | `stage.ts` | `createPaperStage`, `CAMERA_Z` (10 m), `CAMERA_NEAR` (0,1 m), `CAMERA_FAR` (100 m) | `PaperStage` |
 | `paper.ts` (`export *`) | `createPaper`, `createPaperMaterial`, `fitPaperToFrame`, `PAPER_COLOR`, `PAPER_Z`, `PAPER_OVERSCAN`, `GRAIN_CELL`, `GRAIN_AMPLITUDE`, `GRID_FINE_STEP`, `GRID_HALF_STEP`, `GRID_MAJOR_STEP`, `GRID_FINE_WIDTH`, `GRID_HALF_WIDTH`, `GRID_MAJOR_WIDTH`, `GRID_FINE_COLOR`, `GRID_HALF_COLOR`, `GRID_MAJOR_COLOR`, `GRID_FINE_OPACITY`, `GRID_HALF_OPACITY`, `GRID_MAJOR_OPACITY`, `GRID_FINE_MIN_ENERGY`, `GRID_HALF_MIN_ENERGY`, `GRID_MAJOR_MIN_ENERGY`, `GRID_FADE_START_PX`, `GRID_FADE_END_PX`, `GRID_SNAP_START_PX`, `GRID_SNAP_END_PX`, `GRID_SNAP_QUANTUM` | — |
 | `level-display.ts` | `computeDisplay`, `createDisplay`, `choosePose`, `effectivePhase`, `computeAnchors`, `createAnchors`, `CONSOLE_ANCHOR_Y`, `WALKER_HEAD_TOP` | `LevelDisplay`, `LevelAnchors`, `ScreenPoint` |
-| `curve.ts` | `curveTimeScale`, `curveX`, `CURVE_ORIGIN_X` (0,2 m), `CURVE_SPAN` (3,6 m), `CURVE_MAX_SPEED` (1,2 m/s), `CURVE_FULL_SPEED_SECONDS` (3 s), `CURVE_CAPACITY` (721 ; 1 801 avant T-020) | — |
+| `curve.ts` | `curveTimeScale`, `curveX`, `CURVE_ORIGIN_X` (0,2 m), `CURVE_SPAN` (3,6 m), `CURVE_MAX_SPEED` (1,2 m/s), `CURVE_FULL_SPEED_SECONDS` (3 s), `CURVE_CAPACITY` (1201 ; 721 de T-020 à T-021b ; 1 801 avant T-020) | — |
 
 Valeurs des constantes du papier : tableau de la section « Papier millimétré » (pas, épaisseurs, couleurs, opacités) ; `GRID_*_MIN_ENERGY` (0 ; 0,4 ; 1) est l'intensité minimale gardée par un trait plus fin qu'un pixel ; `GRAIN_CELL` = 0,01 m, `GRAIN_AMPLITUDE` = 0,03 ; `PAPER_Z` = −1 m ; `PAPER_OVERSCAN` = 0,02.
 

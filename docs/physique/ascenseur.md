@@ -1,6 +1,6 @@
 # Physique de l'ascenseur (niveaux 1 et 2)
 
-À quoi sert cette page : présenter le modèle physique de l'ascenseur, les formules qui prédisent son comportement et les valeurs mesurées sur le code. Elle s'adresse à un lecteur de niveau licence qui découvre l'automatique. Code : `src/sim/plants/elevator.ts` ; fonctionnement du noyau : [simulation.md](../simulation.md). Le modèle est le même aux deux niveaux ; la section « Niveau 2 : contrôleur PI » en fin de page décrit ce qui change. État du commit `119519b` : les valeurs de jeu du niveau 1 (poutre, tolérance, fenêtre) sont celles de T-020 (2026-11-13) ; les valeurs d'avant, validées en T-005, sont signalées comme telles. Vocabulaire : « quai » désigne ici ce que les textes français du jeu appellent « plateau d'arrivée » depuis T-019.
+À quoi sert cette page : présenter le modèle physique de l'ascenseur, les formules qui prédisent son comportement et les valeurs mesurées sur le code. Elle s'adresse à un lecteur de niveau licence qui découvre l'automatique. Code : `src/sim/plants/elevator.ts` ; fonctionnement du noyau : [simulation.md](../simulation.md). Le modèle est le même aux deux niveaux ; la section « Niveau 2 : contrôleur PI » en fin de page décrit ce qui change. État du commit `08908b6` : les valeurs de jeu du niveau 1 (poutre, tolérance, fenêtre) sont celles de T-020 (2026-11-13), la durée du trajet (10 s) et les valeurs du niveau 2 celles de T-022 ; les valeurs d'avant, validées en T-005, sont signalées comme telles. Vocabulaire : « quai » désigne ici ce que les textes français du jeu appellent « plateau d'arrivée » depuis T-019.
 
 ## Le système en une phrase
 
@@ -54,7 +54,7 @@ Valeurs de `ELEVATOR_PARAMS`, `ELEVATOR_MAX_FORCE` et `ELEVATOR_SETPOINT` (code)
 | Kp | 0 à 8000, pas de 100 | N/m | gain réglé par le joueur | spec §5 ; curseur et touches de l'interface (T-010) |
 | h_poutre | 3,3626 | m | poutre : y > 3,3626 m ⇒ choc (3,30 avant T-020) | `BEAM_HEIGHT` de `src/game` (T-020) |
 | tolérance de marche | 0,5 | m | marche que le bonhomme peut enjamber (0,25 avant T-020) | `STEP_TOLERANCE` de `src/game` (T-020) |
-| durée d'un trajet | 6 | s | 720 pas ; fin de temps au-delà (15 s avant T-020) | `TRIP_MAX_STEPS` de `src/game` (T-020) |
+| durée d'un trajet | 10 | s | 1200 pas ; fin de temps au-delà (6 s, 720 pas, de T-020 à T-021b ; 15 s avant T-020) | `TRIP_MAX_STEPS` de `src/game` (T-022, D27) |
 
 Grandeurs dérivées : poids m·g = 490,5 N ; c/m = 8 s⁻¹ ; vitesse limite en chute libre m·g/c = 1,226 m/s.
 
@@ -216,11 +216,11 @@ Valeurs de référence (`tests/sim/reference.test.ts`, tolérance 1e-6 m ; sorti
 
 Écart du code à ces valeurs : ≤ 4,80e-7 m. Écart des valeurs à l'oracle exact MATLAB : ≤ 5,6e-7 m (T-005 §A–B).
 
-Issues selon les règles de jeu du commit `119519b` (poutre 3,3626 m, tolérance 0,5 m, 720 pas). Pics échantillonnés : mesures de T-020 pour 5000 et 5100 (log `orchestration/logs/T-020.md`), tableau de référence ci-dessus pour les autres. Marge à la poutre = 3,3626 − y_max (différence recalculée par le rédacteur). Pas de l'issue : mesurés par un script jetable du rédacteur au commit `119519b` (ceux de 1000, 2500, 3500, 3800, 4000, 5000, 5100 et 7000 sont aussi figés par `tests/game/outcomes.test.ts`). L'oracle exact MATLAB a été relancé par T-020 : 0 désaccord sur 80 valeurs de Kp ([jeu.md](../jeu.md#issues-de-0-à-8000-nm)). Les issues d'avant T-020 (T-005 §E : 3800 gagne avec +5,842 mm, 3900 heurte avec −1,865 mm) valaient pour la poutre à 3,30 m et la tolérance à 0,25 m.
+Issues selon les règles de jeu du commit `08908b6` (poutre 3,3626 m, tolérance 0,5 m, 1200 pas). Pics échantillonnés : mesures de T-020 pour 5000 et 5100 (log `orchestration/logs/T-020.md`), tableau de référence ci-dessus pour les autres. Marge à la poutre = 3,3626 − y_max (différence recalculée par le rédacteur). Pas de l'issue : mesurés par un script jetable du rédacteur aux commits `119519b` puis `08908b6` (ceux de 1000, 2500, 3500, 3800, 4000, 5000, 5100 et 7000 sont aussi figés par `tests/game/outcomes.test.ts`). L'oracle exact MATLAB a été relancé par T-020, puis par T-022 (horizon de 1200 pas) : 0 désaccord sur 80 valeurs de Kp ([jeu.md](../jeu.md#issues-de-0-à-8000-nm)). Les issues d'avant T-020 (T-005 §E : 3800 gagne avec +5,842 mm, 3900 heurte avec −1,865 mm) valaient pour la poutre à 3,30 m et la tolérance à 0,25 m.
 
 | Kp (N/m) | issue | pas de l'issue | y_max (m) | marge à la poutre 3,3626 − y_max |
 |---|---|---|---|---|
-| 100 | ne décolle pas | 720 | 0 | +3362,6 mm |
+| 100 | ne décolle pas | 1200 | 0 | +3362,6 mm |
 | 1500 | victoire | 280 | 2,776872 | +585,7 mm |
 | 1900 | victoire | 266 | 2,944782 | +417,8 mm |
 | 2000 | victoire | 262 | 2,979718 | +382,9 mm |
@@ -239,8 +239,8 @@ Décision D25 de l'utilisateur, réalisée par T-020 (2026-11-13).
 
 - **Borne basse** : 981 N/m exactement (m·g / 0,5). Avec le curseur du jeu, au pas de 100 N/m, la première valeur gagnante est 1000 N/m.
 - **Borne haute** : entre 5000 et 5100 N/m. Avec ce curseur, la dernière valeur gagnante est 5000 N/m. Les pics échantillonnés sont 3,357020 m à 4900, 3,360855 m à 5000, 3,364391 m à 5100 et 3,367543 m à 5200 ; la poutre (3,3626 m) a été réglée entre ceux de 5000 et de 5100.
-- 41 valeurs gagnantes contiguës (de 1000 à 5000 par pas de 100). Sur la grille : `0-100 noLift | 200-900 step | 1000-5000 win | 5100-8000 bonk`. Victoire la plus lente : pas 301 (Kp = 4000 et 4100), soit 419 pas de marge avant 720.
-- Oracle exact MATLAB relancé par T-020 (MATLAB R2025a, `t005_run_all.m`) : « Kp in [1000 ; 5000], 41 valeurs, contiguë : true », 0 désaccord sur 80 issues, « T005 : FIN SANS ERREUR ». Écart noyau / solution exacte : 1,112e-7 m au pire.
+- 41 valeurs gagnantes contiguës (de 1000 à 5000 par pas de 100). Sur la grille : `0-100 noLift | 200-900 step | 1000-5000 win | 5100-8000 bonk`. Victoire la plus lente : pas 301 (Kp = 4000 et 4100), soit 899 pas de marge avant 1200 (419 avant 720, de T-020 à T-021b).
+- Oracle exact MATLAB relancé par T-020, puis par T-022 (MATLAB R2025a, `t005_run_all.m`, `kMax` 1200, « horizon 1200 pas (10.0 s) ») : « Kp in [1000 ; 5000] », 0 désaccord sur 80 issues, « T005 : FIN SANS ERREUR ». Écart noyau / solution exacte : 1,112e-7 m au pire (T-020).
 
 **Marges** : à 5000 N/m, la cabine passe 1,74 mm sous la poutre ; à 5100 N/m, elle la dépasse de 1,79 mm ; à 1000 N/m, la marche est 9,5 mm sous la tolérance. La marge de 1,74 mm vaut plus de 15 000 fois l'écart numérique RK4 / exact (1,112e-7 m) : aucune issue ne peut basculer pour une raison numérique. En revanche, elle est faible en valeur absolue, et toute retouche de g, m, c, Umax, dt, de la poutre ou de la règle de choc peut faire basculer 5000 ou 5100 (défaut D-11 de T-005, K7 de [defauts-connus.md](../defauts-connus.md)). Après une telle retouche, relancer `validation/matlab/t005_run_all.m` (voir [validation/README.md](../../validation/README.md)).
 
@@ -301,13 +301,15 @@ L'intégrale est calculée à partir de l'erreur e, jamais de la commande satur�
 
 À l'équilibre (cabine immobile), u = m·g, et comme İ = Ki·e, l'erreur est nulle et I vaut m·g = 490,5 N : le terme I porte seul le poids, ce qui supprime l'erreur statique m·g/Kp du niveau 1. Les mesures de T-021a vont dans ce sens (« I tend vers m·g = 490,5 N », log `orchestration/logs/T-021a.md`).
 
-**Valeurs du niveau 2** (`src/game/constants.ts`) : Kp fixé à 2500 N/m, Ki réglable de 0 à 8000 N/(m·s) par pas de 100 (défaut 500), mêmes poutre (3,3626 m), tolérance (0,5 m) et durée (720 pas, 6 s) que le niveau 1.
+**Valeurs du niveau 2** (`src/game/constants.ts`) : Kp fixé à 2500 N/m, Ki réglable de 0 à 8000 N/(m·s) par pas de 100 (défaut 2000 depuis T-022 ; 500 jusqu'à T-021b), même poutre (3,3626 m) et même durée (1200 pas, 10 s depuis T-022) que le niveau 1, mais tolérance d'arrivée propre de 0,10 m depuis T-022 (`LEVEL2_ARRIVAL_TOLERANCE` ; égale à celle du niveau 1, 0,5 m, jusqu'à T-021b).
 
-**Mesures du noyau PI** (T-021a, Kp = 2500 N/m, règles d'issue du niveau 1 : poutre 3,3626 m, tolérance 0,5 m, 720 pas) :
+**Mesures du noyau PI** (T-021a, Kp = 2500 N/m, règles d'issue de l'époque : poutre 3,3626 m, tolérance 0,5 m, 720 pas ; valeurs historiques, les mesures actuelles sont à la suite) :
 
 - Ki gagnants [0 ; 800], chocs [900 ; 8000], aucune fin de temps. Par pas de 10 : 840 gagne (pic 3,362216 m, marge 0,384 mm), 850 heurte (pic 3,365122 m) ;
 - pas saturés au départ : 23 à Ki = 0, 25 à Ki = 800, 26 à 1000, 36 à 4000 ;
 - intégrale maximale : 582,1 N (Ki = 800), 724,8 N (Ki = 1000), 2829,8 N (Ki = 4000) : le terme I dépasse nettement le poids (490,5 N) quand Ki grandit, c'est le windup ;
 - intégrale recalculée indépendamment : écart ≤ 1,8e-12 N (relatif 3,8e-15) pour Ki ∈ {100, 800, 1000, 4000}.
 
-**Ce qui n'est pas validé.** Le PI n'est validé que par des tests unitaires et de déterminisme. L'oracle exact MATLAB du PI et le test d'oracle exact TypeScript (`tests/sim/pi-exact.test.ts`, spec T-018 §8) sont reportés (K28) ; la limite de stabilité Ki < c·Kp/m et le pôle lent ≈ −Ki/Kp de la spec T-018 §4.2 (calculs à la main) n'ont pas été vérifiés. Avec la tolérance de 0,5 m, Ki = 0 gagne et aucun Ki ne donne « trop court » ni « trop lent » (K32) : voir [jeu.md](../jeu.md#niveau-2--arbitre-et-fin-de-temps).
+**Issues du niveau 2 depuis T-022** (Kp = 2500 N/m, tolérance 0,10 m, 1200 pas ; log `orchestration/logs/T-022.md`) : grille de Ki de 100 : `0-100 step | 200-800 win | 900-8000 bonk`, aucun `slow` ; au pas de 10 : `0-120 step`, `130 slow`, `140-840 win`, `850+ bonk`. Le P seul (Ki = 0) s'arrête à m·g/Kp = 0,196 m, au-delà de 0,10 m : Ki est nécessaire. Victoire la plus lente : Ki = 200 au pas 733 (grille), Ki = 140 au pas 1185 (hors grille). Défaut Ki = 2000 : choc au pas 57. Détail et marges : [jeu.md](../jeu.md#niveau-2--arbitre-et-fin-de-temps).
+
+**Ce qui n'est pas validé.** Le PI n'est validé que par des tests unitaires et de déterminisme. L'oracle exact MATLAB du PI et le test d'oracle exact TypeScript (`tests/sim/pi-exact.test.ts`, spec T-018 §8) sont reportés (K28) ; la limite de stabilité Ki < c·Kp/m et le pôle lent ≈ −Ki/Kp de la spec T-018 §4.2 (calculs à la main) n'ont pas été vérifiés. Le défaut K32 (Ki = 0 gagnait avec la tolérance de 0,5 m) est corrigé depuis T-022 ; reste K34 (« trop lent » inatteignable sur la grille de 100) : voir [jeu.md](../jeu.md#niveau-2--arbitre-et-fin-de-temps).

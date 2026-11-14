@@ -1,6 +1,6 @@
 # Architecture
 
-À quoi sert cette page : présenter les modules du code, qui a le droit d'importer qui, le déroulement d'une image et les garde-fous automatiques. État au commit `119519b` : tous les modules sont validés, le jeu s'ouvre sur un écran titre puis un menu, et deux niveaux sont jouables dans un navigateur (le niveau 2 « La mémoire » est venu avec T-021b).
+À quoi sert cette page : présenter les modules du code, qui a le droit d'importer qui, le déroulement d'une image et les garde-fous automatiques. État au commit `08908b6` : tous les modules sont validés, le jeu s'ouvre sur un écran titre puis un menu, et deux niveaux sont jouables dans un navigateur (le niveau 2 « La mémoire » est venu avec T-021b).
 
 ## Modules
 
@@ -161,7 +161,7 @@ x 2 dependency violations (2 errors, 0 warnings). 6 modules, 4 dependencies crui
 
 (Chemin vers `node_modules` raccourci : la copie pointait vers le `node_modules` du projet.)
 
-Sur le dépôt réel, au commit `119519b` (`npm.cmd run lint:arch`, arbre propre, relevé par le rédacteur) :
+Sur le dépôt réel, au commit `08908b6` (même résultat à `119519b` ; `npm.cmd run lint:arch`, arbre propre, relevé par le rédacteur) :
 
 ```text
 ✔ no dependency violations found (67 modules, 178 dependencies cruised)

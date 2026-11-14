@@ -1,6 +1,6 @@
 # Tutoriel : lancer le projet sur son PC (Windows)
 
-À quoi sert cette page : guider pas à pas, sous Windows et dans PowerShell, l'installation d'une copie du projet, son lancement dans le navigateur, une partie du niveau 1 (et un mot du niveau 2), les tests et la validation MATLAB. Aucune connaissance en développement n'est supposée. État décrit : commit `119519b` (les durées et les sorties de terminal recopiées plus bas datent de `566a8a3`, sauf mention ; elles n'ont pas été relancées).
+À quoi sert cette page : guider pas à pas, sous Windows et dans PowerShell, l'installation d'une copie du projet, son lancement dans le navigateur, une partie du niveau 1 (et un mot du niveau 2), les tests et la validation MATLAB. Aucune connaissance en développement n'est supposée. État décrit : commit `08908b6` (les durées et les sorties de terminal recopiées plus bas datent de `566a8a3`, sauf mention ; elles n'ont pas été relancées).
 
 > **Statut des commandes.** Sous Windows, l'utilisateur a exécuté avec succès le clone, `npm.cmd ci` et `npm.cmd run dev` le 2026-11-13 (décision D16 du registre), puis a joué le niveau. La validation MATLAB (étape 6) a été exécutée sous Windows par le rédacteur. Les autres commandes (`git pull`, `npm run test`, `npm run test:cov`, `npm run check`, réinstallation) ont été exécutées sous Linux seulement et restent marquées « non exécuté sous Windows ».
 >
@@ -83,17 +83,17 @@ L'onglet s'appelle « Huygens’s world ». Le jeu s'ouvre sur un **écran titre
 
 ![Titre](img/t017-titre-fr.png)
 
-![Début du niveau 1 (capture de T-019, prise avant T-020 : l'étiquette de Kp y affiche encore 1000 N/m, elle affiche 500 N/m au commit `119519b`)](img/t019-approche-fr.png)
+![Début du niveau 1 (capture de T-019, prise avant T-020 : l'étiquette de Kp y affiche encore 1000 N/m, elle affiche 2000 N/m au commit `08908b6`)](img/t019-approche-fr.png)
 
 ### Jouer
 
 1. Maintenez **→** (ou **D**) : le bonhomme marche jusqu'à la console.
 2. Appuyez sur **E** : le panneau de réglage s'ouvre.
-3. Réglez Kp avec **+** et **−** (pas de 100) ou **Page préc.** / **Page suiv.** (pas de 1000). Le jeu commence à 500 N/m (1000 avant T-020).
+3. Réglez Kp avec **+** et **−** (pas de 100) ou **Page préc.** / **Page suiv.** (pas de 1000). Le jeu commence à 2000 N/m (500 de T-020 à T-021b, 1000 avant) : un lancement sans réglage gagne.
 4. Appuyez sur **E** ou **Entrée** : l'ascenseur part. La courbe de sa hauteur se trace sur le mur de la cage.
 5. Lisez l'issue, puis appuyez sur **R** pour réessayer.
 
-Pour réussir, Kp doit être entre 1000 et 5000 N/m (2000 et 3800 avant T-020) : trop faible, la cabine s'arrête trop bas ; trop fort, elle dépasse et heurte la poutre. Le **niveau 2** du menu (« la mémoire ») garde les mêmes touches, mais règle Ki, avec Kp fixé à 2500 N/m.
+Pour réussir, Kp doit être entre 1000 et 5000 N/m (2000 et 3800 avant T-020) ; un trajet dure 10 s au plus (6 s de T-020 à T-021b) : trop faible, la cabine s'arrête trop bas ; trop fort, elle dépasse et heurte la poutre. Le **niveau 2** du menu (« la mémoire ») garde les mêmes touches, mais règle Ki, avec Kp fixé à 2500 N/m ; la cabine doit s'arrêter à 0,1 m près, ce que Kp seul ne permet pas.
 
 | Touche | Action |
 |---|---|
@@ -130,13 +130,13 @@ Ces commandes ne sont pas nécessaires pour jouer. Elles vérifient le code.
 
 | Commande | Durée indicative | Ce qu'elle montre |
 |---|---|---|
-| `npm run test` | ≈ 30 s | les 586 tests unitaires (45 fichiers) au commit `119519b` (relevé par le rédacteur sous Windows, `npm.cmd test`) ; la fin doit afficher `Test Files  45 passed (45)` et `Tests  586 passed (586)`. Les lignes `T1`, `REF`, `EXACT` comparent la simulation aux formules et à la solution exacte |
+| `npm run test` | ≈ 30 s | les 602 tests unitaires (45 fichiers) au commit `08908b6` (relevé par le rédacteur sous Windows, `npm.cmd test`) ; la fin doit afficher `Test Files  45 passed (45)` et `Tests  602 passed (602)`. Les lignes `T1`, `REF`, `EXACT` comparent la simulation aux formules et à la solution exacte |
 | `npm run test:cov` | ≈ 40 s | les mêmes tests, puis un tableau de couverture de `src/sim` : 100 % partout. Échoue sous 95 % des lignes |
 | `npm run check` | ≈ 1 à 2 min | toute la chaîne : vérification des types, lint, formatage, règles d'architecture, tests, construction du site dans `dist\`. Doit se terminer sans erreur |
 
 Durées mesurées sous Linux ; non exécuté sous Windows. Détail des tests : [tests.md](tests.md).
 
-Les tests de bout en bout (`npm run e2e`, 69 tests dans un vrai navigateur au commit `119519b`) demandent d'abord `npx playwright install chromium`, qui télécharge un navigateur. Non exécuté sous Windows ; voir [tests.md](tests.md#tests-de-bout-en-bout-playwright).
+Les tests de bout en bout (`npm run e2e`, 70 tests dans un vrai navigateur au commit `08908b6`) demandent d'abord `npx playwright install chromium`, qui télécharge un navigateur. Non exécuté sous Windows ; voir [tests.md](tests.md#tests-de-bout-en-bout-playwright).
 
 ## 6. Relancer la validation MATLAB
 
@@ -150,7 +150,7 @@ cd('C:\Users\<vous>\Documents\GitHub\pid-game-test')
 run('validation/matlab/t005_run_all.m')
 ```
 
-3. MATLAB affiche cinq blocs (A + B, C, D, E) : écarts entre la simulation et le calcul exact, effet du bloqueur d'ordre zéro, limite de stabilité (97078,6 N/m à dt = 1/120 s), fenêtre de réussite et marges à la poutre. Depuis T-020, la fenêtre est [1000 ; 5000] N/m (la sortie affiche « Kp in [1000 ; 5000], 41 valeurs, contiguë : true ») et les marges sont 1,74 mm sous la poutre à 5000 N/m et 1,79 mm au-dessus à 5100 N/m ; avant T-020 : [2000 ; 3800], +5,842 mm à 3800 et −1,865 mm à 3900.
+3. MATLAB affiche cinq blocs (A + B, C, D, E) : écarts entre la simulation et le calcul exact, effet du bloqueur d'ordre zéro, limite de stabilité (97078,6 N/m à dt = 1/120 s), fenêtre de réussite et marges à la poutre. Depuis T-020, la fenêtre est [1000 ; 5000] N/m (la sortie affiche « Kp in [1000 ; 5000], 41 valeurs, contiguë : true » ; depuis T-022, elle annonce aussi « horizon 1200 pas (10.0 s) ») et les marges sont 1,74 mm sous la poutre à 5000 N/m et 1,79 mm au-dessus à 5100 N/m ; avant T-020 : [2000 ; 3800], +5,842 mm à 3800 et −1,865 mm à 3900.
 4. La dernière ligne doit être :
 
 ```text

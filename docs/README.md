@@ -1,6 +1,6 @@
 # Documentation technique de Huygens’s world (dépôt `pid-game`)
 
-À quoi sert cette page : servir d'index et expliquer comment lire la documentation. La documentation décrit l'état réel du commit `119519b` (branche `migration`) : la v0.1 a été validée avec réserves au commit `88ae23c` (rapport T-012) ; depuis, les tâches P-005 à T-021b ont corrigé des défauts connus et ajouté un écran titre, un menu, des valeurs de jeu réglées pour le niveau 1 (T-020) et un second niveau, « La mémoire » (contrôleur PI, T-021a et T-021b). Les pages mises à jour par la dernière passe (voir le [CHANGELOG](CHANGELOG.md), entrée D-015) citent `119519b` ; celles que D-015 n'a pas touchées citent encore leur commit d'origine, dont le code qu'elles décrivent n'a pas changé. La page [bilan-v0.1.md](bilan-v0.1.md) reste celle de la v0.1 (état `88ae23c`). Elle est rédigée en français.
+À quoi sert cette page : servir d'index et expliquer comment lire la documentation. La documentation décrit l'état réel du commit `08908b6` (branche `migration`) : la v0.1 a été validée avec réserves au commit `88ae23c` (rapport T-012) ; depuis, les tâches P-005 à T-022 ont corrigé des défauts connus et ajouté un écran titre, un menu, des valeurs de jeu réglées pour le niveau 1 (T-020) et un second niveau, « La mémoire » (contrôleur PI, T-021a et T-021b), puis un trajet de 10 s, un Kp par défaut de 2000 et une tolérance de 0,10 m au niveau 2 (T-022). Les pages mises à jour par la dernière passe (voir le [CHANGELOG](CHANGELOG.md), entrée D-016) citent `08908b6` ; celles que D-016 n'a pas touchées citent encore leur commit d'origine, dont le code qu'elles décrivent n'a pas changé. La page [bilan-v0.1.md](bilan-v0.1.md) reste celle de la v0.1 (état `88ae23c`). Elle est rédigée en français.
 
 ## Par où commencer
 
@@ -17,14 +17,14 @@ Pour comprendre ce qui est affiché : [rendu.md](rendu.md) (dessin au crayon) et
 | Page | Contenu |
 |---|---|
 | [bilan-v0.1.md](bilan-v0.1.md) | bilan de la v0.1 : contenu, chiffres clés, méthode, leçons, suite du parcours (état `88ae23c`, avec des mentions datées) |
-| [defauts-connus.md](defauts-connus.md) | défauts connus K1 à K33, par thème, avec gravité et piste de correction ; défauts corrigés |
+| [defauts-connus.md](defauts-connus.md) | défauts connus K1 à K35, par thème, avec gravité et piste de correction ; défauts corrigés |
 | [architecture.md](architecture.md) | modules (dont `src/app`), règles de dépendances, rôle de `main.ts`, flux d'une image, garde-fous automatiques |
 | [simulation.md](simulation.md) | noyau de simulation : algorithme d'un pas, exports, horloge, RK4, saturation, contrôleur PI, déterminisme, procédures d'ajout |
 | [physique/ascenseur.md](physique/ascenseur.md) | modèle de l'ascenseur, formules, valeurs mesurées, fenêtre de réussite [1000 ; 5000], stabilité, boucle PI du niveau 2 |
 | [jeu.md](jeu.md) | logique des niveaux 1 et 2 : phases, commandes, règles d'issue, valeurs de jeu, instantané, événements, géométrie, contrats pour le rendu et l'interface |
 | [rendu.md](rendu.md) | rendu au crayon : démarrage WebGPU/WebGL2, cycle de vie de la session, cadrage, papier millimétré, traits, lots et budget, courbe, bonhomme, jauge, mesures |
 | [interface.md](interface.md) | interface du joueur : écrans titre et menu, phases, bandeau d'aide, panneau de réglage, niveau 2, table des touches, annonces, disposition, police |
-| [i18n-accessibilite.md](i18n-accessibilite.md) | i18n FR/EN (158 clés par langue) et accessibilité |
+| [i18n-accessibilite.md](i18n-accessibilite.md) | i18n FR/EN (159 clés par langue) et accessibilité |
 | [tests.md](tests.md) | inventaire des tests unitaires et e2e, oracle, tolérances, couverture, tests de pixels, validation MATLAB, intégration continue |
 | [developpement.md](developpement.md) | prérequis, installation, scripts npm, conventions de code, intégration continue, déploiement |
 | [tutoriel-lancer-en-local.md](tutoriel-lancer-en-local.md) | pas à pas Windows/PowerShell : copie, installation, lancement, jouer, tests, validation MATLAB, dépannage (dont `npm.cmd`) |
@@ -59,7 +59,7 @@ Pour comprendre ce qui est affiché : [rendu.md](rendu.md) (dessin au crayon) et
 
 ### Captures
 
-Les images de `img/` sont produites par les tests e2e (T-008 à T-010, T-016, T-017, T-020, T-021b), dans Chrome headless avec rendu logiciel ; `t019-*.png` date de T-019. Cinq captures (t009-05, t009-06, t010-01, t010-02, t010-05) viennent de tests dont le réglage a changé depuis : leurs légendes le disent. Elles servent de référence visuelle : l'orchestrateur les regarde à chaque exécution (leçon L9). Les pages les intègrent par des liens relatifs.
+Les images de `img/` sont produites par les tests e2e (T-008 à T-010, T-016, T-017, T-020, T-021b, T-022), dans Chrome headless avec rendu logiciel ; `t019-*.png` date de T-019. Plusieurs captures viennent de tests dont le réglage a changé depuis (t009-05, t009-06, t010-01, t010-02, t010-05, puis, avec le Kp par défaut de 2000 et le trajet de 10 s de T-022, `t008-paper-1280x720`, `t009-01`, `t009-02`, `t010-06`, `t009-06-trop-court` et `t021-*`, défaut K35) : celles que les pages intègrent portent la mention dans leur légende. Les deux captures de T-022 (`t022-niveau1-trop-court.png`, `t022-niveau2-trop-court.png`) sont à jour. Elles servent de référence visuelle : l'orchestrateur les regarde à chaque exécution (leçon L9). Les pages les intègrent par des liens relatifs.
 
 ### Pages prévues
 

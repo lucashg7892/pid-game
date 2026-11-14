@@ -1,6 +1,6 @@
 # Internationalisation et accessibilité
 
-À quoi sert cette page : décrire le module de traduction FR/EN (`src/i18n`, validé en T-006 et complété en T-010) et la façon d'ajouter une clé ou une langue. La seconde partie décrit l'accessibilité réalisée et testée en T-010. État au commit `119519b`.
+À quoi sert cette page : décrire le module de traduction FR/EN (`src/i18n`, validé en T-006 et complété en T-010) et la façon d'ajouter une clé ou une langue. La seconde partie décrit l'accessibilité réalisée et testée en T-010. État au commit `08908b6`.
 
 ## Partie 1 — i18n (validé, T-006)
 
@@ -24,7 +24,7 @@ Il est branché depuis T-010 : `src/main.ts` crée le traducteur avec `detectLoc
 ### Structure des locales
 
 - Un fichier JSON plat par langue : `{ "clé": "texte", … }`, sans imbrication.
-- 158 clés par langue, les mêmes dans les deux fichiers (comptage par script au commit `119519b` ; 115 au commit `13e8b7e`, 111 à `566a8a3`, T-014 en avait ajouté 4 ; parité vérifiée par `tests/i18n/catalogs.test.ts`). T-006 en avait créé 89 ; T-010 en a ajouté 22 (liste plus bas) ; T-017d, T-019 et T-021b en ont ajouté 43 (section « Clés ajoutées depuis T-017 »).
+- 159 clés par langue, les mêmes dans les deux fichiers (comptage par script au commit `08908b6` ; 158 à `119519b` ; 115 au commit `13e8b7e`, 111 à `566a8a3`, T-014 en avait ajouté 4 ; parité vérifiée par `tests/i18n/catalogs.test.ts`). T-006 en avait créé 89 ; T-010 en a ajouté 22 (liste plus bas) ; T-017d, T-019, T-021b et T-022 en ont ajouté 44 (section « Clés ajoutées depuis T-017 »).
 - Fins de ligne LF, aucune clé dupliquée, aucune valeur vide (tests).
 
 ### Convention de clés
@@ -84,7 +84,7 @@ Dans `hud.hint.item`, l'espace avant « : » est U+00A0 en français. Aucune cl�
 
 ### Clés ajoutées depuis T-017
 
-43 clés ajoutées (158 − 115), identiques en nombre dans les deux langues. Textes et valeurs : `src/i18n/locales/fr.json` et `en.json`, décrits par page : [interface.md](interface.md) (écrans, jauge, niveau 2), [jeu.md](jeu.md) (règles du niveau 2).
+44 clés ajoutées (159 − 115), identiques en nombre dans les deux langues. Textes et valeurs : `src/i18n/locales/fr.json` et `en.json`, décrits par page : [interface.md](interface.md) (écrans, jauge, niveau 2), [jeu.md](jeu.md) (règles du niveau 2).
 
 | Tâche | Préfixe | Clés |
 |---|---|---|
@@ -95,8 +95,9 @@ Dans `hud.hint.item`, l'espace avant « : » est U+00A0 en français. Aucune cl�
 | T-021b | `level2.` | `title`, `goal`, `kp.fixed`, `ki.label`, `ki.help`, `ki.field`, `ki.valueText`, `ki.range`, `ki.locked`, `failTitle.step`, `failTitle.slow`, `failTitle.bonk`, `fail.step`, `fail.slow`, `fail.bonk`, `saturation`, `winTitle`, `win` |
 | T-021b | `hud.` | `status.readyKi`, `status.launchKi`, `status.winKi`, `status.fail.slow`, `status.resetKi`, `ki.tag`, `hint.tuneKi`, `hint.lockedKi` |
 | T-021b | `controls.` | `kiDecrease`, `kiIncrease`, `help.ki`, `help.pauseKi`, `help.touchKi` |
+| T-022 | `hud.` | `status.fail.stepKi` (annonce « trop court » du niveau 2, paramètre `{e}`) |
 
-Valeurs modifiées sans nouvelle clé : T-019 et T-020 (vocabulaire « plateau d'arrivée » à la place de « quai » en français, nombres 0,5 m et 3,36 m dans `level1.fail.step`, `level1.fail.bonk`, `hud.status.fail.step`, `hud.status.fail.bonk` ; `level1.goal` réécrit ; `hud.legend.setpoint`, `hud.status.win`, `level1.win`), T-021b (`level1.comingSoon` : « Le niveau 2 t’attend dans le menu : merci d’avoir joué ! »), P-006 (`fallback.lost.explanation` et `fallback.error.explanation` : « recommencer » au lieu de « reprendre »). Le test des nombres physiques cités (`catalogs.test.ts`) a été mis à jour en conséquence.
+Valeurs modifiées sans nouvelle clé : T-019 et T-020 (vocabulaire « plateau d'arrivée » à la place de « quai » en français, nombres 0,5 m et 3,36 m dans `level1.fail.step`, `level1.fail.bonk`, `hud.status.fail.step`, `hud.status.fail.bonk` ; `level1.goal` réécrit ; `hud.legend.setpoint`, `hud.status.win`, `level1.win`), T-021b (`level1.comingSoon` : « Le niveau 2 t’attend dans le menu : merci d’avoir joué ! »), P-006 (`fallback.lost.explanation` et `fallback.error.explanation` : « recommencer » au lieu de « reprendre »). T-022 (D27 et D29) : `level2.fail.step` (10 s, 0,1 m), `level2.fail.slow` et `hud.status.fail.slow` (10 s), `level2.goal` (tolérance de 0,1 m), `level2.win` (reformulé : le terme I amène la cabine pile au plateau). Le test des nombres physiques cités (`catalogs.test.ts`) a été mis à jour en conséquence ; depuis T-022, il vérifie aussi que la durée (10 s) et la tolérance (0,1 m) du niveau 2 citées égalent les constantes du jeu.
 
 **Copyright.** `title.copyright` vaut « Copyright (c) 2026 lucashg7892 » dans les deux langues, `title.license` « Licence MIT » / « MIT License ». `tests/i18n/license.test.ts` (5 tests) les compare au fichier `LICENSE` : exactement une ligne de copyright, année et titulaire, première ligne de la licence, et aucune autre clé qui contienne « copyright » ou « © ».
 
@@ -123,7 +124,7 @@ Les messages d'erreur citent la clé d'origine quand elle est connue.
 
 - `MessageKey` est dérivé de `fr.json` (`keyof typeof fr`). Une clé absente du français ne compile pas.
 - Le catalogue anglais est typé `Catalog` contre le français : une clé manquante en anglais ne compile pas.
-- `MESSAGE_PARAMS` liste les paramètres de chaque clé qui en a (22 clés au commit `119519b` ; 15 avant T-017 : T-010 avait ajouté `hud.kp.value` et `hud.hint.item`). Un test vérifie que cette table correspond exactement aux `{…}` des deux catalogues.
+- `MESSAGE_PARAMS` liste les paramètres de chaque clé qui en a (23 clés au commit `08908b6`, 22 à `119519b` ; 15 avant T-017 : T-010 avait ajouté `hud.kp.value` et `hud.hint.item`). Un test vérifie que cette table correspond exactement aux `{…}` des deux catalogues.
 - `t` a deux surcharges :
 
 ```ts
@@ -244,7 +245,7 @@ Liste complète au commit `c00e678`, inchangée à `119519b` (seul le type `Unit
 Le code suppose aujourd'hui deux langues. Étapes :
 
 1. Ajouter l'étiquette BCP 47 à `SUPPORTED_LOCALES` (`src/i18n/catalogs.ts`).
-2. Créer `src/i18n/locales/<langue>.json` avec les 158 clés, l'importer dans `catalogs.ts`, le typer `Catalog` et l'ajouter à `CATALOGS`.
+2. Créer `src/i18n/locales/<langue>.json` avec les 159 clés, l'importer dans `catalogs.ts`, le typer `Catalog` et l'ajouter à `CATALOGS`.
 3. Revoir `otherLocale` : il renvoie l'autre langue d'une paire. Avec trois langues, la bascule doit devenir un choix.
 4. Revoir `formatQuantity` : le collage de `%` est codé pour l'anglais seulement.
 5. Ajouter les règles typographiques de la langue dans `tests/i18n/catalogs.test.ts` (les tests actuels traitent FR et EN nommément).

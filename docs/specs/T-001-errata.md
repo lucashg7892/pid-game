@@ -153,3 +153,9 @@ S'y ajoutent les constantes et fabriques de l'ascenseur (`ELEVATOR_*`, `createEl
 - **Spec §5 et §6** : poutre à 3,30 m, tolérance de marche 0,25 m, durée maximale 15 s (1800 pas), Kp au chargement 1000 N/m, fenêtre de réussite [2000 ; 3800] N/m ; vocabulaire « quai » dans les textes français.
 - **Vrai depuis T-020** (décisions D24 et D25 de l'utilisateur) : poutre `BEAM_HEIGHT` = 3,3626 m, tolérance `STEP_TOLERANCE` = 0,5 m, `TRIP_MAX_STEPS` = 720 (6 s), `KP_DEFAULT` = 500 N/m, fenêtre [1000 ; 5000] N/m ; les textes français disent « plateau d'arrivée » (T-019) et citent 0,5 m et 3,36 m. Le cadrage ne suit plus la poutre : `PLAY_ZONE_TOP` = 5,5 m. Les points 13 (poutre « à 3,30 m ») et 14 (échelle « 0,24 m/s à 15 s ») ci-dessus décrivaient l'état d'avant : la poutre est à 3,3626 m et l'échelle vaut 0,6 m/s à 6 s. Le point 16 cite des clés dont la valeur a changé (`level1.fail.step`, `level1.fail.bonk`).
 - **Sources** : `orchestration/logs/T-020.md` ; `src/game/constants.ts`, `src/render/camera.ts` ; [jeu.md](../jeu.md#règles-dissue), [physique/ascenseur.md](../physique/ascenseur.md#fenêtre-de-réussite-1000--5000-nm).
+
+## 20. Durée et Kp par défaut changés par T-022 (2026-11-13)
+
+- **Point 19 et spec §5** : durée maximale 720 pas (6 s) depuis T-020, Kp au chargement 500 N/m, échelle de la courbe 0,6 m/s à 6 s.
+- **Vrai depuis T-022** (décisions D27 et D28 de l'utilisateur) : `TRIP_MAX_STEPS` = 1200 (10 s) pour les deux niveaux, `KP_DEFAULT` = 2000 N/m (dans la fenêtre : un lancement sans réglage gagne au pas 262) ; l'échelle de la courbe vaut 0,36 m/s à 10 s. La poutre (3,3626 m), la tolérance du niveau 1 (0,5 m) et la fenêtre [1000 ; 5000] N/m ne changent pas ; victoire la plus lente du niveau 1 au pas 301.
+- **Sources** : `orchestration/logs/T-022.md` ; `src/game/constants.ts`, `src/render/curve.ts` ; [jeu.md](../jeu.md#règles-dissue).

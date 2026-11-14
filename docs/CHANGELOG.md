@@ -8,6 +8,9 @@ Sortie de `git log --oneline 88ae23c` (18 commits) pour les lignes jusqu'à `88a
 
 | Commit | Contenu |
 |---|---|
+| `08908b6` | T-022 (N3) : trajet de 10 s, Kp par défaut 2000, tolérance du niveau 2 à 0,10 m (K32), oracle MATLAB relancé |
+| `87eaf09` | P-009 (N1) : décisions D27 à D30 au registre (10 s, Kp par défaut 2000, K32, K26 reporté) |
+| `dfc5849` | D-015 (N1) : documentation des tâches P-006 à T-021b (écrans, niveau 1 retouché, PI, niveau 2), ADR-015 et ADR-016 |
 | `119519b` | T-021b (N2) : niveau 2 La mémoire (PI, Kp fixé à 2500, réglage de Ki), menu à deux entrées |
 | `99324fd` | T-021a (N3) : contrôleur PI du noyau, Ki = 0 identique au P, tests de déterminisme |
 | `e9ce171` | T-017e (N2) : composition titre, menu et niveau, bouton Menu (pause, issue), K18, e2e et captures |
@@ -49,6 +52,33 @@ Les neuf premiers commits ont été créés après coup, à la suite, à partir 
 
 - **v0.1 — validée avec réserves le 2026-11-13** (rapport [validation/T-012-v0.1.md](validation/T-012-v0.1.md), bilan [bilan-v0.1.md](bilan-v0.1.md)). Le champ `version` de `package.json` valait `0.0.0` au commit de la validation (K22) ; il vaut `0.1.0` depuis P-005 (`a165a14`).
 
+## D-016 — Documentation des tâches P-009 et T-022 (2026-11-14)
+
+Documentation de deux commits, `87eaf09` (P-009) et `08908b6` (T-022), sur l'état figé `08908b6` (branche `migration`, arbre propre). Aucun code, aucune configuration, aucune PNG de `docs/img/` modifiés ; le rédacteur n'a pas exécuté l'e2e (il réécrit les captures). Source des mesures : `orchestration/logs/T-022.md` (vérifiées par un validateur indépendant), `src/game/constants.ts`, `src/render/curve.ts`, et deux relevés du rédacteur (issues de Kp et de Ki sur 1200 pas par un script jetable, supprimé).
+
+Tâches documentées, avec leur commit :
+
+- **P-009** (`87eaf09`, N1) : décisions D27 (durée maximale 10 s), D28 (`KP_DEFAULT` 2000), D29 (K32 : tolérance du niveau 2 à 0,10 m) et D30 (K26 reporté) au registre.
+- **T-022** (`08908b6`, N3, validateur indépendant, verdict « validé avec réserves », réserves levées) : `TRIP_MAX_STEPS` 720 → 1200 (10 s) pour les deux niveaux ; `KP_DEFAULT` 500 → 2000 (un lancement sans réglage gagne au niveau 1, pas 262, e = 0,245 m) ; `KI_DEFAULT` = `KP_DEFAULT` = 2000, hors de la fenêtre gagnante (choc au pas 57) ; `LEVEL2_ARRIVAL_TOLERANCE` 0,5 → 0,10 m (K32 corrigé) ; textes `level2.fail.step`, `level2.fail.slow`, `hud.status.fail.slow`, `level2.goal`, `level2.win` reformulés et nouvelle clé `hud.status.fail.stepKi` ; oracle MATLAB relancé (`kMax` 1200, « horizon 1200 pas (10.0 s) », 0 désaccord sur 80, fenêtre [1000 ; 5000]) et CSV de synthèse régénéré ; deux captures `docs/img/t022-niveau1-trop-court.png` et `docs/img/t022-niveau2-trop-court.png`.
+
+Mesures recopiées : niveau 1 inchangé (fenêtre [1000 ; 5000], poutre 3,3626 m, tolérance 0,5 m, marges 1,745 mm, 1,791 mm et 9,5 mm), victoire la plus lente au pas 301 (marge 899 pas). Niveau 2 (Kp = 2500, tolérance 0,10 m, 1200 pas), grille de Ki de 100 : trop court de 0 à 100, victoire de 200 à 800, choc de 900 à 8000, aucun « trop lent » ; au pas de 10 : trop court de 0 à 120, « trop lent » à 130, victoire de 140 à 840, choc dès 850. Ki est nécessaire : le P seul s'arrête à 0,196 m.
+
+Chiffres relevés au commit `08908b6` :
+
+| Mesure | Valeur | Avant (`119519b`) |
+|---|---|---|
+| `npm.cmd test` | 45 fichiers, 602 tests verts | 45 fichiers, 586 tests |
+| `npx.cmd playwright test --list` | 70 tests dans 7 fichiers (non exécutés par le rédacteur) | 69 tests dans 7 fichiers |
+| `npm.cmd run lint:arch` | 67 modules, 178 dépendances, 0 violation | idem |
+| clés de texte par langue (script) | 159 | 158 |
+| `npm.cmd run test:cov` | `src/sim` 100 % (192/192 instructions, 102/102 branches) ; `src/game` 100 % (318/318, 107/107, mesure à part) | idem |
+| `npm.cmd run build` | JavaScript 907,79 kB (252,84 kB gzip), CSS 7,30 kB (2,42 kB gzip) | 907,32 kB (252,72 kB gzip) |
+
+- **Pages mises à jour** : `jeu.md`, `physique/ascenseur.md`, `simulation.md`, `rendu.md`, `interface.md` (légendes des captures périmées, K35, et des deux captures de T-022), `tests.md`, `architecture.md`, `i18n-accessibilite.md`, `developpement.md`, `tutoriel-lancer-en-local.md`, `defauts-connus.md` (K1 à K35 : K32 et K6 corrigés, K26 reporté, K34 et K35 ajoutés), `bilan-v0.1.md` (mentions datées), `README.md`, ADR-006 et ADR-016 (K32 corrigé), `specs/T-018` (retouche de T-022) et `specs/T-001-errata.md` (point 20).
+- **ADR** : aucune nouvelle ; l'ADR-016 consigne la correction de K32.
+- **Valeurs historiques conservées** (datées) : 720 pas, 6 s, Kp par défaut 500 et tolérance de 0,5 m au niveau 2 restent écrits là où ils décrivent l'état de T-020 à T-021b (journal, mesures de T-021a, specs, errata, bilan de la v0.1).
+- **Non confirmé** : les captures `t021-*`, `t010-01`, `t010-02`, `t010-06`, `t009-0x` et `t008-paper-1280x720` sont périmées (K35) et n'ont pas été régénérées ; WebGPU réel (K8) et e2e non exécutés par le rédacteur ; les triangles de `rendu.md` datent de `119519b`.
+
 ## D-015 — Documentation des tâches P-006 à T-021b (2026-11-13)
 
 Documentation de onze commits, de `063304d` à `119519b`, sur l'état figé `119519b` (branche `migration`, arbre propre). Aucun code, aucune configuration, aucune PNG de `docs/img/` modifiés ; le rédacteur n'a exécuté aucun test e2e (il réécrirait les captures), seulement `npx.cmd playwright test --list`.
@@ -60,7 +90,7 @@ Tâches documentées, avec leur commit :
 - **T-020** (`c3a9f04`, N3, validateur indépendant) : niveau 1 : `TRIP_MAX_STEPS` 720 (6 s), `STEP_TOLERANCE` 0,5 m, `BEAM_HEIGHT` 3,3626 m, `KP_DEFAULT` 500, fenêtre de réussite [1000 ; 5000] N/m (marges : 1,74 mm sous la poutre à 5000, 1,79 mm au-dessus à 5100, 9,5 mm de tolérance à 1000 ; victoire la plus lente au pas 301) ; cadrage fixé par `PLAY_ZONE_TOP` = 5,5 m (remplace `PLAY_ZONE_ABOVE_BEAM`) ; oracle MATLAB relancé (0 désaccord sur 80) ; textes 0,5 m et 3,36 m ; K6 corrigé, K7 mis à jour. Verdict « validé avec réserves » (R1 corrigée par l'orchestrateur).
 - **T-017abc** (`7e61f7d`, N2) : module pur `src/app` (machine d'écrans titre, menu, niveau), `attachLevel` et `detachLevel` de la session de rendu, `Ui.destroy()`, K23 et K24 corrigés. **T-017d** (`6aef101`) : écrans titre et menu (`src/ui/screens*.ts`, `screen-keys.ts`), copyright égal à `LICENSE` (test). **T-017e** (`e9ce171`) : composition dans `main.ts` (paramètre `screen` du mode `?e2e=1`), bouton « Menu » en pause et à l'issue, K18 corrigé (`ResizeObserver`).
 - **T-021a** (`99324fd`, N3, validateur indépendant) : `createProportionalIntegralController` et `createElevatorPiLoop`, Ki = 0 identique au P bit à bit, pas d'anti-windup ; oracle MATLAB du PI et test d'oracle exact TypeScript reportés (K28). Verdict « validé, sans réserve ».
-- **T-021b** (`119519b`, N2) : niveau 2 « La mémoire » (`createLevel2`, machine commune `src/game/elevator-level.ts`, Kp fixé à 2500, réglage de Ki, issues choc, trop court et trop lent, `LEVEL2_ARRIVAL_TOLERANCE`), menu à deux entrées. Point documenté honnêtement : avec la tolérance actuelle, Ki = 0 gagne et aucun Ki de 0 à 8000 ne donne « trop court » ni « trop lent » (K32).
+- **T-021b** (`119519b`, N2) : niveau 2 « La mémoire » (`createLevel2`, machine commune `src/game/elevator-level.ts`, Kp fixé à 2500, réglage de Ki, issues choc, trop court et trop lent, `LEVEL2_ARRIVAL_TOLERANCE`), menu à deux entrées. Point documenté honnêtement à l'époque (corrigé depuis par T-022, voir [D-016](#d-016--documentation-des-tâches-p-009-et-t-022-2026-11-14)) : avec la tolérance de 0,5 m, Ki = 0 gagnait et aucun Ki de 0 à 8000 ne donnait « trop court » ni « trop lent » (K32).
 
 Chiffres relevés au commit `119519b` :
 

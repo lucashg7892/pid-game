@@ -32,6 +32,10 @@ Tenu par l'orchestrateur. Les sous-agents ne modifient jamais ce fichier.
 | D24 | Niveau 1, durée (2026-11-13) | Après test de jeu : K6 passe à 6 s (`TRIP_MAX_STEPS` : 1800 vers 720) |
 | D25 | Niveau 1, fenêtre (2026-11-13) | Objectif de fenêtre de réussite du niveau 1 : Kp de 1000 à 5000 N/m (remplace [2000 ; 3800] de D9 une fois mis en œuvre) |
 | D26 | Niveau 2, Kp (2026-11-13) | Kp du niveau 2 fixé à 2500 N/m (Q1 de la spec T-018 validée) |
+| D27 | Niveaux 1 et 2, durée (2026-11-13) | Le temps maximal d'un trajet passe de 6 s à 10 s (`TRIP_MAX_STEPS` : 720 vers 1200) ; remplace la valeur de D24 |
+| D28 | Niveau 1, Kp par défaut (2026-11-13) | `KP_DEFAULT` = 2000 N/m (dans la fenêtre) ; `KI_DEFAULT` en découle (= `KP_DEFAULT`, D26) |
+| D29 | Niveau 2, tolérance (2026-11-13) | K32 corrigé : `LEVEL2_ARRIVAL_TOLERANCE` = 0,10 m (au lieu de `STEP_TOLERANCE`), pour que Ki soit nécessaire |
+| D30 | Portrait étroit (2026-11-13) | K26 reporté : le portrait étroit n'est pas prioritaire |
 
 ## 2. Protocole
 

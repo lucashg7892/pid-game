@@ -1,6 +1,6 @@
 # Rendu au crayon (`src/render`)
 
-À quoi sert cette page : expliquer comment le jeu dessine la scène : démarrage du moteur graphique, cadrage, papier millimétré, traits de crayon, bonhomme, courbe et jauge, budget de dessin. Elle décrit le commit `13e8b7e` (rendu validé en T-008 et T-009 ; échecs en cours de route ajoutés par T-014). Les textes posés par-dessus la scène sont dans [interface.md](interface.md).
+À quoi sert cette page : expliquer comment le jeu dessine la scène : démarrage du moteur graphique, cadrage, papier millimétré, traits de crayon, bonhomme, courbe et jauge, budget de dessin. Elle décrit le commit `119519b` (rendu validé en T-008 et T-009 ; échecs en cours de route ajoutés par T-014 ; cadrage fixé et ancres de la jauge par T-019 et T-020 ; session de rendu réutilisable entre les écrans par T-017). Les textes posés par-dessus la scène sont dans [interface.md](interface.md).
 
 ![Le niveau 1 en cours de trajet, 1280 × 720 (capture e2e de T-010)](img/t010-03-trajet.png)
 
@@ -8,11 +8,17 @@
 
 `src/render` est le seul module qui importe three.js (`three/webgpu` et `three/tsl`, règle `three-only-in-render`). Il lit l'instantané du niveau (`level.snapshot`) et l'enregistreur de signaux (`level.signals`) à chaque image ; il ne les modifie jamais et n'en garde aucune référence.
 
-Le point de composition (`src/main.ts`) n'appelle qu'une fonction : `startRendering(canvas, choice, { level, onFrame, onFailure })`. Elle renvoie une session (`RenderSession`) ou un échec, sans jamais lever d'exception. Les échecs survenus après le démarrage passent par `onFailure` (voir « Échecs en cours de route »).
+Le point de composition (`src/main.ts`) démarre le rendu une seule fois : `startRendering(canvas, choice, { onFrame, onFailure })`, sans niveau (papier seul). Elle renvoie une session (`RenderSession`) ou un échec, sans jamais lever d'exception. Les échecs survenus après le démarrage passent par `onFailure` (voir « Échecs en cours de route »). L'option `level` existe encore (niveau dessiné dès le départ), mais `main.ts` ne l'utilise plus depuis T-017.
+
+### Cycle de vie de la session (T-017)
+
+La session vit pour toute l'application. Sur l'écran titre et sur le menu, elle ne dessine que le papier ; à l'entrée dans un niveau, `main.ts` appelle `session.attachLevel(level)`, qui crée la vue du niveau (`createLevelView`) et la dessine à chaque image ; au retour au menu, `session.detachLevel()` libère la vue (`view.dispose()`) et la session revient au papier seul. Un niveau déjà attaché est détaché d'abord ; les deux appels sont sans effet après `stop()`. Raison du choix (une session unique plutôt qu'un arrêt et un redémarrage du rendu à chaque écran) : [ADR-015](decisions/ADR-015-etat-application-machine-ecrans.md). `session.stop()` détache aussi le niveau avant de libérer la scène et le renderer.
+
+Le test e2e du cycle de vie (`ui.spec.ts`, (q)) enchaîne attach, detach, attach sans erreur ni fuite d'écouteur ; les `drawCalls` en papier seul n'ont pas été relevés par le rédacteur.
 
 ### Fichiers purs et fichiers three
 
-Sur les 19 fichiers du module, 13 n'importent pas three (dont `index.ts`) et `camera.ts` n'en importe qu'un type : ils se testent sous Node, sans navigateur (`tests/render/`, 122 tests).
+Sur les 19 fichiers du module (inchangés en nombre depuis `13e8b7e`), 13 n'importent pas three (dont `index.ts`) et `camera.ts` n'en importe qu'un type : ils se testent sous Node, sans navigateur (`tests/render/`, 122 tests).
 
 | Fichier | three ? | Rôle |
 |---|---|---|
@@ -28,7 +34,7 @@ Sur les 19 fichiers du module, 13 n'importent pas three (dont `index.ts`) et `ca
 | `level-display.ts` | non | phase effective, interpolation, attitude, ancres écran pour l'interface |
 | `level-painter.ts` | non | `LevelPainter` : remplit les 5 lots de traits à chaque image |
 | `failure.ts` | non | `createFailureGuard` : un seul signalement d'échec, plus aucun appel gardé ensuite |
-| `session.ts` | non (passe par les fichiers three) | `startRendering` : assemble tout, boucle d'images, branche `renderer.onDeviceLost` et le garde-fou |
+| `session.ts` | non (passe par les fichiers three) | `startRendering` : assemble tout, boucle d'images, branche `renderer.onDeviceLost` et le garde-fou ; `attachLevel` et `detachLevel` (T-017) |
 | `bootstrap.ts` | oui | `bootRenderer`, boucle `setAnimationLoop`, suivi de taille, mouvement réduit |
 | `stage.ts` | oui | scène, caméra orthographique, papier |
 | `paper.ts` | oui | matériau TSL du papier millimétré |
@@ -60,7 +66,7 @@ Deux échecs peuvent survenir après le démarrage (`RenderFailureKind`, fichier
 
 `createFailureGuard(onFailure)` ne signale que le premier échec ; ensuite `guard` n'appelle plus rien. Au premier échec, `session.ts` arrête la session (boucle, observation de taille, vue, scène, renderer libéré ; `stop()` reste sans danger s'il est rappelé) puis appelle `onFailure({ kind, detail })`. `detail` est un message technique, écrit dans la console (`Huygens’s world : <kind> : <detail>`), jamais montré au joueur.
 
-Côté `main.ts` (`handleFailure`, une seule fois) : l'interface est nettoyée (`#ui` retiré, écouteur `resize` et clavier retirés), puis `showFallback` remplace le jeu par `showFailurePage` : un `<main id="fallback">` avec l'attribut `data-kind` (`context-lost` ou `error`), un titre, une explication invitant à recharger la page (la progression du niveau est perdue) et le lien vers la documentation. Clés `fallback.lost.title`, `fallback.lost.explanation`, `fallback.error.title`, `fallback.error.explanation` (FR et EN). Le canvas est caché et `body.dataset.backend` vaut `none`.
+Côté `main.ts` (`handleFailure`, une seule fois) : l'écran courant est démonté (`unmountCurrent` : interface du niveau détruite par `ui.destroy()`, `#ui` retiré, écouteurs `resize` et clavier retirés, ou écran titre ou menu retiré), puis `showFallback` remplace le jeu par `showFailurePage` : un `<main id="fallback">` avec l'attribut `data-kind` (`context-lost` ou `error`), un titre, une explication invitant à recharger la page (la progression du niveau est perdue) et le lien vers la documentation. Clés `fallback.lost.title`, `fallback.lost.explanation`, `fallback.error.title`, `fallback.error.explanation` (FR et EN). Le canvas est caché et `body.dataset.backend` vaut `none`.
 
 Vérifié par `tests/render/failure.test.ts` et `tests/e2e/failure.spec.ts` (perte du contexte par `WEBGL_lose_context`, et exception provoquée par le crochet `window.__huygens.crashNextFrame()` du mode `?e2e=1`), en FR et en EN. Le chemin WebGPU `device.lost` est lu dans three mais n'est exercé par aucun test (voir K8 dans [defauts-connus.md](defauts-connus.md)).
 
@@ -80,8 +86,10 @@ La caméra est orthographique, vue de face, 1 unité = 1 m. La zone de jeu `PLAY
 
 ```text
 x ∈ [−6,5 ; 10,5] m   (décor de −6 à 10 m, plus 0,5 m de marge de chaque côté)
-y ∈ [−1,5 ; 5,5] m    (1,5 m sous le sol ; 2,2 m au-dessus de la poutre à 3,30 m)
+y ∈ [−1,5 ; 5,5] m    (1,5 m sous le sol ; haut fixé à 5,5 m, soit environ 2,1 m au-dessus de la poutre à 3,3626 m)
 ```
+
+Depuis T-020, le haut de la zone est une constante, `PLAY_ZONE_TOP` = 5,5 m : il ne suit plus la poutre. Avant T-020, il valait `BEAM_HEIGHT + PLAY_ZONE_ABOVE_BEAM` (3,3 + 2,2 = 5,5 m) ; la constante `PLAY_ZONE_ABOVE_BEAM` n'existe plus. Ainsi, régler la hauteur de la poutre ne déplace pas le cadrage : la zone reste 17 × 7 m et `computeFrame` est inchangé (75,3 px/m à 1280 × 720).
 
 `computeFrame(largeurPx, hauteurPx)` est une fonction pure. Elle garde la même échelle en x et en y (pas de déformation) :
 
@@ -160,12 +168,12 @@ La passe de sortie est ajoutée par WebGPURenderer : un triangle plein écran co
 
 **Pourquoi `forceSinglePass`.** Les matériaux du crayon sont transparents et `DoubleSide` (rubans d'orientation quelconque). Sans `forceSinglePass = true`, three dessine un tel objet deux fois (faces arrière puis faces avant) : T-009 mesurait 6 appels à l'état initial au lieu de 4 (log T-009, `Renderer.js` l. 3986 de three).
 
-**Triangles**, comptés sous Node par le rédacteur avec `LevelPainter` (1280 × 720, script jetable hors dépôt) ; s'y ajoutent 2 triangles de papier et 1 de la passe de sortie :
+**Triangles**, comptés sous Node par le rédacteur avec `LevelPainter` au commit `119519b` (1280 × 720, images de 1/60 s, script jetable hors dépôt ; 2 640 et 3 506 au total avant T-020, la poutre ayant changé de hauteur) ; s'y ajoutent 2 triangles de papier et 1 de la passe de sortie :
 
 | Situation | `decor` | `error` | `curve` | `actors` | `red` | Total des lots |
 |---|---|---|---|---|---|---|
-| état initial | 2 268 | 0 | 0 | 372 | 0 | 2 640 |
-| victoire à Kp = 2500 N/m | 2 268 | 222 | 588 | 428 | 0 | 3 506 |
+| état initial | 2 266 | 0 | 0 | 372 | 0 | 2 638 |
+| victoire à Kp = 2500 N/m | 2 266 | 222 | 588 | 428 | 0 | 3 504 |
 
 Les tests e2e vérifient seulement « plus de 1 000 triangles et au plus 30 000 » à l'état initial, et « au plus 50 appels, au plus 30 000 triangles » pendant un trajet. Le compte exact relevé par le GPU n'est pas consigné dans les logs.
 
@@ -175,9 +183,13 @@ Les tests e2e vérifient seulement « plus de 1 000 triangles et au plus 30 000 
 
 Vue de face : quai de départ hachuré à gauche, cage d'ascenseur avec poulies et tambour du moteur, quai d'arrivée hachuré à 3 m, jauge de force à droite de la cage, console à levier sur le quai de départ. Le levier de la console s'incline avec Kp (0,7 rad de part et d'autre de la verticale, de 0 au maximum).
 
-La poutre est dessinée en **deux corbeaux** hachurés de 0,42 m à 3,30 m, fixés aux montants de la cage. Le choc reste jugé sur toute la largeur (règle `y > 3,30 m` de `src/game`). La spec décrivait une poutre « au-dessus de la cabine » ; choix accepté en T-009.
+La poutre est dessinée en **deux corbeaux** hachurés de 0,42 m de long, fixés aux montants de la cage, à `BEAM_HEIGHT` = 3,3626 m (3,30 m avant T-020 ; le peintre lit la constante de `src/game`). Le choc reste jugé sur toute la largeur (règle `y > 3,3626 m` de `src/game`). La spec décrivait une poutre « au-dessus de la cabine » ; choix accepté en T-009.
 
-![Choc contre la poutre à Kp = 4500 N/m (capture e2e de T-009)](img/t009-05-choc.png)
+![Choc contre la poutre, 1280 × 720 (capture e2e de T-020 : Kp = 5100 N/m, choc au pas 61 ; interface visible)](img/t020-choc-fr.png)
+
+![Victoire de justesse à Kp = 5000 N/m : le plancher passe 1,74 mm sous la poutre (capture e2e de T-020)](img/t020-poutre-fr.png)
+
+![Choc à l'ancien réglage : Kp = 4500 N/m, capture de T-009 non régénérée ; le test (e) de level.spec.ts joue maintenant Kp = 7000 N/m et une poutre à 3,3626 m](img/t009-05-choc.png)
 
 ## Courbe y(t)
 
@@ -191,11 +203,11 @@ La courbe est tracée sur le mur de la cage. L'axe vertical est la **hauteur ré
 x(t) = 0,2 + t × échelle
 ```
 
-Raison (log T-009) : les issues qui s'apprennent sur la forme de la courbe sont courtes (choc avant 0,53 s, victoire vers 2,3 à 2,6 s) et se lisent en grand. Les trajets de 15 s (marche trop haute, cabine au sol) n'ont qu'une montée puis un palier, lisibles même resserrés (0,24 m/s à 15 s). L'échelle fixe de la spec (0,4 m/s) donnerait 6 m pour 15 s, plus que la cage (4 m).
+Raison (log T-009, chiffres mis à jour par T-020) : les issues qui s'apprennent sur la forme de la courbe sont courtes (choc avant 0,53 s, victoire vers 2,0 à 2,5 s) et se lisent en grand. Les trajets de 6 s (marche trop haute, cabine au sol) n'ont qu'une montée puis un palier, lisibles même resserrés (0,6 m/s à 6 s ; c'était 0,24 m/s à 15 s avant T-020). L'échelle fixe de la spec (0,4 m/s) donnerait 2,4 m pour 6 s, et seulement 0,2 m pour la montée (6 m pour 15 s avant T-020).
 
 La consigne r est en pointillés (tirets de 0,12 m, vides de 0,08 m) ; l'erreur e est hachurée entre la courbe et la consigne, avec un angle différent des hachures du décor. À la victoire, une cote d'atelier mesure la marche résiduelle.
 
-Les points viennent de `level.signals` (valeurs **avant** chaque pas) ; la pointe est interpolée jusqu'à la position affichée de la cabine. Capacité : 1 801 points.
+Les points viennent de `level.signals` (valeurs **avant** chaque pas) ; la pointe est interpolée jusqu'à la position affichée de la cabine. Capacité : `CURVE_CAPACITY` = `TRIP_MAX_STEPS` + 1 = 721 points (1 801 avant T-020).
 
 ## Bonhomme
 
@@ -222,43 +234,47 @@ L'embarquement dans la cabine et la sortie après la victoire ne sont pas animé
 
 À droite de la cage : échelle de 0 N (en bas) à 5000 N (en haut), graduations tous les 500 N (principales tous les 1000 N), repère du poids m·g = 490,5 N. Le remplissage hachuré montre |uSat| : la force peut être négative quand le moteur freine un dépassement, la jauge en montre l'intensité. Quand la commande est écrêtée, le remplissage passe au crayon rouge.
 
+**Étiquettes permanentes (T-019).** Trois textes DOM, de l'interface (`src/ui`), sont posés à côté de la jauge dès l'approche : la légende « Force du moteur » au-dessus du cadre, « 5000 N max » au niveau du haut de l'échelle et « poids » au niveau du repère m·g (clés `hud.gauge.title`, `hud.gauge.max`, `hud.gauge.weight`). Dès le lancement du trajet, la légende cède la place à « Force : … N ». Ces étiquettes sont `aria-hidden` : le panneau des mesures et le nom de la jauge disent la même chose aux lecteurs d'écran. Le rendu ne calcule que les deux ancres d'écran correspondantes (voir ci-dessous) ; le détail est dans [interface.md](interface.md#étiquettes-de-la-jauge-de-force-t-019).
+
+![Approche, 1280 × 720 : bulle d'ouverture réécrite et étiquettes de la jauge (capture de T-019, prise avant T-020 : l'étiquette de Kp affiche encore 1000 N/m)](img/t019-approche-fr.png)
+
 ## Interpolation et ancres pour l'interface
 
 `computeDisplay` applique le contrat de [jeu.md](jeu.md#contrats-pour-le-rendu-et-linterface) : cabine à `lerp(cabinPrevY, cabinY, alpha)` pendant le trajet, figée à l'issue ; bonhomme à `lerp(walkerPrevX, walkerX, alpha)` sur le quai.
 
-`computeAnchors` calcule, à chaque image, la position en pixels CSS des éléments que l'interface annote : dessus du pupitre de la console, centre du plancher de la cabine, milieu de la cote d'erreur, haut de la tête du bonhomme, haut de la jauge. Ces ancres sont un objet réutilisé, réécrit à chaque image (`session.anchors()`). `main.ts` les transmet à `src/ui` sous forme de données, car `src/ui` n'a pas le droit d'importer `src/render`.
+`computeAnchors` calcule, à chaque image, la position en pixels CSS des éléments que l'interface annote : dessus du pupitre de la console, centre du plancher de la cabine, milieu de la cote d'erreur, haut de la tête du bonhomme, haut de la jauge, et, depuis T-019, le bord gauche de l'échelle de la jauge au niveau du haut (`gaugeMax`, étiquette « 5000 N max ») et du repère du poids (`gaugeWeight`, étiquette « poids »), à `GAUGE_LABEL_X` = `GAUGE_MAX_X` + 0,2 m. Ces ancres sont un objet réutilisé, réécrit à chaque image (`session.anchors()`). `main.ts` les transmet à `src/ui` sous forme de données, car `src/ui` n'a pas le droit d'importer `src/render`.
 
 ## Mesures
 
 | Grandeur | Valeur | Source |
 |---|---|---|
-| JavaScript du build | 885,25 kB, **246,57 kB gzip** (un seul fichier) | `npx vite build` sur une extraction de `566a8a3` (rédacteur) |
-| CSS du build | 5,86 kB, 2,09 kB gzip | idem |
+| JavaScript du build | 907,32 kB, **252,72 kB gzip** (un seul fichier) ; 885,25 kB et 246,57 kB à `566a8a3` | `npm.cmd run build` au commit `119519b` (rédacteur) |
+| CSS du build | 7,30 kB, 2,42 kB gzip ; 5,86 kB et 2,09 kB à `566a8a3` | idem |
 | budget JS initial | 400 ko gzip | spec T-001 §7 |
 | polices | 23 944 + 20 112 octets (woff2) | `public/fonts/` |
 | appels de dessin | 4 à l'état initial (e2e), 7 au plus | `render.spec.ts`, `level-view.ts` |
-| triangles des lots | 2 640 à l'état initial ; 3 506 à la victoire (Kp = 2500 N/m) | script du rédacteur |
+| triangles des lots | 2 638 à l'état initial ; 3 504 à la victoire (Kp = 2500 N/m) | script du rédacteur, commit `119519b` |
 
 Vite affiche l'avertissement « Some chunks are larger than 500 kB after minification » : three/webgpu fait l'essentiel du fichier. Aucun découpage n'est fait.
 
 ## Exports de `src/render/index.ts`
 
-Liste complète au commit `13e8b7e`, comptée par script (86 noms : 58 exports nommés plus les 28 de `paper.ts`). Les fichiers internes (`level-painter.ts`, `stroke-batch.ts`, `noise.ts`, `patterns.ts`, `pencil-style.ts`, `pencil-material.ts`, `level-view.ts`, `walker-pose.ts`, `gauge.ts`) ne sont pas réexportés : seuls les tests les importent directement.
+Liste complète au commit `119519b`, comptée par script (86 noms : 58 exports nommés plus les 28 de `paper.ts` ; `PLAY_ZONE_TOP` a remplacé `PLAY_ZONE_ABOVE_BEAM`, le total n'a pas changé). Les fichiers internes (`level-painter.ts`, `stroke-batch.ts`, `noise.ts`, `patterns.ts`, `pencil-style.ts`, `pencil-material.ts`, `level-view.ts`, `walker-pose.ts`, `gauge.ts`) ne sont pas réexportés : seuls les tests les importent directement.
 
 | Fichier | Valeurs | Types |
 |---|---|---|
-| `session.ts` | `startRendering` | `LevelSource`, `RenderSession`, `RenderStats`, `StartOptions`, `StartResult` |
+| `session.ts` | `startRendering` (la session expose `attachLevel`, `detachLevel`, `anchors`, `stats`, `trace`, `renderNow`, `stop`) | `LevelSource`, `RenderSession`, `RenderStats`, `StartOptions`, `StartResult` |
 | `failure.ts` | `createFailureGuard` | `FailureGuard`, `RenderFailure`, `RenderFailureKind` |
 | `bootstrap.ts` | `bootRenderer`, `createFrameLoop`, `detectBackend`, `disposeRenderer`, `hasGraphicsApi`, `observeCanvasSize`, `prefersReducedMotion` | `Backend`, `BootFailureReason`, `BootResult`, `FrameLoop` |
 | `options.ts` | `parseRendererChoice`, `capPixelRatio`, `MAX_PIXEL_RATIO` | `RendererChoice` |
-| `camera.ts` | `computeFrame`, `applyFrame`, `worldXToPixel`, `worldYToPixel`, `PLAY_ZONE`, `PLAY_ZONE_MARGIN_X` (0,5 m), `PLAY_ZONE_BELOW_GROUND` (1,5 m), `PLAY_ZONE_ABOVE_BEAM` (2,2 m) | `Frame`, `WorldRect` |
+| `camera.ts` | `computeFrame`, `applyFrame`, `worldXToPixel`, `worldYToPixel`, `PLAY_ZONE`, `PLAY_ZONE_MARGIN_X` (0,5 m), `PLAY_ZONE_BELOW_GROUND` (1,5 m), `PLAY_ZONE_TOP` (5,5 m) | `Frame`, `WorldRect` |
 | `stage.ts` | `createPaperStage`, `CAMERA_Z` (10 m), `CAMERA_NEAR` (0,1 m), `CAMERA_FAR` (100 m) | `PaperStage` |
 | `paper.ts` (`export *`) | `createPaper`, `createPaperMaterial`, `fitPaperToFrame`, `PAPER_COLOR`, `PAPER_Z`, `PAPER_OVERSCAN`, `GRAIN_CELL`, `GRAIN_AMPLITUDE`, `GRID_FINE_STEP`, `GRID_HALF_STEP`, `GRID_MAJOR_STEP`, `GRID_FINE_WIDTH`, `GRID_HALF_WIDTH`, `GRID_MAJOR_WIDTH`, `GRID_FINE_COLOR`, `GRID_HALF_COLOR`, `GRID_MAJOR_COLOR`, `GRID_FINE_OPACITY`, `GRID_HALF_OPACITY`, `GRID_MAJOR_OPACITY`, `GRID_FINE_MIN_ENERGY`, `GRID_HALF_MIN_ENERGY`, `GRID_MAJOR_MIN_ENERGY`, `GRID_FADE_START_PX`, `GRID_FADE_END_PX`, `GRID_SNAP_START_PX`, `GRID_SNAP_END_PX`, `GRID_SNAP_QUANTUM` | — |
 | `level-display.ts` | `computeDisplay`, `createDisplay`, `choosePose`, `effectivePhase`, `computeAnchors`, `createAnchors`, `CONSOLE_ANCHOR_Y`, `WALKER_HEAD_TOP` | `LevelDisplay`, `LevelAnchors`, `ScreenPoint` |
-| `curve.ts` | `curveTimeScale`, `curveX`, `CURVE_ORIGIN_X` (0,2 m), `CURVE_SPAN` (3,6 m), `CURVE_MAX_SPEED` (1,2 m/s), `CURVE_FULL_SPEED_SECONDS` (3 s), `CURVE_CAPACITY` (1 801) | — |
+| `curve.ts` | `curveTimeScale`, `curveX`, `CURVE_ORIGIN_X` (0,2 m), `CURVE_SPAN` (3,6 m), `CURVE_MAX_SPEED` (1,2 m/s), `CURVE_FULL_SPEED_SECONDS` (3 s), `CURVE_CAPACITY` (721 ; 1 801 avant T-020) | — |
 
 Valeurs des constantes du papier : tableau de la section « Papier millimétré » (pas, épaisseurs, couleurs, opacités) ; `GRID_*_MIN_ENERGY` (0 ; 0,4 ; 1) est l'intensité minimale gardée par un trait plus fin qu'un pixel ; `GRAIN_CELL` = 0,01 m, `GRAIN_AMPLITUDE` = 0,03 ; `PAPER_Z` = −1 m ; `PAPER_OVERSCAN` = 0,02.
 
 ## Tests
 
-Tests Vitest de `tests/render/` (122) et tests e2e de `tests/e2e/render.spec.ts`, `level.spec.ts`, `failure.spec.ts` et `saturation.spec.ts` : voir [tests.md](tests.md). Justification des choix : [ADR-010](decisions/ADR-010-rendu-crayon.md).
+Tests Vitest de `tests/render/` (122) et tests e2e de `tests/e2e/render.spec.ts`, `level.spec.ts`, `level2.spec.ts`, `failure.spec.ts`, `saturation.spec.ts` et `ui.spec.ts` : voir [tests.md](tests.md). Justification des choix : [ADR-010](decisions/ADR-010-rendu-crayon.md).

@@ -263,3 +263,48 @@ Risques :
 - R4. Fenêtre de Ki étroite ou à bord mince : une retouche de g, m, c, Umax, dt ou de la poutre peut faire basculer une borne (D-11 de T-005). Parade : marges consignées par T-018c, `t018_window.m` à relancer après toute retouche de la physique (ADR-006).
 - R5. Conjectures du §4.3 (A_c ≈ 0,7 m·s, bornes de Ki) non mesurées : toute valeur de jeu en dépend ; elles sont à remplacer par les mesures de T-018c et T-018d.
 - R6. L'accès aux fichiers de `docs/physique/` n'a pas été relu pour cette spec ; les constantes citées viennent du code (`src/sim`, `src/game`) et de `docs/jeu.md`, `docs/rendu.md`, `docs/interface.md`, `docs/validation/T-005-noyau.md`.
+
+## Écarts à la réalisation
+
+Section ajoutée par le rédacteur après la réalisation, sur l'état du commit `119519b` (2026-11-13). Le reste de cette spec, rédigé par le concepteur au commit `8091429`, n'est pas modifié ; quand la spec et le code divergent, le code fait foi. Sources : le code et les tests du commit `119519b`, les logs `orchestration/logs/T-020.md` et `T-021a.md`, `orchestration/DEFAUTS-CONNUS.md`. Aucun log de T-021b n'a été lu par le rédacteur ; les mesures du niveau 2 citées ci-dessous viennent du log T-021a ou d'un script jetable du rédacteur (images de 1/30 s).
+
+### Décisions de l'utilisateur qui priment sur la spec
+
+| Sujet (spec) | Décision retenue | Écart avec la spec |
+|---|---|---|
+| Q1 : Kp fixé ou réglable | Kp **fixé à 2500 N/m** (`LEVEL2_KP`) | conforme à la recommandation A et à la valeur proposée |
+| Q3 : plage et pas de Ki | **mêmes bornes et même pas que Kp** : 0 à 8000 N/(m·s), pas de 100 (`KI_MIN`, `KI_MAX`, `KI_STEP`) | la spec laissait la plage à fixer après mesure |
+| Q3 : valeur initiale | `KI_DEFAULT` = `KP_DEFAULT` = 500 | non prévu par la spec |
+| Q3 : tolérance d'arrivée ε₂ | **`LEVEL2_ARRIVAL_TOLERANCE` = `STEP_TOLERANCE` = 0,5 m** (constante propre au niveau, égale à celle du niveau 1) | la spec recommandait 0,10 m et exigeait ε₂ < e_ss (0,196 m à Kp = 2500, §5.3) : **non respecté, d'où K32** |
+| Q7 : durée du trajet | 720 pas (6 s), comme le niveau 1 après T-020 (décision D24) | la spec proposait de garder 1800 pas |
+| Q3 : poutre | `BEAM_HEIGHT` = 3,3626 m, la poutre du niveau 1 réglée par T-020 | la spec proposait de garder 3,30 m ; la poutre du niveau 1 a changé avant la réalisation du niveau 2 |
+| Q2 : anti-windup | **aucun** (option A : le windup se montre par l'échec) | conforme à la recommandation ; voir [ADR-016](../decisions/ADR-016-controleur-pi-sans-anti-windup.md) |
+| §6, Q6 : jauge de l'intégrale, annotations, loupe, courbe I(t) | **reportées** (K30, K31) ; l'instantané expose déjà `iTerm` | le rendu du niveau 2 est celui du niveau 1 |
+| §8 : oracle MATLAB étendu, `tests/sim/pi-exact.test.ts` | **reportés** (K28) ; le PI n'est validé que par tests unitaires et de déterminisme | la spec demandait T-018c |
+| Q9 : accès au niveau 2 | libre depuis le menu, sans sauvegarde | conforme à la recommandation |
+
+### Tâches réellement faites
+
+| Tâche de la spec | Réalisée sous le nom | Commit | Remarques |
+|---|---|---|---|
+| T-018b (PI, `createElevatorPiLoop`, tests, déterminisme) | **T-021a** (N3, validateur indépendant, verdict « validé, sans réserve ») | `99324fd` | `src/sim/controllers/pi.ts` ; `tests/sim/pi.test.ts` (14), `pi-determinism.test.ts` (4) ; **pas** de test d'oracle exact |
+| T-018a (extraction de la machine à états), T-018d (constantes, `createLevel2`), T-018e (textes), T-018g (interface), T-018h (e2e, intégration) | **T-021b** (classée N2 dans le message du commit ; la spec classait T-018a et T-018d en N3) | `119519b` | `src/game/elevator-level.ts`, `level.ts` (enveloppe), `level2.ts` ; clés `level2.*` ; panneau de réglage commun ; menu à deux entrées ; `tests/e2e/level2.spec.ts` (11) |
+| T-018c (oracle MATLAB), T-018f (rendu : jauge I, bande, annotations) | **non réalisées** | — | K28, K30, K31 |
+
+### Écarts de conception
+
+- **Titre** : « Niveau 2 : la mémoire » (`level2.title`), pas « L'ascenseur à action intégrale ».
+- **Issues** : `step` (« trop court »), `slow` (« trop lent »), `bonk` et `win`. Pas d'issue `oscillation`. Le classement de fin de temps est plus simple que celui du §5.2 : `classifyTimeout2` renvoie `step` si |r − y| > tolérance au dernier pas, sinon `slow`, sans regarder Ki ni les changements de signe de l'erreur ; `noLift` n'est jamais produit.
+- **Instantané** : seuls `levelId`, `ki` et `iTerm` ont été ajoutés (le niveau 1 renseigne `ki = 0`, `iTerm = 0`) ; `pTerm`, `uCmd`, `tolerance` et `hasIntegral` du §5.4 n'existent pas. `LevelSnapshot` n'a pas de champ tolérance : l'arbitre la porte.
+- **Réglage** : l'interface lit `level.tuning` (`TuningSpec` : `param`, `min`, `max`, `step`) et appelle `setTuning` et `adjustTuning` ; `createLevel1` garde `setKp` et `adjustKp`, `createLevel2` ajoute `setKi` et `adjustKi`.
+- **Retour au menu** : pas de bouton « niveau suivant » à la victoire du niveau 1 (§10) ; `level1.comingSoon` dit « Le niveau 2 t’attend dans le menu : merci d’avoir joué ! » et le bouton « Menu » du panneau d'issue (T-017e) ramène au menu.
+
+### Valeurs mesurées (Kp = 2500, poutre 3,3626 m, 720 pas)
+
+- Avec la tolérance de 0,5 m : Ki gagnants [0 ; 800], chocs [900 ; 8000], **aucune** fin de temps ; Ki = 840 gagne (pic 3,362216 m, marge 0,384 mm), Ki = 850 heurte (pic 3,365122 m) (log T-021a, K29). Ki = 0 gagne (erreur finale 0,196407 m) ; `KI_DEFAULT` = 500 gagne (erreur finale 0,046204 m, script du rédacteur).
+- Avec une tolérance de 0,10 m (information, non retenue) : fins de temps [0 ; 200], gagnants [300 ; 800], chocs [900 ; 8000], et Ki = 0 ne gagne pas (log T-021a). C'est le correctif proposé en K32.
+- Pas saturés au départ : 23 à Ki = 0, 25 à Ki = 800, 26 à 1000, 36 à 4000 ; intégrale maximale 582,1 N (Ki 800), 724,8 N (1000), 2829,8 N (4000) ; I tend vers m·g = 490,5 N (log T-021a).
+- Les conjectures du §4.3 se vérifient en ordre de grandeur seulement : le seuil de choc heuristique (≈ 1360 N/(m·s), ou 1770 sans l'élan) est supérieur d'environ 60 % à celui mesuré (entre 840 et 850) ; la limite de stabilité Ki < c·Kp/m (§4.2) et le pôle lent n'ont pas été vérifiés (pas d'oracle, K28).
+- Ki = 0 identique au P bit à bit sur 1800 pas pour Kp ∈ {0, 150, 1000, 2500, 4500, 8000} ; empreinte SHA-256 du PI (Kp = 2500, Ki = 1000) : `0d9d331a5a4a9df28a188dd71b599a3559bd47ccc04f6d4ab78b7db5b725744b` ; empreinte du P inchangée (log T-021a).
+
+Documentation correspondante : [jeu.md](../jeu.md#niveau-2--arbitre-et-fin-de-temps), [physique/ascenseur.md](../physique/ascenseur.md#niveau-2--contrôleur-pi), [simulation.md](../simulation.md#contrôleur-pi-t-021a), [interface.md](../interface.md#niveau-2--la-mémoire-t-021b), [ADR-016](../decisions/ADR-016-controleur-pi-sans-anti-windup.md).

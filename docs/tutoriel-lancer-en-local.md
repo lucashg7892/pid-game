@@ -1,6 +1,6 @@
 # Tutoriel : lancer le projet sur son PC (Windows)
 
-À quoi sert cette page : guider pas à pas, sous Windows et dans PowerShell, l'installation d'une copie du projet, son lancement dans le navigateur, une partie du niveau 1, les tests et la validation MATLAB. Aucune connaissance en développement n'est supposée. État décrit : commit `13e8b7e` (les captures, les durées et les chiffres non recopiés ici datent de `566a8a3`).
+À quoi sert cette page : guider pas à pas, sous Windows et dans PowerShell, l'installation d'une copie du projet, son lancement dans le navigateur, une partie du niveau 1 (et un mot du niveau 2), les tests et la validation MATLAB. Aucune connaissance en développement n'est supposée. État décrit : commit `119519b` (les durées et les sorties de terminal recopiées plus bas datent de `566a8a3`, sauf mention ; elles n'ont pas été relancées).
 
 > **Statut des commandes.** Sous Windows, l'utilisateur a exécuté avec succès le clone, `npm.cmd ci` et `npm.cmd run dev` le 2026-11-13 (décision D16 du registre), puis a joué le niveau. La validation MATLAB (étape 6) a été exécutée sous Windows par le rédacteur. Les autres commandes (`git pull`, `npm run test`, `npm run test:cov`, `npm run check`, réinstallation) ont été exécutées sous Linux seulement et restent marquées « non exécuté sous Windows ».
 >
@@ -79,26 +79,28 @@ Exécuté sous Windows par l'utilisateur le 2026-11-13, avec `npm.cmd run dev` (
 
 ### Ce que vous voyez
 
-L'onglet s'appelle « Huygens’s world ». Une feuille de papier millimétré, un bonhomme bâton au crayon à gauche, une console, une cage d'ascenseur au milieu et un quai en hauteur à droite. En haut : le titre, la valeur de Kp et trois boutons (« ? » pour l'aide, la langue, « Pause »). En bas : un bandeau qui dit quoi faire et avec quelle touche.
+L'onglet s'appelle « Huygens’s world ». Le jeu s'ouvre sur un **écran titre** (« Huygens’s world », un bouton « Jouer » et la mention de copyright). Cliquez sur « Jouer » (ou appuyez sur Entrée) pour ouvrir le **menu des niveaux**, puis choisissez « Niveau 1 : le vide ». Le niveau montre une feuille de papier millimétré, un bonhomme bâton au crayon à gauche, une console, une cage d'ascenseur au milieu et un plateau en hauteur à droite. En haut : le titre, la valeur de Kp et trois boutons (« ? » pour l'aide, la langue, « Pause »). En bas : un bandeau qui dit quoi faire et avec quelle touche. En pause, un bouton « Menu » ramène au menu.
 
-![Début du niveau](img/t010-01-aide.png)
+![Titre](img/t017-titre-fr.png)
+
+![Début du niveau 1 (capture de T-019, prise avant T-020 : l'étiquette de Kp y affiche encore 1000 N/m, elle affiche 500 N/m au commit `119519b`)](img/t019-approche-fr.png)
 
 ### Jouer
 
 1. Maintenez **→** (ou **D**) : le bonhomme marche jusqu'à la console.
 2. Appuyez sur **E** : le panneau de réglage s'ouvre.
-3. Réglez Kp avec **+** et **−** (pas de 100) ou **Page préc.** / **Page suiv.** (pas de 1000). Le jeu commence à 1000 N/m.
+3. Réglez Kp avec **+** et **−** (pas de 100) ou **Page préc.** / **Page suiv.** (pas de 1000). Le jeu commence à 500 N/m (1000 avant T-020).
 4. Appuyez sur **E** ou **Entrée** : l'ascenseur part. La courbe de sa hauteur se trace sur le mur de la cage.
 5. Lisez l'issue, puis appuyez sur **R** pour réessayer.
 
-Pour réussir, Kp doit être entre 2000 et 3800 N/m : trop faible, la cabine s'arrête trop bas ; trop fort, elle dépasse et heurte la poutre.
+Pour réussir, Kp doit être entre 1000 et 5000 N/m (2000 et 3800 avant T-020) : trop faible, la cabine s'arrête trop bas ; trop fort, elle dépasse et heurte la poutre. Le **niveau 2** du menu (« la mémoire ») garde les mêmes touches, mais règle Ki, avec Kp fixé à 2500 N/m.
 
 | Touche | Action |
 |---|---|
 | ← / → ou Q / D (A / D en QWERTY) | marcher |
 | E, Entrée ou Espace | utiliser la console, puis lancer |
-| + / − | Kp ± 100 N/m |
-| Page préc. / Page suiv. | Kp ± 1000 N/m |
+| + / − | Kp ± 100 N/m (niveau 2 : Ki) |
+| Page préc. / Page suiv. | Kp ± 1000 N/m (niveau 2 : Ki) |
 | R | recommencer |
 | Échap | fermer l'aide ou le réglage de Kp ; sinon pause, reprise |
 
@@ -128,13 +130,13 @@ Ces commandes ne sont pas nécessaires pour jouer. Elles vérifient le code.
 
 | Commande | Durée indicative | Ce qu'elle montre |
 |---|---|---|
-| `npm run test` | ≈ 30 s | les 439 tests unitaires (36 fichiers) au commit `13e8b7e` ; la fin doit afficher `Test Files  36 passed (36)` et `Tests  439 passed (439)`. Les lignes `T1`, `REF`, `EXACT` comparent la simulation aux formules et à la solution exacte |
+| `npm run test` | ≈ 30 s | les 586 tests unitaires (45 fichiers) au commit `119519b` (relevé par le rédacteur sous Windows, `npm.cmd test`) ; la fin doit afficher `Test Files  45 passed (45)` et `Tests  586 passed (586)`. Les lignes `T1`, `REF`, `EXACT` comparent la simulation aux formules et à la solution exacte |
 | `npm run test:cov` | ≈ 40 s | les mêmes tests, puis un tableau de couverture de `src/sim` : 100 % partout. Échoue sous 95 % des lignes |
 | `npm run check` | ≈ 1 à 2 min | toute la chaîne : vérification des types, lint, formatage, règles d'architecture, tests, construction du site dans `dist\`. Doit se terminer sans erreur |
 
 Durées mesurées sous Linux ; non exécuté sous Windows. Détail des tests : [tests.md](tests.md).
 
-Les tests de bout en bout (`npm run e2e`, 39 tests dans un vrai navigateur) demandent d'abord `npx playwright install chromium`, qui télécharge un navigateur. Non exécuté sous Windows ; voir [tests.md](tests.md#tests-de-bout-en-bout-playwright).
+Les tests de bout en bout (`npm run e2e`, 69 tests dans un vrai navigateur au commit `119519b`) demandent d'abord `npx playwright install chromium`, qui télécharge un navigateur. Non exécuté sous Windows ; voir [tests.md](tests.md#tests-de-bout-en-bout-playwright).
 
 ## 6. Relancer la validation MATLAB
 
@@ -148,14 +150,14 @@ cd('C:\Users\<vous>\Documents\GitHub\pid-game-test')
 run('validation/matlab/t005_run_all.m')
 ```
 
-3. MATLAB affiche cinq blocs (A + B, C, D, E) : écarts entre la simulation et le calcul exact, effet du bloqueur d'ordre zéro, limite de stabilité (97078,6 N/m à dt = 1/120 s), fenêtre de réussite [2000 ; 3800] N/m et marges à la poutre (+5,842 mm à 3800, −1,865 mm à 3900).
+3. MATLAB affiche cinq blocs (A + B, C, D, E) : écarts entre la simulation et le calcul exact, effet du bloqueur d'ordre zéro, limite de stabilité (97078,6 N/m à dt = 1/120 s), fenêtre de réussite et marges à la poutre. Depuis T-020, la fenêtre est [1000 ; 5000] N/m (la sortie affiche « Kp in [1000 ; 5000], 41 valeurs, contiguë : true ») et les marges sont 1,74 mm sous la poutre à 5000 N/m et 1,79 mm au-dessus à 5100 N/m ; avant T-020 : [2000 ; 3800], +5,842 mm à 3800 et −1,865 mm à 3900.
 4. La dernière ligne doit être :
 
 ```text
 T005 : FIN SANS ERREUR
 ```
 
-Exécuté sous Windows le 2026-11-12 dans `PID_GAME` : MATLAB 25.1 (R2025a), « T005 : FIN SANS ERREUR », 1,1 s. Mode d'emploi complet : [validation/README.md](../validation/README.md).
+Exécuté sous Windows le 2026-11-12 dans `PID_GAME` : MATLAB 25.1 (R2025a), « T005 : FIN SANS ERREUR », 1,1 s. Mode d'emploi complet : [validation/README.md](../validation/README.md). T-020 l'a relancé le 2026-11-13 sur le nouveau réglage (log T-020) : même ligne finale.
 
 ## 7. Dépannage
 

@@ -4,10 +4,22 @@
 
 ## Correspondance tâche → commit
 
-Sortie de `git log --oneline 88ae23c` (18 commits) pour les lignes jusqu'à `88ae23c`. Les quatre lignes du haut viennent de `git log --oneline 88ae23c..13e8b7e` (branche `migration`) ; les commits de documentation et de protocole qui s'intercalent (T-013, P-001 à P-004) n'y figurent pas.
+Sortie de `git log --oneline 88ae23c` (18 commits) pour les lignes jusqu'à `88ae23c`. Les quatre lignes de `13e8b7e` à `a165a14` viennent de `git log --oneline 88ae23c..13e8b7e` (branche `migration`) ; les douze lignes du haut (de `119519b` à `a001622`) viennent de `git log --oneline a001622..119519b`, plus `a001622` lui-même. Les commits de documentation et de protocole qui s'intercalent entre `88ae23c` et `13e8b7e` (T-013, P-001 à P-004) n'y figurent pas.
 
 | Commit | Contenu |
 |---|---|
+| `119519b` | T-021b (N2) : niveau 2 La mémoire (PI, Kp fixé à 2500, réglage de Ki), menu à deux entrées |
+| `99324fd` | T-021a (N3) : contrôleur PI du noyau, Ki = 0 identique au P, tests de déterminisme |
+| `e9ce171` | T-017e (N2) : composition titre, menu et niveau, bouton Menu (pause, issue), K18, e2e et captures |
+| `6aef101` | T-017d (N2) : écrans titre et menu des niveaux, textes FR/EN, test du copyright contre LICENSE |
+| `7e61f7d` | T-017abc (N2) : machine d'écrans `src/app`, `attachLevel` / `detachLevel`, `Ui.destroy`, K23 et K24 |
+| `c3a9f04` | T-020 (N3) : niveau 1, fenêtre [1000 ; 5000], tolérance 0,5 m, poutre 3,3626 m, 6 s, Kp par défaut 500, oracle MATLAB relancé |
+| `c5c0235` | T-019 (N2) : bulle d'ouverture, vocabulaire « plateau d'arrivée », étiquettes permanentes de la jauge de force |
+| `e75b70b` | P-008 (N1) : décisions D24 à D26 au registre (K6 à 6 s, fenêtre 1000-5000, Kp du niveau 2) |
+| `8091429` | T-017 et T-018 (N1) : specs de l'écran titre avec menu et du niveau 2 avec Ki |
+| `0db54c1` | P-007 (N1) : décisions D20 à D23 au registre (niveau 2 avec Ki, écran titre, Échap) |
+| `063304d` | P-006 (N1) : consignes e2e (PNG de `docs/img`, PowerShell) et texte de repli « recommencer » |
+| `a001622` | D-014 (N1) : documentation des correctifs P-005, T-014, T-015 et T-016 |
 | `13e8b7e` | T-016 : e2e de saturation et capture `docs/img/t016-saturation.png` (K20) |
 | `88be7ac` | T-015 : l'aide met en pause pendant un trajet, `aria-modal`, piège de focus, focus sur « Rejouer » (K19, K21) |
 | `2b3c01e` | T-014 : perte de contexte GPU et exception après démarrage, page de repli d'échec (K16, K17) |
@@ -36,6 +48,39 @@ Les neuf premiers commits ont été créés après coup, à la suite, à partir 
 ## Versions
 
 - **v0.1 — validée avec réserves le 2026-11-13** (rapport [validation/T-012-v0.1.md](validation/T-012-v0.1.md), bilan [bilan-v0.1.md](bilan-v0.1.md)). Le champ `version` de `package.json` valait `0.0.0` au commit de la validation (K22) ; il vaut `0.1.0` depuis P-005 (`a165a14`).
+
+## D-015 — Documentation des tâches P-006 à T-021b (2026-11-13)
+
+Documentation de onze commits, de `063304d` à `119519b`, sur l'état figé `119519b` (branche `migration`, arbre propre). Aucun code, aucune configuration, aucune PNG de `docs/img/` modifiés ; le rédacteur n'a exécuté aucun test e2e (il réécrirait les captures), seulement `npx.cmd playwright test --list`.
+
+Tâches documentées, avec leur commit :
+
+- **P-006** (`063304d`) : consignes e2e et texte de repli « recommencer » (`fallback.lost.explanation` et `fallback.error.explanation`). **P-007** (`0db54c1`) et **P-008** (`e75b70b`) : décisions D20 à D26 au registre (niveau 2 avec Ki, écran titre, Échap, K6 à 6 s, fenêtre [1000 ; 5000], Kp du niveau 2). Specs **T-017** et **T-018** (`8091429`).
+- **T-019** (`c5c0235`, N2) : bulle d'ouverture `level1.goal` réécrite, « quai » devient « plateau d'arrivée » en français, étiquettes permanentes de la jauge de force (« Force du moteur », « 5000 N max », « poids »), ancres de rendu `gaugeMax` et `gaugeWeight`.
+- **T-020** (`c3a9f04`, N3, validateur indépendant) : niveau 1 : `TRIP_MAX_STEPS` 720 (6 s), `STEP_TOLERANCE` 0,5 m, `BEAM_HEIGHT` 3,3626 m, `KP_DEFAULT` 500, fenêtre de réussite [1000 ; 5000] N/m (marges : 1,74 mm sous la poutre à 5000, 1,79 mm au-dessus à 5100, 9,5 mm de tolérance à 1000 ; victoire la plus lente au pas 301) ; cadrage fixé par `PLAY_ZONE_TOP` = 5,5 m (remplace `PLAY_ZONE_ABOVE_BEAM`) ; oracle MATLAB relancé (0 désaccord sur 80) ; textes 0,5 m et 3,36 m ; K6 corrigé, K7 mis à jour. Verdict « validé avec réserves » (R1 corrigée par l'orchestrateur).
+- **T-017abc** (`7e61f7d`, N2) : module pur `src/app` (machine d'écrans titre, menu, niveau), `attachLevel` et `detachLevel` de la session de rendu, `Ui.destroy()`, K23 et K24 corrigés. **T-017d** (`6aef101`) : écrans titre et menu (`src/ui/screens*.ts`, `screen-keys.ts`), copyright égal à `LICENSE` (test). **T-017e** (`e9ce171`) : composition dans `main.ts` (paramètre `screen` du mode `?e2e=1`), bouton « Menu » en pause et à l'issue, K18 corrigé (`ResizeObserver`).
+- **T-021a** (`99324fd`, N3, validateur indépendant) : `createProportionalIntegralController` et `createElevatorPiLoop`, Ki = 0 identique au P bit à bit, pas d'anti-windup ; oracle MATLAB du PI et test d'oracle exact TypeScript reportés (K28). Verdict « validé, sans réserve ».
+- **T-021b** (`119519b`, N2) : niveau 2 « La mémoire » (`createLevel2`, machine commune `src/game/elevator-level.ts`, Kp fixé à 2500, réglage de Ki, issues choc, trop court et trop lent, `LEVEL2_ARRIVAL_TOLERANCE`), menu à deux entrées. Point documenté honnêtement : avec la tolérance actuelle, Ki = 0 gagne et aucun Ki de 0 à 8000 ne donne « trop court » ni « trop lent » (K32).
+
+Chiffres relevés au commit `119519b` :
+
+| Mesure | Valeur | Avant (`13e8b7e`) |
+|---|---|---|
+| `npm.cmd test` | 45 fichiers, 586 tests verts | 36 fichiers, 439 tests |
+| `npx.cmd playwright test --list` | 69 tests dans 7 fichiers (jamais exécutés par le rédacteur) | 39 tests dans 5 fichiers |
+| `npm.cmd run lint:arch` | 67 modules, 178 dépendances, 0 violation, 9 règles | 57 modules, 147 dépendances, 8 règles |
+| clés de texte par langue (script) | 158 | 115 |
+| `npm.cmd run test:cov` | `src/sim` 100 % (192/192 instructions, 102/102 branches) ; `src/game` 100 % (mesure à part) ; `src/app` 92,3 % des lignes (mesure à part) | `src/sim` 100 % |
+| `npm.cmd run build` | JavaScript 907,32 kB (252,72 kB gzip), CSS 7,30 kB (2,42 kB gzip) | 885,25 kB (246,57 kB gzip) à `566a8a3` |
+
+Dans les logs de l'orchestrateur : `npm run check` vert avec 454 tests et 41 e2e verts à la fin de T-020 ; 524 tests et 58 e2e verts à la fin de T-021a.
+
+- **Pages mises à jour** : `jeu.md`, `physique/ascenseur.md`, `simulation.md`, `rendu.md`, `interface.md`, `architecture.md`, `i18n-accessibilite.md`, `tests.md`, `developpement.md`, `tutoriel-lancer-en-local.md`, `defauts-connus.md` (K25 à K33 ; K6, K18, K23 et K24 corrigés ; K7 avec ses nouvelles marges), `bilan-v0.1.md` (mentions datées ; la v0.1 reste décrite à `88ae23c`), `README.md` et ce journal. ADR-006, ADR-009 et ADR-011 reçoivent une ligne datée ; `specs/T-001-errata.md` une note de mise à jour.
+- **ADR créées** : [ADR-015](decisions/ADR-015-etat-application-machine-ecrans.md) (machine d'écrans pure, session de rendu unique) et [ADR-016](decisions/ADR-016-controleur-pi-sans-anti-windup.md) (PI sans anti-windup, validation unitaire seulement, tolérance du niveau 2).
+- **Specs** : section « Écarts à la réalisation » ajoutée en fin de [T-017](specs/T-017-ecran-titre-et-menu.md) et de [T-018](specs/T-018-niveau-2-ascenseur-ki.md) ; le reste de ces specs n'est pas modifié.
+- **Captures** : t009-05, t009-06, t010-01, t010-02 et t010-05 n'ont pas été régénérées depuis le changement des tests qui les produisent ; leurs légendes dans `rendu.md` et `interface.md` le disent. `t019-approche-fr.png` (prise avant T-020) montre encore Kp = 1000 N/m.
+- **Non confirmé** : le résultat des e2e depuis T-017e (jamais exécutés par le rédacteur) ; la mesure des appels de dessin en papier seul (titre et menu) ; la couverture de `src/render` et de `src/ui` (non refaite).
+- Rédacteur seul, aucun code modifié. Commit : à venir.
 
 ## D-014 — Documentation des correctifs P-005, T-014, T-015 et T-016 (2026-11-13)
 

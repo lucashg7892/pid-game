@@ -1,12 +1,12 @@
 # Interface du joueur (`src/ui`)
 
-À quoi sert cette page : décrire ce que le joueur voit et ce qu'il peut faire, phase par phase : textes, panneau de réglage, touches, accessibilité, disposition à l'écran, police. Elle décrit le commit `13e8b7e` (interface validée en T-010, corrigée par P-005, T-014 et T-015). Le dessin de la scène est dans [rendu.md](rendu.md), les règles du niveau dans [jeu.md](jeu.md).
+À quoi sert cette page : décrire ce que le joueur voit et ce qu'il peut faire, phase par phase : textes, panneau de réglage, touches, accessibilité, disposition à l'écran, police. Elle décrit le commit `119519b` (interface validée en T-010, corrigée par P-005, T-014, T-015, puis étendue par T-017 : écrans titre et menu, bouton « Menu », destruction de l'interface du niveau ; T-019 : étiquettes de la jauge ; T-021b : niveau 2). Le dessin de la scène est dans [rendu.md](rendu.md), les règles du niveau dans [jeu.md](jeu.md).
 
 ## Principe
 
 L'interface est faite d'éléments HTML posés **par-dessus** le canvas (`src/ui/overlay.ts`, styles `ui.css`). Les textes restent du vrai texte : lisibles par un lecteur d'écran, traduits par `src/i18n`, nets à toute taille.
 
-Le DOM est construit une fois. À chaque image, `ui.update()` :
+Le DOM du niveau est construit une fois par entrée dans un niveau : `createUi` le monte, `ui.destroy()` le démonte (écouteurs du document, du canvas et du traducteur retirés, conteneur vidé, canvas masqué aux lecteurs d'écran). Depuis T-017, `main.ts` crée une interface neuve à chaque entrée depuis le menu et la détruit au retour ([ADR-011](decisions/ADR-011-interface-dom.md), [ADR-015](decisions/ADR-015-etat-application-machine-ecrans.md)). À chaque image, `ui.update()` :
 
 1. reconstruit le **modèle de vue** (`view-model.ts`, pur) : « instantané du niveau + langue + état de l'interface → ce qu'il faut afficher » ;
 2. consomme les événements du niveau (`level.drainEvents`) pour la région `aria-live` ;
@@ -15,23 +15,61 @@ Le DOM est construit une fois. À chaque image, `ui.update()` :
 
 Le modèle de vue est un objet unique réécrit en place ; un texte n'est recalculé que si ce dont il dépend a changé (langue, phase, valeur arrondie à l'affichage). En régime établi, rien n'est écrit. « Aucune allocation par image » est établi par construction, pas mesuré (réserve du log T-010).
 
-**Règle d'architecture** : `src/ui` n'importe que `src/game` et `src/i18n` (règle `ui-deps` de dependency-cruiser). Il n'importe ni `src/render` ni `src/sim`. Les positions à l'écran dont il a besoin (console, tête du bonhomme, jauge, cote) sont calculées par le rendu et transmises par `src/main.ts` sous forme de données (`UiGeometry`).
+**Règle d'architecture** : `src/ui` n'importe que `src/game`, `src/i18n` et (types seulement : `ScreenId`, `LevelEntry`) `src/app` (règle `ui-deps` de dependency-cruiser ; aucune règle n'interdit `ui → app`). Il n'importe ni `src/render` ni `src/sim`. Les positions à l'écran dont il a besoin (console, tête du bonhomme, jauge, cote) sont calculées par le rendu et transmises par `src/main.ts` sous forme de données (`UiGeometry`).
+
+## Écrans titre et menu (T-017)
+
+Depuis T-017, le jeu s'ouvre sur un **écran titre**, puis un **menu des niveaux**, avant le niveau (machine d'écrans : [architecture.md](architecture.md#ce-que-fait-srcmaints), [ADR-015](decisions/ADR-015-etat-application-machine-ecrans.md)). Les deux écrans sont du DOM posé sur le canvas, qui n'affiche que le papier millimétré ; code : `src/ui/screens.ts` (DOM), `screens-model.ts` (textes, pur), `screen-keys.ts` (touches, pur), `screens.css`. Chaque écran est un `<main>` nommé par son titre, monté dans un conteneur `#screens` ; `destroy()` retire le DOM, les écouteurs et l'abonnement au traducteur (idempotent).
+
+| Écran | Contenu | Focus à l'arrivée |
+|---|---|---|
+| titre | titre « Huygens’s world », sous-titre (`app.tagline`), bouton « Jouer » / « Play », bouton de langue, pied de page avec la mention de copyright et le nom de la licence | « Jouer » |
+| menu | titre « Niveaux » / « Levels », liste de boutons « Niveau 1 : le vide » et « Niveau 2 : la mémoire », bouton « Retour » / « Back » | le premier niveau jouable, ou, au retour d'un niveau, celui qu'on vient de quitter |
+
+![Écran titre en français, 1280 × 720 (capture e2e de T-017e)](img/t017-titre-fr.png)
+
+![Menu des niveaux en français (capture e2e de T-017e ; ne montre qu'une entrée, le niveau 2 est venu avec T-021b : voir la capture du menu à deux entrées plus haut)](img/t017-menu-fr.png)
+
+**Copyright.** La ligne affichée est « Copyright (c) 2026 lucashg7892 » (`title.copyright`, identique en français et en anglais) suivie de « Licence MIT » ou « MIT License » (`title.license`). `tests/i18n/license.test.ts` (5 tests) la compare au fichier `LICENSE` : ligne unique de copyright, année et titulaire, première ligne de la licence, aucune autre clé ne porte de notice. Elle n'est affichée que sur le titre. Elle est posée directement sur le papier, sans carte, et une ligne de grille la traverse (K27).
+
+**Touches** (`screenKeyToIntent`, 17 tests dans `tests/ui/screen-keys.test.ts`) :
+
+| Écran | Touche | Intention |
+|---|---|---|
+| titre | Entrée, Espace | natif (activation du bouton focalisé) |
+| titre | Échap | rien |
+| menu | ↑ / ↓ | `focusPrev` / `focusNext` entre les niveaux jouables puis « Retour », sans bouclage (`block` aux extrémités, `focusFirst` ou `focusLast` si le focus est ailleurs) |
+| menu | Échap | `back` : retour au titre (ignoré en répétition) |
+| titre, menu | Tab, Maj+Tab | natif |
+| niveau | — | `none` : ces écrans n'ont aucun rôle dans un niveau (son clavier est `keys.ts`) |
+
+Avec Ctrl, Alt ou ⌘ enfoncée, aucune intention. Le clavier du niveau (`bindKeyboard`) n'est monté que dans un niveau.
+
+**Accessibilité.** Tous les contrôles sont de vrais boutons (clic, toucher, Entrée et Espace identiques), de 44 px au moins (`min-height` 48 px dans `screens.css` ; l'e2e (h) de `screens.spec.ts` vérifie au moins 44 px à 390 × 844 et 360 × 740). À l'arrivée sur un écran, une phrase est écrite dans une région `aria-live="polite"` de l'écran, après un délai de 100 ms pour qu'elle soit lue : « Écran titre » (`menu.announce.title`) ou « Menu des niveaux » (`menu.announce.menu`). Le canvas est `aria-hidden="true"` sur le titre et le menu ; `createUi` retire cet attribut à l'entrée dans un niveau et `ui.destroy()` le remet. `<html lang>` et le titre du document sont tenus par `main.ts` (abonnement au traducteur), plus par l'interface du niveau. Ces écrans n'ont aucune animation ni transition. Le bouton de langue du titre réutilise `Translator.setLocale` ; la langue choisie est conservée au menu, dans le niveau et au retour (e2e (e)). En portrait, les écrans sont des colonnes qui défilent verticalement (`max-height: 100dvh`) et n'ont pas l'invite de rotation. Un essai avec un vrai lecteur d'écran n'a pas été fait ; le tactile n'a pas été essayé sur un appareil réel (K9).
+
+![Titre en portrait 390 × 844 (capture e2e de T-017e)](img/t017-titre-portrait.png)
+
+![Menu en portrait 390 × 844 (capture e2e de T-017e)](img/t017-menu-portrait.png)
+
+Sans GPU, la page de repli remplace tout, avant le titre (e2e `?renderer=none` de `screens.spec.ts`). Un échec du rendu pendant le titre ou le menu démonte l'écran et affiche la page de repli d'échec (e2e (g)).
 
 ## Ce que voit le joueur, phase par phase
 
-En permanence, la barre du haut montre le titre « Huygens’s world », l'**étiquette permanente** « Kp = 1000 N/m » (valeur courante), et trois boutons : « ? » (aide des commandes), la langue (« English » / « Français ») et « Pause ». En bas, le **bandeau d'aide** dit quelle action est possible maintenant et avec quelle touche.
+En permanence, la barre du haut montre le titre « Huygens’s world », l'**étiquette permanente** « Kp = 500 N/m » (valeur courante ; 1000 avant T-020 ; au niveau 2 : « Kp = 2500 · Ki = 500 »), et trois boutons : « ? » (aide des commandes), la langue (« English » / « Français ») et « Pause ». Quand le jeu est en pause, un quatrième bouton, « Menu », apparaît à côté (voir plus bas). En bas, le **bandeau d'aide** dit quelle action est possible maintenant et avec quelle touche. Depuis T-019, la jauge de force porte aussi des étiquettes permanentes (voir [plus bas](#étiquettes-de-la-jauge-de-force-t-019)).
 
 ### Approche
 
-Une bulle rappelle l'objectif ; le bandeau indique d'avancer vers la console. Arrivé à la console, la bulle invite à l'utiliser.
+Une bulle rappelle l'objectif ; le bandeau indique d'avancer vers la console. Arrivé à la console, la bulle invite à l'utiliser. Depuis T-019, la bulle d'ouverture (`level1.goal`) dit : « Pour traverser, monte en ascenseur jusqu’au plateau d’en face, 3 m plus haut. Plus la cabine est loin de cette hauteur, plus le moteur tire fort. » Le mot « quai » est remplacé par « plateau d'arrivée » dans les textes français du niveau (les nombres de ces textes suivent T-020 : 0,5 m et 3,36 m).
 
-![Approche : bulle d'objectif et bandeau « → / D : avancer vers la console » (capture e2e de T-010)](img/t010-01-aide.png)
+![Approche (capture de T-019 : bulle réécrite, étiquettes de la jauge ; l'étiquette de Kp affiche 1000 N/m, valeur par défaut d'avant T-020)](img/t019-approche-fr.png)
+
+![Approche à l'ancien réglage : bulle d'avant T-019 et sans étiquettes de la jauge, Kp = 1000 N/m (capture de T-010 non régénérée ; le test (a) de ui.spec.ts les produit maintenant avec Kp = 500 N/m)](img/t010-01-aide.png)
 
 ### Réglage
 
-Le panneau Kp s'ouvre à gauche du bonhomme et de la console, sans les couvrir. Il contient : la valeur en grand (« 2500 N/m »), les boutons − et +, un curseur de 0 à 8000 par pas de 100, un champ numérique, l'aide de Kp, la plage et le bouton « Lancer ».
+Le panneau Kp s'ouvre à gauche du bonhomme et de la console, sans les couvrir. Il contient : la valeur en grand (« 2500 N/m »), les boutons − et +, un curseur de 0 à 8000 par pas de 100, un champ numérique, l'aide de Kp, la plage et le bouton « Lancer ». Le curseur part de Kp = 500 N/m (`KP_DEFAULT`).
 
-![Réglage : panneau Kp ouvert (capture e2e de T-010)](img/t010-02-panneau.png)
+![Réglage : panneau Kp ouvert (capture de T-010 non régénérée : elle montre l'ancien réglage, Kp = 1000 N/m au départ du curseur ; le test (a) de ui.spec.ts la reproduit maintenant avec 500 N/m)](img/t010-02-panneau.png)
 
 ### Trajet
 
@@ -49,15 +87,60 @@ Un panneau donne le titre de l'issue, un message qui explique le mécanisme phys
 
 ![Victoire à Kp = 2500 N/m (capture e2e de T-010)](img/t010-04-victoire.png)
 
-![Choc à Kp = 4500 N/m, en anglais (capture e2e de T-010)](img/t010-05-bonk-en.png)
+![Choc en anglais, à l'ancien réglage : Kp = 4500 N/m, avant T-020 (capture de T-010 non régénérée ; le test (b) de ui.spec.ts joue maintenant Kp = 7000 N/m)](img/t010-05-bonk-en.png)
 
 ### Pause
 
-« Échap » (hors phase de réglage) ou le bouton « Pause » figent le jeu ; le bandeau indique comment reprendre. En phase de réglage, « Échap » ferme le panneau de Kp au lieu de mettre en pause. Le bouton « Pause » change de libellé (« Reprendre ») sans attribut `aria-pressed`.
+« Échap » (hors phase de réglage) ou le bouton « Pause » figent le jeu ; le bandeau indique comment reprendre. En phase de réglage, « Échap » ferme le panneau de Kp au lieu de mettre en pause. Le bouton « Pause » change de libellé (« Reprendre ») sans attribut `aria-pressed`. En pause, le bouton « Menu » (clé `controls.menu`, identique en français et en anglais) est visible dans la barre du haut.
+
+### Bouton « Menu » (T-017e)
+
+Le bouton « Menu » ramène au menu des niveaux, **sans confirmation** : le niveau est jeté (pas de reprise au retour). Il existe seulement quand `main.ts` fournit l'action `onMenu` à `createUi`, et il est visible à deux endroits : dans la barre du haut **en pause**, et dans le **panneau d'issue**, à côté de « Rejouer ». Tant que l'aide est ouverte, il ne fait rien (garde `commandsBlocked`, voir « Aide des commandes »). Aucune touche n'est liée à ce bouton : Échap garde son rôle (fermer le réglage, ou pause).
+
+En portrait étroit (≤ 700 px), pour que les quatre boutons de la barre du haut (« ? », langue, « Menu », « Reprendre ») tiennent en pause, le titre et l'étiquette Kp de la barre sont masqués par CSS (classe `is-paused`) : choix « le plus simple » de T-017e, à valider côté design (K26).
+
+![Issue avec le bouton « Menu » (capture e2e de T-017e)](img/t017-issue-menu.png)
+
+## Étiquettes de la jauge de force (T-019)
+
+À droite de la cage, la jauge de force porte des étiquettes **permanentes**, dès l'approche. Elles sont posées par `src/ui` (classes `ui-gauge-title` et `ui-gauge-tag`), aux ancres calculées par le rendu (`forceGauge`, `gaugeMax`, `gaugeWeight`, voir [rendu.md](rendu.md#interpolation-et-ancres-pour-linterface)) :
+
+| Étiquette | Français | Anglais | Clé |
+|---|---|---|---|
+| légende, au-dessus du cadre | Force du moteur | Motor force | `hud.gauge.title` |
+| haut de l'échelle | 5000 N max | 5000 N max | `hud.gauge.max` (paramètre `{n}`, `ELEVATOR_MAX_FORCE` formaté) |
+| repère du poids m·g | poids | weight | `hud.gauge.weight` |
+
+Dès le lancement du trajet, la légende cède la place à « Force : … N » (`ui-force`) ; « 5000 N max » et « poids » restent. Les trois étiquettes sont `aria-hidden` (le panneau des mesures et le nom de la jauge disent déjà la même chose) et cachées tant que la géométrie manque. La disposition leur réserve `GAUGE_LABELS_ROOM` = 84 px à droite de la jauge (les mesures se posent au-delà) et, en portrait, `GAUGE_TITLE_BAND` = 18 px au-dessus de la scène : la bulle et les mesures s'arrêtent plus haut (`layout.ts`, `tests/ui/layout.test.ts`).
+
+## Niveau 2 : La mémoire (T-021b)
+
+Le niveau 2 réutilise la même interface : `createUi` lit `level.tuning` (`param`, `min`, `max`, `step`) et `level.snapshot.levelId` pour choisir les textes et la grandeur réglée. Ce qui change :
+
+- **Panneau de réglage** : il règle **Ki** de 0 à 8000 N/(m·s) par pas de 100 (curseur, champ numérique, − et +), avec la valeur en grand (« 500 N/(m·s) ») ; une ligne « Kp = 2500 N/m (fixé) » rappelle que Kp n'est pas réglable (`level2.kp.fixed`) ; aide `level2.ki.help` (« chaque seconde, le terme I augmente de Ki × erreur ») ; plage `level2.ki.range` ; verrou `level2.ki.locked`.
+- **Étiquette de la barre du haut** : « Kp = 2500 · Ki = 500 » (`hud.ki.tag`, sans unités).
+- **Touches** : les mêmes qu'au niveau 1 (`+`, `−`, Page préc., Page suiv.), qui appellent `level.adjustTuning` ; le bandeau dit « régler Ki » (`hud.hint.tuneKi`) puis « Ki est verrouillé » (`hud.hint.lockedKi`) pendant le trajet ; l'aide des commandes cite Ki (`controls.help.ki`, `controls.help.pauseKi`, `controls.help.touchKi`).
+- **Annonces** : `hud.status.readyKi`, `hud.status.launchKi` (Kp et Ki), `level2.saturation` à la première saturation, `hud.status.winKi`, `hud.status.fail.slow`, `hud.status.resetKi`.
+- **Issues** : « Niveau réussi ! » (`level2.win`), « Trop court » (`level2.failTitle.step`, avec l'erreur), « Trop lent » (`level2.failTitle.slow`), « Choc contre la poutre » (`level2.failTitle.bonk`, qui explique le windup : « Trop de mémoire ! … Baisse Ki. »). Le teaser et le message « Le niveau 2 t'attend dans le menu » du niveau 1 ne s'affichent qu'au niveau 1.
+- **Pas encore là** : la jauge du terme intégral, les annotations du windup, la loupe de la bande de tolérance et la courbe I(t) (K30 et K31).
+
+Les captures de T-021b :
+
+![Menu à deux entrées (capture e2e de T-021b)](img/t021-menu.png)
+
+![Niveau 2, réglage de Ki à 800 (capture e2e de T-021b)](img/t021-niveau2-reglage.png)
+
+![Niveau 2, victoire (capture e2e de T-021b)](img/t021-niveau2-victoire.png)
+
+![Niveau 2, choc à Ki = 2500 N/(m·s) (capture e2e de T-021b)](img/t021-niveau2-choc.png)
+
+![Niveau 2 en portrait 390 × 844 : le panneau défile en interne et « Lancer » n'est pas visible sans défiler (K33)](img/t021-niveau2-portrait.png)
+
+Point de jeu non résolu (K32) : avec la tolérance de 0,5 m, Ki = 0 gagne ; voir [jeu.md](jeu.md#niveau-2--arbitre-et-fin-de-temps).
 
 ## Bandeau d'aide contextuel
 
-`chooseHint` (fichier `hints.ts`) choisit le bandeau d'après l'instantané ; `hintLine` produit son contenu dans la langue courante. Les touches sont dessinées comme des touches de clavier (`<kbd>`). Textes exacts vérifiés par `tests/ui/view-model.test.ts` :
+`chooseHint` (fichier `hints.ts`) choisit le bandeau d'après l'instantané ; `hintLine` produit son contenu dans la langue courante. Les touches sont dessinées comme des touches de clavier (`<kbd>`). Textes exacts vérifiés par `tests/ui/view-model.test.ts` (niveau 1 ; au niveau 2, `hintLine` cite Ki : « régler Ki », « Ki est verrouillé », vérifié par `tests/ui/level2-view-model.test.ts`) :
 
 | Bandeau | Quand | Français | Anglais |
 |---|---|---|---|
@@ -106,7 +189,7 @@ Le focus est sur la page (aucun contrôle sélectionné). Colonne « Intention �
 | Début | `Home` | `Home` | `block` | rien (empêche le défilement) |
 | Fin | `End` | `End` | `block` | rien (empêche le défilement) |
 
-Les touches de Kp n'agissent qu'en approche et en réglage ; ailleurs, le niveau répond `locked` (Kp verrouillé, décision D9). La touche R n'agit que pendant le trajet et à l'issue.
+Les touches de Kp n'agissent qu'en approche et en réglage ; ailleurs, le niveau répond `locked` (Kp verrouillé, décision D9). Au niveau 2, les mêmes touches règlent Ki (`bindKeyboard` appelle `level.adjustTuning`, qui agit sur la grandeur du niveau : ± 100 et ± 1000 N/(m·s)). La touche R n'agit que pendant le trajet et à l'issue.
 
 ### Touches qui dépendent de la phase
 
@@ -148,7 +231,7 @@ Le bouton « ? » ouvre une fenêtre d'aide (`role="dialog"`, `aria-modal="true"
 - Échap ou « Fermer l’aide » la referme ;
 - la couche de l'aide est au-dessus des mesures du trajet (`z-index: 2` sur `.ui-help`).
 
-Limites connues : K23 (les mesures transparaissent sous le papier translucide de l'aide) et K24 (cliquer « Reprendre » avec l'aide ouverte relance le jeu derrière elle), dans [defauts-connus.md](defauts-connus.md).
+Corrigés par T-017abc : **K23** (le papier de l'aide est opaque, les mesures du trajet ne transparaissent plus ; e2e (p)) et **K24** (tant que l'aide est ouverte, les commandes du niveau sont suspendues : « Pause » / « Reprendre », « Menu », le réglage, le champ numérique, le clic sur la console et le bouton tactile « Action » n'agissent pas ; seule la fermeture de l'aide agit, qui reprend le jeu par `helpPauseDecision` si l'aide l'avait mis en pause ; règle pure `commandsBlocked(helpOpen)` de `src/ui/help.ts` ; e2e (o)).
 
 À l'apparition du panneau d'issue, le focus est porté sur son bouton « Rejouer le niveau » ; quand le panneau se ferme, le focus qui s'y trouvait est rendu au document (`releaseFocus`).
 
@@ -162,11 +245,11 @@ Une région `aria-live="polite"` (`role="status"`) annonce une phrase par évén
 
 | Événement | Annonce (clé) |
 |---|---|
-| ouverture du réglage | `hud.status.ready` |
-| lancement | `hud.status.launch` avec Kp |
-| première saturation (une fois par trajet) | `level1.saturation` |
-| issue | `hud.status.win`, `hud.status.fail.step`, `hud.status.fail.noLift` ou `hud.status.fail.bonk`, avec l'erreur finale à 2 décimales |
-| recommencer | `hud.status.reset` |
+| ouverture du réglage | `hud.status.ready` (niveau 2 : `hud.status.readyKi`) |
+| lancement | `hud.status.launch` avec Kp (niveau 2 : `hud.status.launchKi` avec Kp et Ki) |
+| première saturation (une fois par trajet) | `level1.saturation` (niveau 2 : `level2.saturation`) |
+| issue | `hud.status.win`, `hud.status.fail.step`, `hud.status.fail.noLift` ou `hud.status.fail.bonk`, avec l'erreur finale à 2 décimales ; au niveau 2, `hud.status.winKi` et `hud.status.fail.slow` |
+| recommencer | `hud.status.reset` (niveau 2 : `hud.status.resetKi`) |
 | pause, reprise | `hud.status.paused`, `hud.status.resumed` |
 | fermeture du réglage | rien |
 
@@ -174,7 +257,7 @@ Chaque événement est consommé une seule fois. Le canvas porte `role="img"` et
 
 ## Petit écran en portrait
 
-Sur un écran en portrait de moins de 700 px de large, une invite propose de tourner l'appareil (`app.rotateHint`), et la disposition passe en « bandes » (voir plus bas). À 390 px de large, la scène est petite (17 m dans la largeur). Depuis P-005, la barre du haut y mesure 76 px (`TOP_BAR_PORTRAIT` : le titre et l'étiquette de Kp passent sur deux lignes, mesuré à 390 px de large) et l'invite de rotation est posée plus bas (`.ui-rotate { top: 80px }`, hauteur réservée `ROTATE_BAR` = 48) : l'étiquette de Kp n'est plus masquée (K2). La capture ci-dessous date de T-010 et montre l'ancienne disposition.
+Sur un écran en portrait de moins de 700 px de large, une invite propose de tourner l'appareil (`app.rotateHint`), et la disposition passe en « bandes » (voir plus bas). À 390 px de large, la scène est petite (17 m dans la largeur). Depuis P-005, la barre du haut y mesure 76 px (`TOP_BAR_PORTRAIT` : le titre et l'étiquette de Kp passent sur deux lignes, mesuré à 390 px de large) et l'invite de rotation est posée plus bas (`.ui-rotate { top: 80px }`, hauteur réservée `ROTATE_BAR` = 48) : l'étiquette de Kp n'est plus masquée (K2). La capture ci-dessous date de T-010 et montre l'ancienne disposition. En trajet, à 390 px, le panneau de mesures et le panneau de réglage sont rognés en bas (défilement interne) et la dernière ligne de la légende (« Jauge ») n'est pas visible sans défiler (K25, vu sur les captures de T-019) ; au niveau 2, le panneau de réglage défile en interne (231 px visibles pour 341 px de contenu) et « Lancer » n'est pas visible sans défiler : la touche Entrée et le bouton « Action » restent (K33). Ces défauts s'ajoutent à K5 (scène minuscule).
 
 ![Portrait 390 × 844 avec l'invite de rotation (capture e2e de T-010)](img/t010-06-portrait.png)
 
@@ -221,13 +304,16 @@ Principaux exports, groupés par fichier :
 
 | Fichier | Exports |
 |---|---|
-| `overlay.ts` | `createUi(options) → Ui` ; types `Ui`, `UiOptions` |
-| `input.ts` | `bindKeyboard(level, ui, window)` (renvoie la fonction qui retire les écouteurs), `focusTargetOf` |
+| `overlay.ts` | `createUi(options) → Ui` (`Ui` : `helpOpen`, `update`, `setHelp`, `destroy`) ; types `Ui`, `UiOptions` (dont `level: Level`, `onMenu?`) |
+| `input.ts` | `bindKeyboard(level: Level, ui, window)` (renvoie la fonction qui retire les écouteurs ; appelée au retour au menu), `focusTargetOf` |
 | `keys.ts` | `keyToIntent`, `kpDeltaOf`, `walkSideOf`, `KP_SMALL_STEP` (100), `KP_BIG_STEP` (1000) ; types `KeyInput`, `KeyIntent`, `FocusTarget` |
 | `hints.ts` | `chooseHint`, `hintLine`, `hintText`, `KEY_SYMBOLS`, `KEY_SEPARATOR` ; types `HintId`, `HintItem`, `HintLine`, `HintSegment` |
 | `view-model.ts` | `createViewModelBuilder`, `staticTexts`, `effectivePhase` ; types `ViewModel`, `ViewModelBuilder`, `StaticTexts`, `UiState` |
 | `layout.ts` | `computeLayout`, `createLayout`, `consoleRect`, `walkerRect`, `walkerOnLedge`, `isConsoleHit`, `intersects`, `boxExtent` ; types `UiGeometry`, `UiLayout`, `PanelBox`, `ScreenRect`, `ScreenXY` |
 | `announce.ts` | `announcementFor`, `formatError`, `formatKp`, `ERROR_DIGITS` |
+| `screens.ts` | `createTitleScreen`, `createMenuScreen` ; types `Screen`, `TitleScreenOptions`, `MenuScreenOptions` |
+| `screens-model.ts` | `buildTitleView`, `buildMenuView`, `levelLabel`, `LEVEL_TITLE_KEYS` ; types `TitleView`, `MenuView`, `MenuEntryView` |
+| `screen-keys.ts` | `screenKeyToIntent` ; types `ScreenKeyInput`, `ScreenKeyIntent` |
 
 Constantes de disposition exportées par `layout.ts` (pixels CSS, sauf mention) :
 
@@ -238,6 +324,8 @@ Constantes de disposition exportées par `layout.ts` (pixels CSS, sauf mention) 
 | `TOP_BAR_PORTRAIT` | 76 | hauteur réservée à la barre du haut en portrait étroit (titre et Kp sur deux lignes) |
 | `ROTATE_BAR` | 48 | hauteur réservée à l'invite de rotation sous la barre du haut, en portrait |
 | `BANNER_RESERVE` | 76 | hauteur réservée au bandeau d'aide |
+| `GAUGE_LABELS_ROOM` | 84 | largeur réservée aux étiquettes « 5000 N max » et « poids » à droite de la jauge (T-019 ; exportée par `layout.ts`, pas par `index.ts`) |
+| `GAUGE_TITLE_BAND` | 18 | hauteur prise par la légende de la jauge au-dessus de la scène en portrait (T-019 ; idem) |
 | `MIN_SIDE` | 240 | largeur libre minimale de chaque côté de la cage pour la disposition « côtés » |
 | `MIN_BANNER_BAND` | 56 | hauteur minimale sous la scène pour y poser le bandeau |
 | `MIN_PANEL_BESIDE` | 280 | largeur minimale d'un panneau posé à gauche du bonhomme et de la console (sinon il est posé au-dessus) |

@@ -1,6 +1,6 @@
 # Tests
 
-À quoi sert cette page : dire quels tests existent au commit `566a8a3`, ce que chacun prouve, avec quelles tolérances, comment lancer les tests de bout en bout et comment relancer la validation indépendante. La fin de page décrit l'intégration continue (T-011).
+À quoi sert cette page : dire quels tests existent au commit `119519b`, ce que chacun prouve, avec quelles tolérances, comment lancer les tests de bout en bout et comment relancer la validation indépendante. La fin de page décrit l'intégration continue (T-011).
 
 ## Lancer les tests
 
@@ -15,31 +15,37 @@ Configuration (`vitest.config.ts`) : environnement `node`, fichiers `tests/**/*.
 
 ## Inventaire
 
-Sortie de `npm test` au commit `13e8b7e` (arbre propre) : **36 fichiers, 439 tests, tous verts** (« Test Files  36 passed (36) », « Tests  439 passed (439) »). Au commit `566a8a3`, il y en avait 34 fichiers et 426 tests ; T-014 et T-015 ont ajouté `failure.test.ts` et `help.test.ts`, P-005 un test dans `keys.test.ts`. Les fichiers `tests/game/helpers.ts` et `tests/ui/helpers.ts` sont des modules d'outils partagés, pas des fichiers de test : Vitest ne les compte pas. S'y ajoutent 39 tests de bout en bout (Playwright), [plus bas](#tests-de-bout-en-bout-playwright).
+Sortie de `npm.cmd test` au commit `119519b` (arbre propre, relevé par le rédacteur, code de sortie 0) : **45 fichiers, 586 tests, tous verts** (« Test Files  45 passed (45) », « Tests  586 passed (586) »). Au commit `13e8b7e`, il y en avait 36 fichiers et 439 tests (34 et 426 à `566a8a3`). Depuis : T-017 a ajouté `tests/app/` (2 fichiers), `screen-keys.test.ts`, `screens-model.test.ts` et `license.test.ts` ; T-021a `pi.test.ts` et `pi-determinism.test.ts` ; T-021b `level2.test.ts` et `level2-view-model.test.ts` ; T-020 et T-021b ont étendu des fichiers existants. Les fichiers `tests/game/helpers.ts` et `tests/ui/helpers.ts` sont des modules d'outils partagés, pas des fichiers de test : Vitest ne les compte pas. S'y ajoutent 69 tests de bout en bout (Playwright), [plus bas](#tests-de-bout-en-bout-playwright). Les nombres par fichier du tableau sont relevés par le rédacteur (sortie JSON de Vitest).
 
 | Fichier | Tests | Ce qu'il prouve |
 |---|---|---|
 | `tests/smoke.test.ts` | 1 | `SIM_DT` vaut exactement 1/120 s |
-| `tests/render/camera.test.ts` | 17 | zone de 17 × 7 m entièrement visible et sans déformation pour 6 tailles d'écran ; valeurs de référence à 1280 × 720 ; portrait ; 7 tailles invalides sans NaN ; conversion monde → pixel |
+| `tests/app/machine.test.ts` | 20 | machine d'écrans (`src/app`) : catalogue (niveaux 1 et 2 jouables, dans l'ordre), table de transitions complète (chaque couple écran-commande, y compris `ignored` et `invalid`), `levelId` non nul seulement dans un niveau, abonnement et désabonnement, commande reçue pendant une notification exécutée après elle |
+| `tests/app/units.test.ts` | 1 | sources de `src/app` : ni aléa, ni horloge, ni DOM, aucun import hors `src/app` |
+| `tests/render/camera.test.ts` | 17 | zone de 17 × 7 m (haut fixé à `PLAY_ZONE_TOP`) entièrement visible et sans déformation pour 6 tailles d'écran ; valeurs de référence à 1280 × 720 ; portrait ; 7 tailles invalides sans NaN ; conversion monde → pixel |
 | `tests/render/options.test.ts` | 25 | lecture de `?renderer=` (17 cas) ; plafond du rapport de pixels (8 cas) |
 | `tests/render/stroke-batch.test.ts` | 21 | rubans : nombre de sommets, largeur constante, jointures, cas dégénérés sans NaN, épingle, épaisseur minimale à l'écran, effilement, débordement compté, tremblé déterministe et borné |
-| `tests/render/level-painter.test.ts` | 14 | état initial ; trajets 2500, 4500, 1500 et 100 N/m sans débordement et sous le budget ; jauge rouge seulement saturée ; cote à la victoire ; boiling 8 fois par seconde, figé en mouvement réduit ; mêmes tableaux après 1000 mises à jour ; interpolation ; ancres |
+| `tests/render/level-painter.test.ts` | 14 | état initial ; trajets 2500, 7000, 800 et 100 N/m (issues `win` au pas 291, `bonk` 56, `step` 720, `noLift` 720) sans débordement et sous le budget ; jauge rouge seulement saturée ; cote à la victoire ; boiling 8 fois par seconde, figé en mouvement réduit ; mêmes tableaux après 1000 mises à jour ; interpolation ; ancres |
 | `tests/render/walker-pose.test.ts` | 13 | 7 attitudes : membres de longueur constante, pieds au sol, deux sens ; marche réglée sur la distance ; miroir ; poses debout, mains aux hanches, victoire, choc |
 | `tests/render/noise.test.ts` | 9 | hachage déterministe et réparti ; bruit borné et continu ; graines ; boiling 8 Hz figé en mouvement réduit |
 | `tests/render/patterns.test.ts` | 9 | hachures dans le polygone (convexe, concave, qui se recoupe), au pas régulier ; pointillés ; cas dégénérés ; sortie pleine |
-| `tests/render/curve.test.ts` | 6 | échelle 1,2 m/s jusqu'à 3 s puis resserrée ; y fidèle aux échantillons ; 1 801 points sans débordement |
+| `tests/render/curve.test.ts` | 6 | échelle 1,2 m/s jusqu'à 3 s puis resserrée ; y fidèle aux échantillons ; 721 points (`TRIP_MAX_STEPS` + 1) sans débordement |
 | `tests/render/failure.test.ts` | 4 | garde-fou d'échec du rendu (`createFailureGuard`) : un seul signalement, plus aucun appel gardé après un échec, une exception devient un échec `error` |
 | `tests/render/gauge.test.ts` | 4 | 0 N en bas, 5000 N en haut ; remplissage \|uSat\| / 5000 ; 11 graduations ; repère du poids 490,5 N |
 | `tests/ui/keys.test.ts` | 34 | 27 touches × 20 combinaisons de phase et de focus ; Ctrl, Alt, Meta ; répétition ; Échap ferme l'aide, ferme le réglage (`closeTuning`) sans lancer ni pause ; aucun défilement ; écarts de Kp ; marche par position physique |
-| `tests/ui/view-model.test.ts` | 20 | textes exacts des 7 bandeaux en FR et EN ; panneau, mesures, légende, pause, aide ; messages d'issue avec e mesurée et e théorique ; étiquette Kp dans toutes les phases ; mémoïsation ; titre « Huygens’s world » |
-| `tests/ui/layout.test.ts` | 20 | 13 tailles d'écran : aucun panneau ne coupe la cage, la console ni le bonhomme, ni ne sort de l'écran ; cas particuliers ; même objet réécrit ; zone de clic de la console |
+| `tests/ui/view-model.test.ts` | 22 | textes exacts des 7 bandeaux en FR et EN ; panneau, mesures, légende, pause, aide ; messages d'issue avec e mesurée et e théorique ; étiquette Kp dans toutes les phases ; mémoïsation ; titre « Huygens’s world » |
+| `tests/ui/layout.test.ts` | 22 | 13 tailles d'écran : aucun panneau ne coupe la cage, la console ni le bonhomme, ni ne sort de l'écran ; cas particuliers ; même objet réécrit ; zone de clic de la console ; étiquettes de la jauge (« 5000 N max », « poids ») à droite de la jauge, mesures au-delà, bulle et mesures sous la légende en portrait |
 | `tests/ui/announce.test.ts` | 4 | annonces de chaque événement en FR et EN, saturation une seule fois, valeur de e (signe moins U+2212) |
-| `tests/ui/help.test.ts` | 8 | règles pures de l'aide : `helpPauseDecision` (pause à l'ouverture pendant un trajet seulement, reprise à la fermeture seulement si l'aide avait mis en pause) et `trapFocusIndex` (piège de focus) |
-| `tests/game/units.test.ts` | 16 | géométrie (quais, vide de 4 m, poutre 3,30 m, consigne 3 m) ; arrondi de Kp (10 cas) ; seuil noLift calculé ; victoire au 120e pas consécutif ; choc strictement au-dessus de 3,30 m, victoire au pas 1800 prioritaire, NaN ; `place` du bonhomme ; imports limités à `src/game` et `src/sim`, ni aléa, ni horloge, ni DOM |
-| `tests/game/outcomes.test.ts` | 19 | issues de la spec §11 ; pas d'issue exacts ; borne haute 3800/3900 figée (D-11) ; balayage 0 → 8000 ; erreur finale à la victoire ≈ m·g/Kp (1e-3 m) ; marche de 0,327 m à 1500 N/m |
-| `tests/game/state-machine.test.ts` | 15 | état initial ; marche bornée ; zone de la console ; `initialKp` ; bornes et arrondi de Kp ; verrouillage pendant le trajet, l'issue et la pause ; commandes sans objet ; pause sans pas ni saut de temps ; bonhomme à bord ; `restart` (second trajet identique bit à bit) ; état figé après l'issue |
+| `tests/ui/help.test.ts` | 9 | règles pures de l'aide : `helpPauseDecision` (pause à l'ouverture pendant un trajet seulement, reprise à la fermeture seulement si l'aide avait mis en pause), `commandsBlocked` (commandes suspendues tant que l'aide est ouverte, K24) et `trapFocusIndex` (piège de focus) |
+| `tests/ui/screen-keys.test.ts` | 17 | `screenKeyToIntent` : touches × écrans × focus (Échap au titre, ↑ ↓ et Échap au menu, sans bouclage, Ctrl, Alt, Meta, aucun rôle dans un niveau) |
+| `tests/ui/screens-model.test.ts` | 8 | textes exacts du titre et du menu en FR et EN, suivi de la langue, une entrée par niveau du catalogue, nom de repli sans clé, clés de titre existantes, budget de 8 clés `title.` et `menu.` |
+| `tests/ui/level2-view-model.test.ts` | 18 | modèle de vue du niveau 2 en FR et EN : réglage de Ki, Kp « fixé », étiquette Kp et Ki, bulle, issues (victoire, choc, « trop court », « trop lent »), mémoïsation, bandeaux et annonces du niveau 2, niveau 1 inchangé |
+| `tests/game/units.test.ts` | 16 | géométrie (quais, vide de 4 m, poutre 3,3626 m, consigne 3 m) ; arrondi de Kp (10 cas) ; seuil noLift calculé ; victoire au 120e pas consécutif ; choc strictement au-dessus de 3,3626 m, victoire au pas 720 prioritaire, NaN ; `place` du bonhomme ; imports limités à `src/game` et `src/sim`, ni aléa, ni horloge, ni DOM |
+| `tests/game/outcomes.test.ts` | 28 | issues de la spec §11 (Kp = 7000 pour le choc depuis T-020) ; pas d'issue exacts ; borne haute 5000 / 5100 figée (T-020, anciennement 3800 / 3900, D-11) ; balayage 0 → 8000 : `0-100 noLift \| 200-900 step \| 1000-5000 win \| 5100-8000 bonk`, victoire la plus lente 301 pas ; marges 1,74 mm (5000), 1,79 mm (5100), 9,5 mm de tolérance (1000) ; erreur finale à la victoire ≈ m·g/Kp (1e-3 m) ; marche de 0,613 m à 800 N/m |
+| `tests/game/state-machine.test.ts` | 15 | état initial (Kp = 500) ; marche bornée ; zone de la console ; `initialKp` ; bornes et arrondi de Kp ; verrouillage pendant le trajet, l'issue et la pause ; commandes sans objet ; pause sans pas ni saut de temps ; bonhomme à bord ; `restart` (second trajet identique bit à bit) ; état figé après l'issue |
 | `tests/game/frames.test.ts` | 5 | même issue, même pas, même erreur, même trace pour 5 découpages en images (Kp ∈ {1500, 2500, 3800, 3900}) ; image de 0,5 s |
 | `tests/game/events.test.ts` | 5 | chaque événement une seule fois ; première saturation unique ; pas de saturation à 1500 N/m ; `tuningClosed` ; débordement de la file ; événement ajouté pendant la visite |
+| `tests/game/level2.test.ts` | 43 | niveau 2 (T-021b) : constantes (Kp 2500, Ki 0 à 8000 par 100, défaut 500, tolérance 0,5 m) ; réglage de Ki (arrondi, bornes, verrou) ; issues du vrai niveau 2 (Ki 0, 100, 500, 800 gagnent ; 900, 1000, 2500, 5000, 8000 heurtent) ; le choc vient du windup (I dépasse le poids) ; « trop court » et « trop lent » avec une boucle injectée ; arbitres `classifyTimeout2` et `createOutcomeJudge2` ; `iTerm` ; `restart` ; boucle reconstruite quand Ki change ; 5 découpages en images ; Ki = 0 identique au niveau 1 à Kp = 2500 |
 | `tests/game/allocation.test.ts` | 2 | instantané unique sur 1000 images ; muter l'échantillon ou l'état du noyau ne change pas l'instantané |
 | `tests/sim/clock.test.ts` | 12 | constantes ; nombre de pas pour des images de 1/30, 1/60, 1/144 s ; à-coup de 0,5 s plafonné à 8 pas ; durées négatives, nulles ou NaN ; `reset` ; pas de dérive sur 1 h en images de 1/144 s ; paramètres invalides |
 | `tests/sim/integrators.test.ts` | 7 | RK4 sur ẋ = −x, x0 = 1, dt = 0,1 s, 10 pas : \|x − e⁻¹\| ≤ 1e-6 ; ordre 4 (erreur divisée par ≈ 16 quand dt est divisé par 2) ; commande constante pendant le pas ; aucune allocation ; mêmes bits sur deux exécutions ; `constrain` non appliqué ; dimensions invalides |
@@ -47,16 +53,19 @@ Sortie de `npm test` au commit `13e8b7e` (arbre propre) : **36 fichiers, 439 tes
 | `tests/sim/signals.test.ts` | 8 | tampon préalloué de `capacity × 5` ; ordre chronologique ; écrasement du plus ancien ; aucune réallocation ; `clear` ; capacité 1 ; capacité invalide ; nom de signal inconnu (D-12) |
 | `tests/sim/loop.test.ts` | 22 | contrôleur P ; paramètres de l'ascenseur ; dérivée ; contact sol ; cohérence de `LoopSample` ; aucune allocation sur 1000 pas ; `reset` ; t = k·dt ; boucle désactivée ; saturation négative ; modèle quelconque accepté ; consigne non finie (D-1) ; `MAX_SIM_DT` (D-2) ; état initial invalide (D-7) |
 | `tests/sim/oracle.test.ts` | 20 | oracle analytique T1 à T5 ; taux de décroissance c/(2m) à 5 % (Kp ≤ 4000) ; σ à Kp = 8000 contre la valeur exacte de la boucle échantillonnée (D-4) |
-| `tests/sim/exact.test.ts` | 13 | trajectoire complète contre la solution exacte (D-6) ; propriétés de Φ et Γ ; ordre 4 ; Euler, RK2 et RK3 échouent |
+| `tests/sim/exact.test.ts` | 16 | trajectoire complète contre la solution exacte (D-6), pour 9 Kp : les 6 d'origine et 1000, 5000, 5100 (bornes de T-020) ; propriétés de Φ et Γ ; ordre 4 ; Euler, RK2 et RK3 échouent |
 | `tests/sim/reference.test.ts` | 5 | valeurs de référence de jeu (saturation ±5000 N) pour 4 Kp |
 | `tests/sim/determinism.test.ts` | 4 | déterminisme (a), (b), (c) et trace non triviale |
-| `tests/i18n/catalogs.test.ts` | 24 | structure des JSON ; convention de clés ; parité FR/EN ; paramètres identiques ; `MESSAGE_PARAMS` exact ; clés de la spec §6 ; nombres physiques cités ; typographie ; `isLocale`, `otherLocale`, `isMessageKey`, `matchLocale` |
+| `tests/sim/pi.test.ts` | 14 | contrôleur PI (T-021a) : lois discrètes (u = Kp·e + I avec I avant mise à jour), Ki = 0 identique au P bit à bit sur 1800 pas (Kp ∈ {0, 150, 1500, 2500, 4500}), I = Ki·dt·e·n à erreur constante, `reset`, `RangeError`, cohérence de `LoopSample`, aucune allocation, `setEnabled(false)`, options, convergence (Kp = 2500, Ki = 1000 : e → 0 et I → m·g), windup (I croît pendant la saturation) |
+| `tests/sim/pi-determinism.test.ts` | 4 | déterminisme de la boucle PI : deux exécutions identiques bit à bit, images de 1/60 s puis 1/144 s, empreinte SHA-256 figée (Kp = 2500, Ki = 1000), trace non triviale |
+| `tests/i18n/license.test.ts` | 5 | mention de copyright contre le fichier `LICENSE` : une seule ligne de copyright, `title.copyright` identique en FR et en EN, année et titulaire, `title.license`, aucune autre clé avec « copyright » ou « © » |
+| `tests/i18n/catalogs.test.ts` | 24 | structure des JSON ; convention de clés (préfixes dont `title.`, `menu.`, `level2.`) ; parité FR/EN ; paramètres identiques (9 textes identiques autorisés) ; `MESSAGE_PARAMS` exact ; clés de la spec §6 ; nombres physiques cités ; typographie ; `isLocale`, `otherLocale`, `isMessageKey`, `matchLocale` |
 | `tests/i18n/detect.test.ts` | 7 | priorité de `?lang=`, casse, région, valeur inconnue, paramètre répété, langues du navigateur, repli sur l'anglais |
 | `tests/i18n/format.test.ts` | 13 | virgule ou point décimal ; arrondi ; décimales imposées ; groupement à 5 chiffres ; signe (vrai signe moins U+2212, jamais « - ») ; zéro négatif ; valeur non finie ; options invalides ; cache ; unités et `%` |
 | `tests/i18n/interpolate.test.ts` | 11 | remplacement ; pas de double substitution ; paramètre manquant, hérité, en trop, non textuel ; accolades littérales ; gabarit mal formé ; `I18nError` ; `parseTemplate` |
 | `tests/i18n/translator.test.ts` | 15 | traduction de chaque clé dans chaque langue ; erreurs ; catalogues injectés ; abonnés (notification, désabonnement, doublon, erreur groupée) ; formatage selon la langue |
 
-Sous-totaux : `tests/sim/` 98 tests (9 fichiers), `tests/i18n/` 70 tests (5 fichiers), `tests/game/` 62 tests (6 fichiers), `tests/render/` 122 tests (10 fichiers), `tests/ui/` 86 tests (5 fichiers), test fumée 1.
+Sous-totaux : `tests/sim/` 119 tests (11 fichiers), `tests/i18n/` 75 tests (6 fichiers), `tests/game/` 114 tests (7 fichiers), `tests/render/` 122 tests (10 fichiers), `tests/ui/` 134 tests (8 fichiers), `tests/app/` 21 tests (2 fichiers), test fumée 1 ; total 586 (45 fichiers).
 
 ## Oracle analytique (`tests/sim/oracle.test.ts`)
 
@@ -82,9 +91,9 @@ Ajouté en T-004b (défaut D-6 de T-005). Il compare la boucle de jeu (RK4, dt =
 x(k+1) = Φ·x(k) + Γ·f(k),   f(k) = sat(Kp·(r − y(k))) − m·g,   puis contrainte de sol
 ```
 
-- Kp ∈ {500, 1500, 2500, 3800, 3900, 8000}, 1200 pas, à **chaque** pas, sur y et sur ẏ.
+- Kp ∈ {500, 1500, 2500, 3800, 3900, 8000} plus, depuis T-020, {1000, 5000, 5100} (bornes de la fenêtre), 1200 pas, à **chaque** pas, sur y et sur ẏ.
 - Tolérances : 5e-7 m sur y, 5e-6 m/s sur ẏ.
-- Écarts mesurés : max 1,420e-7 m sur y et 2,311e-6 m/s sur ẏ (Kp = 8000).
+- Écarts mesurés : max 1,420e-7 m sur y et 2,311e-6 m/s sur ẏ (Kp = 8000, relevé de T-004b) ; T-020 consigne 1,112e-7 m au pire pour l'écart noyau / solution exacte aux bornes de la fenêtre, tolérances inchangées.
 - Ordre : à Kp = 2500, l'écart est divisé par 16,45 quand dt est divisé par 2.
 - Mutants internes au test : Euler (écart sur y ≥ 3,7e-3 m), RK2 point milieu (≥ 8,5e-5 m) et RK3 de Kutta (≥ 1,4e-6 m) dépassent les tolérances pour chaque Kp.
 
@@ -100,10 +109,10 @@ Boucle de jeu Kp = 2500 N/m, 1800 pas. Trace = 4 valeurs par pas : y et ẏ apr�
 
 - (a) deux exécutions : traces identiques bit à bit (−0 et +0 distingués) ;
 - (b) pilotage par l'horloge en images de 1/60 s puis de 1/144 s : mêmes états aux mêmes k ;
-- (c) empreinte SHA-256 figée : `5f85e15aa78afeeb834bf30e651b062be643a3e763b2821d7d534bcbbb38a821` ;
+- (c) empreinte SHA-256 figée : `5f85e15aa78afeeb834bf30e651b062be643a3e763b2821d7d534bcbbb38a821` (inchangée à `119519b`) ;
 - la trace n'est pas triviale : la cabine bouge et la saturation agit.
 
-Détails : [simulation.md](simulation.md#déterminisme).
+Le PI a son empreinte (`pi-determinism.test.ts`, Kp = 2500, Ki = 1000 : `0d9d331a5a4a9df28a188dd71b599a3559bd47ccc04f6d4ab78b7db5b725744b`). Détails : [simulation.md](simulation.md#déterminisme).
 
 ## Couverture
 
@@ -113,11 +122,11 @@ npm run test:cov
 
 Périmètre : `src/sim/**/*.ts` seulement. Seuils (`vitest.config.ts`) : 95 % des lignes et 90 % des branches ; en dessous, la commande échoue. `src/i18n` n'est pas mesuré ; `src/game` ne l'est pas par ce script (voir plus bas).
 
-Résultat au commit `566a8a3` (code de sortie 0) :
+Résultat au commit `119519b` (`npm.cmd run test:cov`, code de sortie 0, 586 tests, relevé par le rédacteur ; 100 % aussi à `566a8a3`) :
 
 | Périmètre | Instructions | Branches | Fonctions | Lignes |
 |---|---|---|---|---|
-| `src/sim` (tous fichiers) | 100 % | 100 % | 100 % | 100 % |
+| `src/sim` (tous fichiers, `controllers/pi.ts` compris) | 100 % (192/192) | 100 % (102/102) | 100 % (38/38) | 100 % (178/178) |
 
 `index.ts` et `types.ts` apparaissent à 0 % dans le détail : ils ne contiennent que des réexportations et des types, sans code exécuté. Ils ne font pas baisser le total.
 
@@ -129,11 +138,15 @@ Résultat au commit `566a8a3` (code de sortie 0) :
 npx vitest run --coverage --coverage.include='src/game/**/*.ts'
 ```
 
-Résultat au commit `566a8a3` (code de sortie 0) : 100 % des instructions, branches, fonctions et lignes pour `constants.ts`, `events.ts`, `kp.ts`, `level.ts`, `outcome.ts` et `walker.ts` ; `index.ts` à 0 % (réexportations seules). Les seuils de `vitest.config.ts` s'appliquent alors à `src/game`. Le log T-007 consigne aussi 100 %.
+Résultat au commit `119519b` (code de sortie 0, relevé par le rédacteur) : 100 % des instructions (318/318), des branches (107/107), des fonctions (63/63) et des lignes (298/298), « 8 files fully covered » : `constants.ts`, `elevator-level.ts`, `events.ts`, `kp.ts`, `level.ts`, `level2.ts`, `outcome.ts` et `walker.ts` ; `index.ts` à 0 % (réexportations seules). Les seuils de `vitest.config.ts` s'appliquent alors à `src/game`. Le log T-007 consignait aussi 100 %.
+
+### Couverture de `src/app`
+
+Même commande avec `--coverage.include='src/app/**/*.ts'` (au commit `119519b`, relevé par le rédacteur) : `screens.ts` à 92,3 % des instructions, 77,77 % des branches, 100 % des fonctions, 92,15 % des lignes (lignes 85, 94, 107 et 116 non couvertes) ; le total est 92,3 % des lignes et 77,77 % des branches, donc **sous les seuils de 95 % et 90 %** si ce périmètre était mesuré seul (la commande échoue alors, ce qui n'arrive pas avec `npm run test:cov`, qui ne mesure que `src/sim`). `levels.ts` et `index.ts` ne contiennent que des données et des réexportations.
 
 ### Couverture de `src/render` et `src/ui`
 
-Mesure faite par le rédacteur sur l'extraction de `566a8a3`, seuils désactivés :
+Mesure faite par le rédacteur sur l'extraction de `566a8a3`, seuils désactivés (non refaite au commit `119519b` : `src/render` a peu changé, mais `src/ui` a gagné `screens.ts`, `screens-model.ts` et `screen-keys.ts`, dont seuls `screens-model.ts` et `screen-keys.ts` sont des fichiers purs testés sous Node) :
 
 ```sh
 npx vitest run --coverage --coverage.include='src/render/**/*.ts' --coverage.include='src/ui/**/*.ts' --coverage.thresholds.lines=0 --coverage.thresholds.branches=0
@@ -151,21 +164,23 @@ Total : 76,24 % des lignes pour `src/render`, 36,57 % pour `src/ui`. Le log T-01
 
 ## Logique de jeu (`tests/game/`)
 
-Ajoutés par T-007 : 62 tests en 6 fichiers. Ils jouent le niveau par son API publique, comme le fera l'interface : marche jusqu'à la console, réglage de Kp, lancement, images successives jusqu'à l'issue (`tests/game/helpers.ts`, fonction `runTrip`). Règles et tableau des issues : [jeu.md](jeu.md#règles-dissue).
+Ajoutés par T-007 (62 tests en 6 fichiers), étendus par T-020 et T-021b : 114 tests en 7 fichiers. Ils jouent le niveau par son API publique, comme le fera l'interface : marche jusqu'à la console, réglage, lancement, images successives jusqu'à l'issue (`tests/game/helpers.ts`, fonction `runTrip`). Règles et tableau des issues : [jeu.md](jeu.md#règles-dissue).
 
 | Vérification | Valeur attendue | Fichier |
 |---|---|---|
-| issues de la spec §11 | 150 → `noLift`, 1500 → `step`, 2500 → `win`, 3500 → `win`, 4500 → `bonk` | `outcomes.test.ts` |
-| pas d'issue exacts | 2500 → 291, 3500 → 278, 3800 → 273, 3900 → 63, 4500 → 58, 150 et 1500 → 1800 | `outcomes.test.ts` |
-| balayage 0 → 8000 par 100 N/m | `0-100:noLift \| 200-1900:step \| 2000-3800:win \| 3900-8000:bonk` | `outcomes.test.ts` |
+| issues de la spec §11 | 150 → `noLift`, 500 et 800 → `step`, 2500, 3500 et 4500 → `win`, 7000 → `bonk` | `outcomes.test.ts` |
+| pas d'issue exacts | 1000 → 267, 2500 → 291, 3500 → 278, 3800 → 273, 4000 → 301, 5000 → 293, 5100 → 61 (`bonk`), 7000 → 56 (`bonk`), 150, 800 et 900 → 720 | `outcomes.test.ts` |
+| balayage 0 → 8000 par 100 N/m | `0-100:noLift \| 200-900:step \| 1000-5000:win \| 5100-8000:bonk` ; victoire la plus lente 301 pas | `outcomes.test.ts` |
+| marges de la fenêtre | pics 3,360855 m (5000) et 3,364391 m (5100) à 6 décimales ; 1,74 mm sous la poutre, 1,79 mm au-dessus ; 9,5 mm de tolérance à 1000 | `outcomes.test.ts` |
 | erreur finale à la victoire | \|finalError − m·g/Kp\| ≤ 1e-3 m pour 2000, 2500, 3000, 3800 N/m | `outcomes.test.ts` |
-| indépendance à la cadence d'images | bit à bit identique pour 1/30, 1/60, 1/144 s et deux découpages irréguliers (générateur mulberry32 à graine fixe) | `frames.test.ts` |
-| `restart` | état du réglage restauré ; second trajet identique bit à bit | `state-machine.test.ts` |
+| indépendance à la cadence d'images | bit à bit identique pour 1/30, 1/60, 1/144 s et deux découpages irréguliers (générateur mulberry32 à graine fixe) ; niveau 2 : 5 découpages | `frames.test.ts`, `level2.test.ts` |
+| `restart` | état du réglage restauré ; second trajet identique bit à bit | `state-machine.test.ts`, `level2.test.ts` |
 | allocation | même objet instantané sur 1000 images, dans toutes les phases | `allocation.test.ts` |
+| niveau 2 | Ki gagnants 0 à 800, chocs 900 à 8000 | `level2.test.ts` |
 
-La spec T-001 §11 demandait « victoire de Kp = 2500 au pas 291 ± 1 » ; le test exige 291 exactement. La recommandation D-11 de T-005 (figer 3800 et 3900 N/m) est appliquée.
+La spec T-001 §11 demandait « victoire de Kp = 2500 au pas 291 ± 1 » ; le test exige 291 exactement. La recommandation D-11 de T-005 (figer les deux Kp qui encadrent la borne haute) est appliquée à 5000 et 5100 depuis T-020 (3800 et 3900 avant). Le test CA-7 de l'erreur de la marche à 800 N/m (`toBeCloseTo(0.613125, 6)`) a été resserré par l'orchestrateur après la réserve R1 du validateur de T-020.
 
-## Validation indépendante MATLAB (T-005)
+## Validation indépendante MATLAB (T-005, relancée par T-020)
 
 Un validateur qui n'avait pas écrit le code a recalculé le comportement du noyau avec un oracle **exact** (exponentielle de matrice, sans RK4), écrit en MATLAB. MATLAB sert seulement à la validation : rien n'est importé par le site ([ADR-006](decisions/ADR-006-oracle-matlab.md)).
 
@@ -178,7 +193,7 @@ Relancer (MATLAB R2025a, sans toolbox), depuis la racine du dépôt :
 run('validation/matlab/t005_run_all.m')
 ```
 
-La dernière ligne affichée doit être `T005 : FIN SANS ERREUR`. L'orchestrateur l'a relancé pendant la validation de T-005 et a retrouvé les mêmes chiffres (log T-005). Pour régénérer les CSV du code TypeScript, suivre la procédure du `validation/README.md` (test Vitest temporaire, à supprimer après usage).
+La dernière ligne affichée doit être `T005 : FIN SANS ERREUR`. L'orchestrateur l'a relancé pendant la validation de T-005 et a retrouvé les mêmes chiffres (log T-005). T-020 a relancé l'oracle après le changement des valeurs de jeu et adapté `t005_params.m`, `t005_E.m` et `t005_issue.m` ; `validation/data/ts_sweep_summary.csv` a été régénéré. **Le contrôleur PI n'est pas couvert par cet oracle** (extension reportée, K28). Pour régénérer les CSV du code TypeScript, suivre la procédure du `validation/README.md` (test Vitest temporaire, à supprimer après usage).
 
 Résultats principaux :
 
@@ -187,7 +202,8 @@ Résultats principaux :
 | écart RK4 / exact sur y, 12 Kp | ≤ 1,42e-7 m ; rapport ≈ 16,5 quand dt est divisé par 2 |
 | formules du régime linéaire (boucle continue, `ode45`) | retrouvées à 1e-9 près |
 | Kp critique à dt = 1/120 s | 97 079 N/m (trois méthodes) |
-| fenêtre de jeu [2000 ; 3800] N/m | confirmée ; 0 désaccord TS/oracle sur 80 Kp |
+| fenêtre de jeu [2000 ; 3800] N/m (T-005, réglage d'origine) | confirmée ; 0 désaccord TS/oracle sur 80 Kp |
+| fenêtre de jeu [1000 ; 5000] N/m (T-020, poutre 3,3626 m, tolérance 0,5 m, 720 pas) | confirmée : « Kp in [1000 ; 5000], 41 valeurs, contiguë : true », 0 désaccord TS/oracle sur 80 issues, « T005 : FIN SANS ERREUR » (MATLAB R2025a, log T-020) |
 | attaques (40 cas) | 2 défauts mineurs (consigne non validée, dt non borné), corrigés en T-004b |
 
 ### Analyse de mutation de T-005
@@ -226,17 +242,19 @@ Avec un Chrome déjà installé (réseau filtré) : la variable `PW_CHROME_PATH`
 PW_CHROME_PATH=/usr/bin/google-chrome npx playwright test
 ```
 
-**La VM des agents ne peut pas télécharger de navigateur** (403 « Connection blocked by network allowlist », log T-008). Les tests e2e sont donc exécutés par l'orchestrateur, dans son environnement, sur une copie du dépôt, avec la seconde commande : Google Chrome for Testing 153, headless, rendu logiciel SwiftShader, WebGL2 ([ADR-012](decisions/ADR-012-tests-navigateur.md)). Résultat consigné au commit `566a8a3` : **28 tests verts en 1,7 min** (log T-010). Les 11 tests ajoutés depuis (T-014, T-015, T-016) sont décrits d'après leur code ; le rédacteur n'a exécuté aucun test e2e, il a seulement listé les tests.
+**La VM des agents ne peut pas télécharger de navigateur** (403 « Connection blocked by network allowlist », log T-008). Les tests e2e sont donc exécutés par l'orchestrateur, dans son environnement, sur une copie du dépôt, avec la seconde commande : Google Chrome for Testing 153, headless, rendu logiciel SwiftShader, WebGL2 ([ADR-012](decisions/ADR-012-tests-navigateur.md)). Résultats consignés : **28 tests verts en 1,7 min** au commit `566a8a3` (log T-010) ; **41 verts** à la fin de T-020 (log T-020) ; **58 verts** à la fin de T-021a (log T-021a). Les tests ajoutés ensuite (T-017d, T-017e, T-021b) sont décrits d'après leur code : le rédacteur n'a exécuté **aucun** test e2e (il réécrirait les PNG de `docs/img/`), il a seulement listé les tests.
 
 ### Inventaire
 
-Sortie de `npx playwright test --list` au commit `13e8b7e` : « Total: 39 tests in 5 files » (28 tests dans 3 fichiers au commit `566a8a3`).
+Sortie de `npx.cmd playwright test --list` au commit `119519b` : « Total: 69 tests in 7 files » (39 tests dans 5 fichiers au commit `13e8b7e`, 28 dans 3 fichiers à `566a8a3`). Les tests marqués « FR et EN » comptent pour deux.
 
 | Fichier | Tests | Ce qu'ils vérifient |
 |---|---|---|
 | `render.spec.ts` | 10 | WebGL2 imposé : démarrage sans erreur console, papier dessiné, **4 appels de dessin**, triangles entre 1 000 et 30 000 ; portrait 390 × 844 : papier aligné sans déformation, lignes de mètre de même teinte ; uniformité des lignes de mètre à 1280 × 720, 1281 × 721 et 390 × 844 ; redimensionnement 1280 × 720 → 800 × 900 ; page de repli `?renderer=none` en FR et en EN ; mode automatique : backend constaté, sans exception |
-| `level.spec.ts` | 6 | (a) bonhomme dessiné à l'état initial ; (b, c, d) console, trajet à 2500 N/m, victoire au pas 291 ; (e) 4500 N/m : choc au pas 58 ; (f, g) 1500 N/m : marche trop haute au pas 1800, courbe dans sa zone, budget ; (h) `window.__huygens` absent sans `?e2e=1` ; (i) portrait : victoire dessinée |
-| `ui.spec.ts` | 17 | (a) partie complète au clavier réel en français (aide, marche, panneau, + × 15, Entrée, victoire, R) ; (b) en anglais, 4500 N/m (Page préc. × 3, + × 5), choc ; (c) bascule de langue pendant le réglage ; (d) accessibilité FR et EN ; (e) aucune touche ne fait défiler la page ; (f) perte de focus pendant un trajet : pause ; (f bis) en approche : arrêt sans pause ; (g) invite de rotation en portrait ; (h) police manuscrite servie depuis `/pid-game/fonts/` ; (i) aucun panneau ne recouvre la cage, la console ni le bonhomme, à 1280 × 720 et 390 × 844 ; (j) aide ouverte pendant un trajet : pause, reprise à la fermeture (bouton et Échap) ; (k) pause du joueur puis aide : la fermeture de l'aide ne reprend pas ; (l) hors trajet, l'aide ne change pas la phase ; (m) aide modale : focus dedans, Tab piégé, focus rendu à l'ouvreur ; (n) bouton Pause sans `aria-pressed`, focus sur « Rejouer » à l'issue |
+| `level.spec.ts` | 8 | (a) bonhomme dessiné à l'état initial ; (b, c, d) console, trajet à 2500 N/m, victoire au pas 291 ; (e) 7000 N/m : choc au pas 56 (4500 avant T-020) ; (f, g) 800 N/m : marche trop haute au pas 720, 721 points de courbe dans leur zone, budget (1500 N/m au pas 1800 avant T-020) ; (h) `window.__huygens` absent sans `?e2e=1` ; (i) portrait : victoire dessinée ; (j) T-020 : poutre dessinée à `BEAM_HEIGHT`, 5000 N/m gagne au pas 293 sous la poutre, 5100 N/m la heurte au pas 61 (captures `t020-poutre-fr.png`, `t020-choc-fr.png`) ; (k) T-020 : portrait 390 × 844, la poutre reste dans le cadre et dessinée |
+| `level2.spec.ts` | 11 | niveau 2 (T-021b) : (a) FR et EN : menu à deux entrées, niveau 2 au clavier, victoire à Ki = 800 ; (b) FR et EN : réglage à la souris (curseur, champ, − et +), choc à Ki = 2500 ; (c) FR et EN : Ki verrouillé pendant le trajet (clavier, souris, crochet), retour au menu ; (d) FR et EN : niveau 1 inchangé derrière le menu à deux entrées ; (e) issues du vrai niveau 2 par le crochet (Ki = 0, 800, 900, 5000) ; (f) portrait 390 × 844 : étiquette Kp et Ki sans recouvrement ; (g) 1280 × 720 : aucun recouvrement du réglage, du trajet et de l'issue ; cinq captures `t021-*.png` |
+| `ui.spec.ts` | 20 | (a) partie complète au clavier réel en français (aide, marche, panneau, + × 20 depuis 500 N/m, Entrée, victoire, R ; étiquettes de la jauge) ; (b) en anglais, 7000 N/m (Page préc. × 6, + × 5), choc ; (c) bascule de langue pendant le réglage ; (d) accessibilité FR et EN ; (e) aucune touche ne fait défiler la page ; (f) perte de focus pendant un trajet : pause ; (f bis) en approche : arrêt sans pause ; (g) invite de rotation en portrait ; (h) police manuscrite servie depuis `/pid-game/fonts/` ; (i) aucun panneau ni étiquette de la jauge ne recouvre la cage, la console ni le bonhomme, à 1280 × 720 et 390 × 844 ; (j) aide ouverte pendant un trajet : pause, reprise à la fermeture (bouton et Échap) ; (k) pause du joueur puis aide : la fermeture de l'aide ne reprend pas ; (l) hors trajet, l'aide ne change pas la phase ; (m) aide modale : focus dedans, Tab piégé, focus rendu à l'ouvreur ; (n) bouton Pause sans `aria-pressed`, focus sur « Rejouer » à l'issue ; (o) K24 : « Reprendre » ne relance pas le jeu derrière l'aide ; (p) K23 : l'aide est opaque ; (q) cycle de vie de la vue : attach, detach, attach sans fuite ni erreur. Sans `?e2e=1`, le test passe d'abord par le titre (« Jouer », puis le premier niveau) |
+| `screens.spec.ts` | 14 | écrans titre et menu (T-017) : (a) FR et EN : chargement sur le titre, focus sur « Jouer », copyright égal à la ligne de `LICENSE` ; (b) FR et EN : parcours au clavier seul (victoire, pause, « Menu », Échap) ; (c) FR et EN : parcours à la souris, retour au menu depuis l'issue, puis « Retour » ; (d) trois allers-retours niveau → menu → niveau : une seule interface, un seul effet par frappe, niveau neuf ; (e) la langue choisie au titre est conservée ; (f) `?renderer=none` : page de repli, sans titre ni menu ; (g) échec du rendu sur le menu : écran démonté, page de repli ; (h) portrait 390 × 844 et 360 × 740 : boutons d'au moins 44 px ; (i) en pause, « Menu » reste dans l'écran sans chevaucher les autres boutons, à 1280 × 720, 390 × 844 et 360 × 740 ; captures `t017-*.png` |
 | `failure.spec.ts` | 4 | WebGL2 imposé, en FR et en EN : perte du contexte (`WEBGL_lose_context`) puis exception provoquée par `crashNextFrame()` ; dans les deux cas la page de repli traduite (`#fallback`, `data-kind` valant `context-lost` ou `error`) remplace le jeu, canvas masqué, `#ui` retiré, aucun bouton. Le chemin WebGPU (`device.lost`) n'est pas exercé |
 | `saturation.spec.ts` | 2 | (a) Kp = 2500 : jauge rouge à 0,1 s (au moins 500 pixels de crayon rouge), sans rouge à 0,5 s ; (b) Kp = 4500 : texte « Saturé », annonce `level1.saturation`, capture `docs/img/t016-saturation.png`, texte disparu à 0,4 s |
 
@@ -251,6 +269,7 @@ Plusieurs tests décodent la capture d'écran (`tests/e2e/png.ts`) et comptent d
 - **présence** : pixels de graphite dans la boîte du bonhomme, et aucun dans une boîte témoin 2 m plus à droite (papier vierge) ;
 - **position** : points de la courbe y(t) aux coordonnées attendues ; aucune trace de courbe hors de sa zone ;
 - **jauge rouge** (T-016) : `saturation.spec.ts` compte les pixels de crayon rouge (r ≥ 120, r − g ≥ 60, r − b ≥ 60) dans le rectangle monde de la jauge : au moins 500 à 0,1 s à Kp = 2500, aucun à 0,5 s ;
+- **poutre** (T-020) : `level.spec.ts` (j) et (k) cherchent le bord bas de la poutre dans la capture (rangée de pixels attendue à une ou quatre rangées près) et vérifient que la poutre est dessinée à `BEAM_HEIGHT` ;
 - **aspect du papier** : teinte des lignes de mètre identique le long d'une ligne et d'une ligne à l'autre, et comparaison à la capture de référence de T-008.
 
 Les tests d'aspect ont été ajoutés après l'incident de T-009b : les tests de position passaient alors que le papier était visiblement dégradé (voir [rendu.md](rendu.md#papier-millimétré)). Les tests produisent aussi les captures de `docs/img/`, que l'orchestrateur regarde à chaque exécution (leçon L9).

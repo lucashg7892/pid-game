@@ -26,6 +26,7 @@ Le joueur doit lire les touches, régler Kp, comprendre l'issue, en français ou
 - Textes exacts des bandeaux et messages testés sous Node, dans les deux langues.
 - Les ancres écran ont une image de retard (mise à jour de l'UI avant le dessin), invisible pour des étiquettes.
 - Les boutons tactiles n'ont pas été essayés sur un vrai écran tactile.
+- Depuis T-017 (2026-11-13), l'interface du niveau est **détruite et recréée** à chaque sortie et entrée d'un niveau : `createUi` gagne `destroy()`, qui retire les écouteurs du document, du canvas et du traducteur ; `bindKeyboard` est retiré au retour au menu. Les écrans titre et menu sont d'autres modules DOM (`screens.ts`), avec le même principe (modèle de vue pur, touches pures) ; voir [ADR-015](ADR-015-etat-application-machine-ecrans.md).
 
 Détails : [interface.md](../interface.md).
 

@@ -12,7 +12,8 @@ Les premières valeurs de référence venaient du même algorithme (RK4) que le 
 
 ## Conséquences
 
-- Écart RK4 / exact ≤ 1,42e-7 m ; Kp critique 97 079 N/m ; fenêtre [2000 ; 3800] N/m confirmée, 0 désaccord sur 80 Kp ; 8 mutants tués (rapport [T-005](../validation/T-005-noyau.md)).
+- Écart RK4 / exact ≤ 1,42e-7 m ; Kp critique 97 079 N/m ; fenêtre [2000 ; 3800] N/m confirmée, 0 désaccord sur 80 Kp ; 8 mutants tués (rapport [T-005](../validation/T-005-noyau.md)). La fenêtre [2000 ; 3800] N/m valait pour la poutre à 3,30 m, la tolérance de 0,25 m et 1800 pas ; **depuis T-020 (2026-11-13) elle est [1000 ; 5000] N/m** (poutre 3,3626 m, tolérance 0,5 m, 720 pas) et l'oracle, relancé, la confirme : « Kp in [1000 ; 5000], 41 valeurs, contiguë : true », 0 désaccord sur 80 issues (log `orchestration/logs/T-020.md`). Les valeurs de ce paragraphe d'avant T-020 restent celles du rapport T-005, qui n'est pas modifié.
+- L'oracle ne couvre pas le contrôleur PI du niveau 2 : son extension (`t018_*.m`) et le test d'oracle exact TypeScript (`tests/sim/pi-exact.test.ts`) sont reportés, le PI n'étant validé que par des tests unitaires et de déterminisme (K28, [ADR-016](ADR-016-controleur-pi-sans-anti-windup.md)).
 - Relancer la validation demande MATLAB : `run('validation/matlab/t005_run_all.m')` (voir [validation/README.md](../../validation/README.md)). La CI ne la lance pas.
 - Toute retouche de la physique (g, m, c, Umax, dt) ou des règles de jeu doit être suivie d'une relance de `t005_E.m`.
 

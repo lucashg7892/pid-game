@@ -1,6 +1,6 @@
 # Développement
 
-À quoi sert cette page : installer le projet, connaître chaque script npm et les conventions de code. État au commit `13e8b7e` pour le code ; intégration continue et déploiement au commit `88ae23c` (T-011). Pour un pas-à-pas sous Windows destiné à un non-développeur, voir le [tutoriel de lancement local](tutoriel-lancer-en-local.md).
+À quoi sert cette page : installer le projet, connaître chaque script npm et les conventions de code. État au commit `119519b` pour le code ; intégration continue et déploiement au commit `88ae23c` (T-011). Pour un pas-à-pas sous Windows destiné à un non-développeur, voir le [tutoriel de lancement local](tutoriel-lancer-en-local.md).
 
 ## Prérequis
 
@@ -28,12 +28,12 @@ Pour les tests e2e, installez aussi Chromium pour Playwright : `npx playwright i
 
 ## Scripts npm
 
-Commandes exactes de `package.json` au commit `7bcd9ce` (11 scripts).
+Commandes exactes de `package.json` au commit `119519b` (11 scripts, inchangés depuis `7bcd9ce`). Sous PowerShell, écrire `npm.cmd` et `npx.cmd`.
 
 | Script | Commande | Usage |
 |---|---|---|
 | `npm run dev` | `vite` | serveur de développement avec rechargement à chaud |
-| `npm run typecheck` | `tsc -p tsconfig.json --noEmit && tsc -p tsconfig.sim.json --noEmit` | vérifie les types de tout le projet, puis de `src/sim` et `src/game` sans DOM |
+| `npm run typecheck` | `tsc -p tsconfig.json --noEmit && tsc -p tsconfig.sim.json --noEmit` | vérifie les types de tout le projet, puis de `src/sim`, `src/game` et `src/app` sans DOM |
 | `npm run lint` | `eslint . --max-warnings 0 && prettier --check . && depcruise src --config .dependency-cruiser.cjs` | lint, formatage et règles d'architecture ; aucun avertissement toléré |
 | `npm run lint:arch` | `depcruise src --config .dependency-cruiser.cjs` | règles d'architecture seules |
 | `npm run format` | `prettier --write .` | reformate les fichiers (hors `docs/` et `orchestration/`, voir `.prettierignore`) |
@@ -41,7 +41,7 @@ Commandes exactes de `package.json` au commit `7bcd9ce` (11 scripts).
 | `npm run test:cov` | `vitest run --coverage` | tests unitaires et couverture de `src/sim` ; échoue sous 95 % des lignes ou 90 % des branches (voir [tests.md](tests.md#couverture)) |
 | `npm run build` | `vite build` | build de production dans `dist/` |
 | `npm run preview` | `vite preview` | sert le contenu de `dist/` |
-| `npm run e2e` | `playwright test` | tests de bout en bout (39) dans Chromium, contre le build servi par `vite preview` ; construit le site avant (voir [tests.md](tests.md#tests-de-bout-en-bout-playwright)) |
+| `npm run e2e` | `playwright test` | tests de bout en bout (69 au commit `119519b`, relevés par `npx.cmd playwright test --list`) dans Chromium, contre le build servi par `vite preview` ; construit le site avant (voir [tests.md](tests.md#tests-de-bout-en-bout-playwright)) |
 | `npm run check` | `npm run typecheck && npm run lint && npm run test && npm run build` | vérification complète avant livraison |
 
 ### Tests de bout en bout et `PW_CHROME_PATH`
@@ -78,7 +78,7 @@ Le script `test:cov` a été ajouté par T-003 avec le paquet `@vitest/coverage-
 
 Cible de compilation : ES2023 (`tsconfig.json` et `build.target` de `vite.config.ts`).
 
-## Arborescence au commit `13e8b7e`
+## Arborescence au commit `119519b`
 
 Liste tirée de `git ls-files`.
 
@@ -88,22 +88,23 @@ tsconfig.json  tsconfig.sim.json  vite.config.ts  vitest.config.ts  playwright.c
 LICENSE  README.md  .nvmrc  .prettierrc.json  .prettierignore  .gitignore  .gitattributes
 public/        favicon.svg ; fonts/ : Patrick Hand (2 fichiers woff2) et OFL.txt
 src/main.ts    point de composition
-src/sim/       noyau de simulation (9 fichiers), voir simulation.md
+src/sim/       noyau de simulation (10 fichiers dont controllers/pi.ts), voir simulation.md
 src/i18n/      i18n FR/EN (7 fichiers TypeScript + locales/fr.json, locales/en.json)
-src/game/      logique du niveau 1 (7 fichiers), voir jeu.md
+src/app/       état d'application : machine d'écrans et catalogue (3 fichiers), voir architecture.md
+src/game/      logique des niveaux 1 et 2 (9 fichiers), voir jeu.md
 src/render/    rendu au crayon (19 fichiers), voir rendu.md
-src/ui/        interface (9 fichiers TypeScript + ui.css), voir interface.md
-tests/smoke.test.ts  tests/sim/ (9 fichiers)  tests/i18n/ (5 fichiers)
-tests/game/    6 fichiers de test + helpers.ts (outils partagés)
+src/ui/        interface et écrans titre et menu (12 fichiers TypeScript + ui.css + screens.css), voir interface.md
+tests/smoke.test.ts  tests/sim/ (11 fichiers)  tests/i18n/ (6 fichiers)  tests/app/ (2 fichiers)
+tests/game/    7 fichiers de test + helpers.ts (outils partagés)
 tests/render/  10 fichiers de test
-tests/ui/      5 fichiers de test + helpers.ts
-tests/e2e/     5 fichiers .spec.ts + console.ts, overlay.ts, png.ts
-docs/img/      17 captures produites par les tests e2e
+tests/ui/      8 fichiers de test + helpers.ts
+tests/e2e/     7 fichiers .spec.ts + console.ts, overlay.ts, png.ts
+docs/img/      31 captures PNG (voir README.md, section Captures)
 validation/    oracle MATLAB de T-005 : matlab/ (9 scripts), data/ (3 CSV), README.md
 docs/  orchestration/
 ```
 
-`dist/`, `node_modules/` et `coverage/` ne sont pas versionnés. Les sorties des tests e2e (`playwright-report/`, `test-results/`) sont aussi ignorées par git. Le dépôt git (branche `main`) a 15 commits au commit `566a8a3` (`git rev-list --count 566a8a3`) ; la correspondance tâche → commit est dans [CHANGELOG.md](CHANGELOG.md#correspondance-tâche--commit). Depuis T-011 (commit `8736af7`), `.github/workflows/` contient `ci.yml` et `deploy.yml` (sections suivantes). Le dépôt a 18 commits au commit `88ae23c` (`git rev-list --count 88ae23c`).
+`dist/`, `node_modules/` et `coverage/` ne sont pas versionnés. Les sorties des tests e2e (`playwright-report/`, `test-results/`) sont aussi ignorées par git. Le dépôt git (branche `main`) avait 15 commits au commit `566a8a3` (`git rev-list --count 566a8a3`) ; la correspondance tâche → commit est dans [CHANGELOG.md](CHANGELOG.md#correspondance-tâche--commit). Depuis T-011 (commit `8736af7`), `.github/workflows/` contient `ci.yml` et `deploy.yml` (sections suivantes). Le dépôt a 18 commits au commit `88ae23c` (`git rev-list --count 88ae23c`) et 39 au commit `119519b` (`git rev-list --count HEAD`, branche `migration`). `CLAUDE.md` à la racine donne les règles de travail du projet.
 
 ## Licence
 
@@ -138,5 +139,6 @@ Le site sera alors servi sous le chemin `/pid-game/`, qui correspond à la base 
 |---|---|---|---|
 | socle T-002 | 812,66 kB | 219,75 kB | log T-002 |
 | `566a8a3` | 885,25 kB | **246,57 kB** | `npx vite build` sur une extraction de `566a8a3` (rédacteur, 2026-11-13) |
+| `119519b` | 907,32 kB | **252,72 kB** | `npm.cmd run build` (rédacteur, 2026-11-13, code de sortie 0) |
 
-Un seul fichier JavaScript, dominé par `three/webgpu`. Feuille de style : 5,86 kB (2,09 kB gzip). Polices : 23 944 et 20 112 octets, chargées à la demande. Vite affiche l'avertissement « Some chunks are larger than 500 kB after minification ». Budget visé par la spec T-001 §7 : 400 ko gzip pour le JS initial, respecté.
+Un seul fichier JavaScript, dominé par `three/webgpu`. Feuille de style : 5,86 kB (2,09 kB gzip) à `566a8a3`, 7,30 kB (2,42 kB gzip) à `119519b`. Polices : 23 944 et 20 112 octets, chargées à la demande. Vite affiche l'avertissement « Some chunks are larger than 500 kB after minification ». Budget visé par la spec T-001 §7 : 400 ko gzip pour le JS initial, respecté.

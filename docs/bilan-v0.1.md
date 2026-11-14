@@ -1,6 +1,6 @@
 # Bilan de la v0.1
 
-À quoi sert cette page : résumer pour un lecteur extérieur ce que contient la v0.1 de Huygens’s world, ses chiffres clés, la façon dont elle a été produite, les leçons tirées et la suite prévue. Verdict de la validation finale T-012 : **v0.1 validée avec réserves** le 2026-11-13 ([rapport](validation/T-012-v0.1.md)). État décrit : commit `88ae23c`, celui de la validation. Les chiffres qui ont changé depuis (tests, clés de texte, défauts connus) sont relevés au commit `13e8b7e` et marqués comme tels ; les autres restent ceux de `88ae23c`.
+À quoi sert cette page : résumer pour un lecteur extérieur ce que contient la v0.1 de Huygens’s world, ses chiffres clés, la façon dont elle a été produite, les leçons tirées et la suite prévue. Verdict de la validation finale T-012 : **v0.1 validée avec réserves** le 2026-11-13 ([rapport](validation/T-012-v0.1.md)). État décrit : commit `88ae23c`, celui de la validation. Les chiffres qui ont changé depuis (tests, clés de texte, défauts connus) sont relevés au commit `13e8b7e` et marqués comme tels ; les autres restent ceux de `88ae23c`. **Cette page décrit la v0.1 : son état reste celui du commit `88ae23c`.** Les tâches validées depuis (T-017 à T-021b : écrans titre et menu, valeurs de jeu du niveau 1, niveau 2) sont décrites dans le [CHANGELOG](CHANGELOG.md) et dans les pages techniques ; les chiffres de cette page qui ne valent plus au commit `119519b` portent une mention datée.
 
 ## Ce que contient la v0.1
 
@@ -18,16 +18,16 @@ Objectifs de la spec, d'après T-012 §C : O1 (niveau jouable) atteint ; O2 (voi
 
 | Mesure | Valeur | Source |
 |---|---|---|
-| Tests unitaires (Vitest) | 439 tests, 36 fichiers, tous verts au commit `13e8b7e` (426 tests, 34 fichiers à `88ae23c`) | `npm test` au commit `13e8b7e` ; rapport T-012 §A pour `88ae23c` |
-| Tests de bout en bout (Playwright) | 39 tests dans 5 fichiers au commit `13e8b7e` (liste de `npx playwright test --list`) ; 28 tests dans 3 fichiers, verts en 1,7 min au commit `566a8a3` | exécution par l'orchestrateur, log `orchestration/logs/T-010.md`, pour les 28 premiers ; liste confirmée par T-012 §A. Les 11 tests ajoutés depuis n'ont pas été exécutés par le rédacteur |
+| Tests unitaires (Vitest) | 439 tests, 36 fichiers, tous verts au commit `13e8b7e` (426 tests, 34 fichiers à `88ae23c`) ; 586 tests, 45 fichiers au commit `119519b` | `npm test` aux commits `13e8b7e` et `119519b` ; rapport T-012 §A pour `88ae23c` |
+| Tests de bout en bout (Playwright) | 69 tests dans 7 fichiers au commit `119519b`, 39 dans 5 fichiers au commit `13e8b7e` (listes de `npx playwright test --list`) ; 28 tests dans 3 fichiers, verts en 1,7 min au commit `566a8a3` | exécution par l'orchestrateur, log `orchestration/logs/T-010.md`, pour les 28 premiers ; liste confirmée par T-012 §A. Les tests ajoutés depuis n'ont pas été exécutés par le rédacteur |
 | Couverture du noyau `src/sim` | 100 % des lignes, branches et fonctions (seuils 95 / 90) | `npm run test:cov`, rapport T-012 §A |
 | JavaScript du build | 885,25 kB, soit 246,57 kB gzip (budget de la spec : 400 kB gzip) | `npm run check`, rapport T-012 §A |
 | Polices (Patrick Hand, 2 fichiers woff2) | 23 944 et 20 112 octets, chargées à la demande | `stat` sur `public/fonts/` au commit `88ae23c` |
 | Écart simulation / modèle exact | 1,42e-7 m au pire sur la hauteur y | MATLAB, rapport T-012 §B |
-| Fenêtre de réussite | Kp ∈ [2000 ; 3800] N/m, contiguë ; 0 désaccord sur 80 issues | MATLAB, rapport T-012 §B |
-| Marges aux bornes hautes | +5,842 mm à Kp = 3800 ; −1,865 mm à Kp = 3900 | MATLAB, rapport T-012 §B |
-| Textes traduits | 115 clés par langue, mêmes clés en FR et EN au commit `13e8b7e` (111 à `88ae23c`) | comptage par script ; rapport T-012 §C et §F |
-| Défauts connus | 24 (K1 à K24) au commit `13e8b7e`, dont 8 corrigés (K1, K2, K3, K16, K17, K19, K20, K21) et 1 corrigé en partie (K22) ; plus aucun majeur ouvert ; à `88ae23c` : 22, dont 1 majeur (K16), aucun bloquant | [defauts-connus.md](defauts-connus.md) |
+| Fenêtre de réussite | Kp ∈ [2000 ; 3800] N/m, contiguë ; 0 désaccord sur 80 issues (v0.1). **Depuis T-020 : [1000 ; 5000] N/m**, 41 valeurs contiguës, 0 désaccord sur 80 issues | MATLAB, rapport T-012 §B ; log T-020 |
+| Marges aux bornes hautes | +5,842 mm à Kp = 3800 ; −1,865 mm à Kp = 3900 (v0.1). **Depuis T-020 : +1,74 mm à Kp = 5000 ; −1,79 mm à Kp = 5100** (poutre 3,3626 m) | MATLAB, rapport T-012 §B ; log T-020 |
+| Textes traduits | 158 clés par langue au commit `119519b`, 115 au commit `13e8b7e` (111 à `88ae23c`), mêmes clés en FR et EN | comptage par script ; rapport T-012 §C et §F |
+| Défauts connus | 33 (K1 à K33) au commit `119519b`, dont 12 corrigés (K1, K2, K3, K6, K16, K17, K18, K19, K20, K21, K23, K24) et 1 corrigé en partie (K22) ; plus aucun majeur ouvert (24 dont 8 corrigés au commit `13e8b7e`) ; à `88ae23c` : 22, dont 1 majeur (K16), aucun bloquant | [defauts-connus.md](defauts-connus.md) |
 
 ## Comment elle a été produite
 
@@ -59,6 +59,6 @@ Reformulées depuis le registre (`orchestration/REGISTRE.md` §4, L1 à L10).
 
 ## La suite du parcours
 
-La progression pédagogique est fixée par la décision D8 du registre : boucle ouverte et fermée, contrôleur P, système du premier ordre, terme I (avec l'emballement de l'intégrale, ou windup), terme D (avec le bruit), PID complet, puis défi final. Les termes I et D sont des non-objectifs de la v0.1 ([spec T-001](specs/T-001-tranche-verticale.md) §1) ; l'écran de victoire du niveau 1 annonce déjà le terme I (spec §6).
+La progression pédagogique est fixée par la décision D8 du registre : boucle ouverte et fermée, contrôleur P, système du premier ordre, terme I (avec l'emballement de l'intégrale, ou windup), terme D (avec le bruit), PID complet, puis défi final. Les termes I et D sont des non-objectifs de la v0.1 ([spec T-001](specs/T-001-tranche-verticale.md) §1) ; l'écran de victoire du niveau 1 annonce déjà le terme I (spec §6). Depuis la v0.1, le terme I a un niveau : le niveau 2 « La mémoire » (T-021a et T-021b, [ADR-016](decisions/ADR-016-controleur-pi-sans-anti-windup.md)), sans anti-windup, dont la valeur de jeu pose encore question (K32).
 
 Avant d'y aller, le rapport T-012 recommandait pour la v0.2 : gérer la perte de contexte GPU (K16, fait en T-014), ajouter un e2e de saturation (K20, fait en T-016), faire tourner la CI sur GitHub et trancher la publication (K14), mettre en pause à l'ouverture de l'aide (K19, fait en T-015), essayer WebGPU réel et le tactile sur appareil (K8, K9). Restent ouverts : K14, K8 et K9.

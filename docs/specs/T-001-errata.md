@@ -2,7 +2,7 @@
 
 À quoi sert cette page : lister les points de la [spécification T-001](T-001-tranche-verticale.md) que les tâches T-004, T-005, T-004b, T-006, T-008, T-009 et T-010 ont corrigés ou précisés. La spec elle-même n'est pas modifiée. Quand la spec et le code divergent, le code fait foi.
 
-Chaque point donne : ce que dit la spec, ce qui est vrai (points 1 à 10 : commit `c00e678` ; points 11 à 18 : commit `566a8a3`), et la source.
+Chaque point donne : ce que dit la spec, ce qui est vrai (points 1 à 10 : commit `c00e678` ; points 11 à 18 : commit `566a8a3` ; point 19 : commit `119519b`), et la source.
 
 ## 1. Instant du pic à dt = 1/120 s (coquille)
 
@@ -127,7 +127,7 @@ S'y ajoutent les constantes et fabriques de l'ascenseur (`ELEVATOR_*`, `createEl
 ## 15. E (Entrée, Espace) lance le trajet en phase de réglage
 
 - **Spec §6** : « interagir `E`/`Entrée`/`Espace` » ; le lancement passe par le bouton « Lancer ».
-- **Vrai** : en approche, ces touches utilisent la console ; en réglage, elles **lancent** le trajet. Aucune touche ne referme le panneau sans lancer (l'API `interact()` du niveau le permet, le clavier ne l'utilise pas). Les boutons tactiles font 56 × 56 px (spec : au moins 44 × 44).
+- **Vrai** : en approche, ces touches utilisent la console ; en réglage, elles **lancent** le trajet. Aucune touche ne refermait le panneau sans lancer à `566a8a3` (l'API `interact()` du niveau le permettait, le clavier ne l'utilisait pas) ; depuis P-005 (K3, 2026-11-13), Échap ferme le panneau (intention `closeTuning`). Les boutons tactiles font 56 × 56 px (spec : au moins 44 × 44).
 - **Sources** : log T-010 ; `src/ui/keys.ts` ; `tests/ui/keys.test.ts`. Table complète : [interface.md](../interface.md#touches).
 
 ## 16. Clés i18n ajoutées
@@ -148,3 +148,8 @@ S'y ajoutent les constantes et fabriques de l'ascenseur (`ELEVATOR_*`, `createEl
 - **Vrai** : sous 700 px de large en portrait, une invite propose de tourner l'appareil (`app.rotateHint`) et l'interface passe en disposition « bandes ». La scène reste entière mais petite (17 m dans la largeur).
 - **Sources** : logs T-009 et T-010 ; `src/ui/ui.css`, `src/ui/layout.ts`.
 
+## 19. Valeurs de jeu du niveau 1 changées par T-020 (2026-11-13)
+
+- **Spec §5 et §6** : poutre à 3,30 m, tolérance de marche 0,25 m, durée maximale 15 s (1800 pas), Kp au chargement 1000 N/m, fenêtre de réussite [2000 ; 3800] N/m ; vocabulaire « quai » dans les textes français.
+- **Vrai depuis T-020** (décisions D24 et D25 de l'utilisateur) : poutre `BEAM_HEIGHT` = 3,3626 m, tolérance `STEP_TOLERANCE` = 0,5 m, `TRIP_MAX_STEPS` = 720 (6 s), `KP_DEFAULT` = 500 N/m, fenêtre [1000 ; 5000] N/m ; les textes français disent « plateau d'arrivée » (T-019) et citent 0,5 m et 3,36 m. Le cadrage ne suit plus la poutre : `PLAY_ZONE_TOP` = 5,5 m. Les points 13 (poutre « à 3,30 m ») et 14 (échelle « 0,24 m/s à 15 s ») ci-dessus décrivaient l'état d'avant : la poutre est à 3,3626 m et l'échelle vaut 0,6 m/s à 6 s. Le point 16 cite des clés dont la valeur a changé (`level1.fail.step`, `level1.fail.bonk`).
+- **Sources** : `orchestration/logs/T-020.md` ; `src/game/constants.ts`, `src/render/camera.ts` ; [jeu.md](../jeu.md#règles-dissue), [physique/ascenseur.md](../physique/ascenseur.md#fenêtre-de-réussite-1000--5000-nm).

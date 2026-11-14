@@ -1,6 +1,6 @@
 # Noyau de simulation (`src/sim`)
 
-À quoi sert cette page : expliquer comment le noyau calcule un pas de simulation, ce qu'exporte `src/sim/index.ts` et quelles règles garantissent le déterminisme. Elle décrit le commit validé (T-003, T-004, T-004b). La physique de l'ascenseur est dans [physique/ascenseur.md](physique/ascenseur.md).
+À quoi sert cette page : expliquer comment le noyau calcule un pas de simulation, ce qu'exporte `src/sim/index.ts` et quelles règles garantissent le déterminisme. Elle décrit le noyau validé (T-003, T-004, T-004b), complété par le contrôleur PI de T-021a (état du commit `119519b`). La physique de l'ascenseur est dans [physique/ascenseur.md](physique/ascenseur.md).
 
 ## Rôle du noyau
 
@@ -9,7 +9,7 @@ Le noyau simule un système physique piloté par un contrôleur, pas à pas, ave
 Ce que le noyau fait aujourd'hui :
 
 - il fournit une boucle fermée générique (`createClosedLoop`) qui accepte n'importe quel modèle, contrôleur et intégrateur ;
-- il fournit un modèle (l'ascenseur), un contrôleur (proportionnel) et un intégrateur (RK4) ;
+- il fournit un modèle (l'ascenseur), deux contrôleurs (proportionnel, puis proportionnel-intégral depuis T-021a) et un intégrateur (RK4) ;
 - il fournit une horloge à pas fixe et un enregistreur de signaux, utilisés par `src/game` et lus par le rendu des courbes (voir [rendu.md](rendu.md#courbe-yt)).
 
 Ce qu'il ne fait pas : il ne décide ni de la victoire ni de l'échec. Ces règles sont dans `src/game/` (validé en T-007, voir [jeu.md](jeu.md#règles-dissue)). Le noyau est importé par `src/game/` (boucle de l'ascenseur, horloge, enregistreur) et par `src/render/` (force maximale du moteur pour la jauge, type `SignalRecorder`) ; `src/main.ts` ne l'importe plus directement depuis T-010.
@@ -45,7 +45,7 @@ Points à retenir :
 
 ## Exports de `src/sim/index.ts`
 
-Liste complète, vérifiée contre le fichier au commit `c00e678` ; `src/sim/` est inchangé au commit `7bcd9ce`. 21 valeurs et 16 types.
+Liste complète, comptée sur `src/sim/index.ts` au commit `119519b` : 23 valeurs et 19 types (21 et 16 au commit `c00e678`, inchangé jusqu'à T-021a, qui a ajouté deux fabriques et trois types).
 
 ### Constantes
 
@@ -74,8 +74,10 @@ Liste complète, vérifiée contre le fichier au commit `c00e678` ; `src/sim/` e
 | `isSaturated` | `(uCmd, uSat) → boolean` | vrai si la saturation a modifié la commande ; faux si uCmd est NaN | aucune |
 | `createSignalRecorder` | `(capacity) → CircularSignalRecorder` | enregistreur circulaire préalloué | `RangeError` si `capacity` n'est pas un entier ≥ 1 ; `forEach` lève `RangeError` sur un nom de signal inconnu |
 | `createProportionalController` | `(kp) → ProportionalController` | contrôleur u = Kp·(r − y), sans état | `RangeError` si `kp` est NaN, infini ou négatif |
+| `createProportionalIntegralController` | `(kp, ki) → ProportionalIntegralController` | contrôleur PI u = Kp·e + I, intégrale « rectangle à gauche » en newtons, sans anti-windup (voir plus bas) | `RangeError` si `kp` ou `ki` est NaN, infini ou négatif |
 | `createElevator` | `(params = ELEVATOR_PARAMS) → PlantModel` | modèle de l'ascenseur | `RangeError` si `mass` n'est pas finie et > 0, si `gravity` n'est pas finie, ou si `damping` n'est pas fini et ≥ 0 |
 | `createElevatorLoop` | `(options: ElevatorLoopOptions) → SteppableClosedLoop` | assemble la boucle du niveau 1 : ascenseur, P, saturation ±Umax, RK4, consigne constante, cabine au sol | `RangeError` si la consigne n'est pas finie, plus toutes les erreurs des fabriques appelées (Kp, Umax négatif ou NaN, dt, paramètres physiques) |
+| `createElevatorPiLoop` | `(options: ElevatorPiLoopOptions) → ElevatorPiLoop` | même assemblage que `createElevatorLoop`, avec le contrôleur PI ; expose `loop.controller` (`integral`, `proportionalTerm`) en lecture | `RangeError` si la consigne n'est pas finie, plus celles de `createElevatorLoop` et du PI (Kp, Ki) |
 | `createClosedLoop` | `(config: ClosedLoopConfig) → SteppableClosedLoop` | boucle fermée générique | `RangeError` si `dt` n'est pas fini et dans ]0, `MAX_SIM_DT`], si `x0.length ≠ plant.stateSize`, si x0 contient une valeur non finie, ou si `plant.constrain` modifie x0 ; `step()` lève `RangeError` si la consigne lue n'est pas finie |
 
 ### Types
@@ -95,8 +97,11 @@ Liste complète, vérifiée contre le fichier au commit `c00e678` ; `src/sim/` e
 | `ResettableFixedStepClock` | `clock.ts` | `FixedStepClock` + `reset()` |
 | `CircularSignalRecorder` | `signals.ts` | `SignalRecorder` + `buffer` (lecture) + `clear()` |
 | `ProportionalController` | `controllers/p.ts` | `Controller` + `kp` (lecture) |
+| `ProportionalIntegralController` | `controllers/pi.ts` | `Controller` + `kp`, `ki`, `integral` (N), `proportionalTerm` (N) (lecture) |
 | `ElevatorParams` | `plants/elevator.ts` | `mass`, `gravity`, `damping` |
 | `ElevatorLoopOptions` | `plants/elevator.ts` | `kp` (obligatoire), `maxForce`, `dt`, `setpoint`, `params` (facultatifs) |
+| `ElevatorPiLoopOptions` | `plants/elevator.ts` | `ElevatorLoopOptions` + `ki` (obligatoire) |
+| `ElevatorPiLoop` | `plants/elevator.ts` | `SteppableClosedLoop` + `controller` (`ProportionalIntegralController`) |
 | `SteppableClosedLoop` | `loop.ts` | `ClosedLoop` + `k`, `dt`, `x` (lecture) |
 
 Les six derniers types étendent les interfaces de la spec T-001 §4. Ces extensions sont listées dans les [errata de la spec](specs/T-001-errata.md).
@@ -162,7 +167,7 @@ Le cas NaN s'écarte de la formule littérale de la spec (`saturated = uSat !== 
 - `clear()` vide l'enregistreur sans réallouer.
 - `push` et `forEach` n'allouent rien.
 
-L'enregistreur copie des nombres : il ne garde aucune référence vers l'échantillon. Il ne stocke pas ẏ ni uCmd. Capacité utilisée par le jeu : 1800 échantillons, soit 15 s (`src/game/level.ts`, T-007) ; le rendu y lit la courbe y(t) (T-009).
+L'enregistreur copie des nombres : il ne garde aucune référence vers l'échantillon. Il ne stocke pas ẏ ni uCmd. Capacité utilisée par le jeu : `TRIP_MAX_STEPS` = 720 échantillons, soit 6 s (`src/game/elevator-level.ts` ; 1800 échantillons, 15 s, avant T-020) ; le rendu y lit la courbe y(t) (T-009).
 
 ## Borne `MAX_SIM_DT` = 1/30 s
 
@@ -204,7 +209,34 @@ Trois tests le vérifient (`tests/sim/determinism.test.ts`), sur la boucle de je
 5f85e15aa78afeeb834bf30e651b062be643a3e763b2821d7d534bcbbb38a821
 ```
 
+Le contrôleur PI a sa propre empreinte (`tests/sim/pi-determinism.test.ts`, T-021a) : trace de 5 valeurs `Float64` par pas (y, ẏ, uCmd, uSat, puis l'intégrale I après le pas), 1800 pas, Kp = 2500 N/m, Ki = 1000 N/(m·s) :
+
+```text
+0d9d331a5a4a9df28a188dd71b599a3559bd47ccc04f6d4ab78b7db5b725744b
+```
+
+L'empreinte du P ci-dessus n'a pas changé (log T-021a).
+
 Limite : l'empreinte porte sur les octets en ordre machine petit-boutiste (x86-64, ARM64). Le déterminisme entre navigateurs n'a pas été vérifié (rapport T-005, « Doutes et limites »).
+
+## Contrôleur PI (T-021a)
+
+`createProportionalIntegralController(kp, ki)` (fichier `src/sim/controllers/pi.ts`) respecte le contrat `Controller` sans le modifier : `loop.ts`, `LoopSample` et `createElevatorLoop` n'ont pas changé. Ordre dans `update(r, y, dt)` :
+
+1. `e = r − y` ;
+2. `P = Kp·e` ;
+3. `u = P + I`, avec I **avant** mise à jour (si I vaut exactement 0, `u = P` sans l'addition : le zéro signé du P est conservé) ;
+4. `I ← I + Ki·dt·e` ;
+5. renvoie `u`.
+
+Propriétés (tests `tests/sim/pi.test.ts`, 14 tests, et `tests/sim/pi-determinism.test.ts`, 4 tests) :
+
+- **L'intégrale est stockée en newtons**, ce qui la rend comparable à la jauge de force et au poids m·g. Elle est mise à jour à partir de e, **jamais de la commande saturée** : pas d'anti-windup ([ADR-016](decisions/ADR-016-controleur-pi-sans-anti-windup.md)). Elle est lue par `controller.integral`, le terme proportionnel du dernier appel par `controller.proportionalTerm`.
+- **Ki = 0 est identique au P bit à bit** sur 1800 pas, pour Kp ∈ {0, 150, 1000, 2500, 4500, 8000} (mesure de T-021a).
+- `RangeError` si Kp ou Ki n'est pas fini ou est négatif ; aucune allocation dans `update` (le test vérifie l'identité des objets, pas le tas).
+- `createElevatorPiLoop({ kp, ki, … })` assemble la boucle et ajoute `controller` à l'objet de la boucle (`Object.assign`) ; il ne faut pas appeler `controller.update` ni `controller.reset` soi-même, la boucle s'en charge.
+
+Validation : tests unitaires et de déterminisme seulement. L'oracle MATLAB du PI et le test d'oracle exact TypeScript (`tests/sim/pi-exact.test.ts`) sont reportés (K28). Mesures du noyau PI : [physique/ascenseur.md](physique/ascenseur.md#niveau-2--contrôleur-pi).
 
 ## Le piège de `LoopSample`
 
@@ -226,7 +258,7 @@ Lecture : au 1er appel, `y` vaut 0 (mesure à t = 0) mais `x[0]` vaut déjà 0,0
 
 Trois règles pour tout appelant. `src/game/` les applique (T-007) : il juge l'issue sur l'état après le pas et copie les nombres (voir [jeu.md](jeu.md#convention-de-pas) et [ses contrats](jeu.md#contrats-pour-le-rendu-et-linterface)) :
 
-1. **Choisir l'instant jugé.** Pour un seuil (choc à 3,30 m, par exemple), utiliser `sample.y` (avant le pas) ou `sample.x[0]` (après le pas). Le maximum est le même, décalé d'un pas (rapport T-005, recommandation 4).
+1. **Choisir l'instant jugé.** Pour un seuil (choc à 3,3626 m, par exemple), utiliser `sample.y` (avant le pas) ou `sample.x[0]` (après le pas). Le maximum est le même, décalé d'un pas (rapport T-005, recommandation 4).
 2. **Ne jamais garder une référence à l'échantillon.** `step()` réécrit le même objet. Trois échantillons rangés dans un tableau affichent tous le dernier k (T-005, attaque F8c : k stockés = 2, 2, 2). Copier les champs utiles.
 3. **Ne jamais modifier `x`.** `sample.x` et `loop.x` sont le tableau interne de la boucle. Le type est en lecture seule, mais un transtypage suffit à corrompre la simulation (T-005, attaque F8). Copier avec `Float64Array.from(sample.x)` pour conserver un état.
 
@@ -253,4 +285,4 @@ Trois règles pour tout appelant. `src/game/` les applique (T-007) : il juge l'i
 3. Exporter depuis `src/sim/index.ts`.
 4. Tester `update` seul, puis dans une boucle avec un oracle.
 
-Point à trancher avant un contrôleur à mémoire (PI, PID) : quand la boucle est désactivée (`setEnabled(false)`), `update` n'est pas appelé du tout. Une intégrale reste donc figée pendant ce temps. `reset()` de la boucle appelle `controller.reset()` et réactive la boucle (log T-004, « à reporter »).
+Un contrôleur à mémoire existe depuis T-021a (le PI). Quand la boucle est désactivée (`setEnabled(false)`), `update` n'est pas appelé du tout : l'intégrale reste donc figée pendant ce temps, sans remise à zéro. Le niveau 2 n'utilise pas `setEnabled`. `reset()` de la boucle appelle `controller.reset()` (I et terme proportionnel remis à 0) et réactive la boucle (log T-004, « à reporter »).

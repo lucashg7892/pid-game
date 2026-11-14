@@ -1,30 +1,30 @@
 # Documentation technique de Huygens’s world (dépôt `pid-game`)
 
-À quoi sert cette page : servir d'index et expliquer comment lire la documentation. La documentation décrit l'état réel du commit `13e8b7e` (branche `migration`) : la v0.1 a été validée avec réserves au commit `88ae23c` (rapport T-012) et le niveau 1 est jouable. Depuis, P-005, T-014, T-015 et T-016 ont corrigé huit défauts connus et modifié le code ; les pages mises à jour (voir le [CHANGELOG](CHANGELOG.md), entrée D-014) citent `13e8b7e`, les autres citent encore `566a8a3`, dont le code qu'elles décrivent n'a pas changé. Elle est rédigée en français.
+À quoi sert cette page : servir d'index et expliquer comment lire la documentation. La documentation décrit l'état réel du commit `119519b` (branche `migration`) : la v0.1 a été validée avec réserves au commit `88ae23c` (rapport T-012) ; depuis, les tâches P-005 à T-021b ont corrigé des défauts connus et ajouté un écran titre, un menu, des valeurs de jeu réglées pour le niveau 1 (T-020) et un second niveau, « La mémoire » (contrôleur PI, T-021a et T-021b). Les pages mises à jour par la dernière passe (voir le [CHANGELOG](CHANGELOG.md), entrée D-015) citent `119519b` ; celles que D-015 n'a pas touchées citent encore leur commit d'origine, dont le code qu'elles décrivent n'a pas changé. La page [bilan-v0.1.md](bilan-v0.1.md) reste celle de la v0.1 (état `88ae23c`). Elle est rédigée en français.
 
 ## Par où commencer
 
 Pour lancer le projet sur un PC Windows, sans être développeur : [tutoriel-lancer-en-local.md](tutoriel-lancer-en-local.md).
 
-Pour comprendre le noyau en un quart d'heure : [simulation.md](simulation.md) (schéma d'un pas, piège de `LoopSample`), puis [physique/ascenseur.md](physique/ascenseur.md) (formules et valeurs du niveau 1), puis [jeu.md](jeu.md) (phases du niveau et règles d'issue).
+Pour comprendre le noyau en un quart d'heure : [simulation.md](simulation.md) (schéma d'un pas, piège de `LoopSample`, contrôleur PI), puis [physique/ascenseur.md](physique/ascenseur.md) (formules et valeurs des niveaux 1 et 2), puis [jeu.md](jeu.md) (phases du niveau et règles d'issue).
 
 Pour un tour d'horizon de la version : [bilan-v0.1.md](bilan-v0.1.md), puis [defauts-connus.md](defauts-connus.md).
 
-Pour comprendre ce qui est affiché : [rendu.md](rendu.md) (dessin au crayon) et [interface.md](interface.md) (textes, touches, accessibilité).
+Pour comprendre ce qui est affiché : [rendu.md](rendu.md) (dessin au crayon) et [interface.md](interface.md) (écrans titre et menu, textes, touches, accessibilité).
 
 ## Pages
 
 | Page | Contenu |
 |---|---|
-| [bilan-v0.1.md](bilan-v0.1.md) | bilan de la v0.1 : contenu, chiffres clés, méthode, leçons, suite du parcours |
-| [defauts-connus.md](defauts-connus.md) | défauts connus K1 à K24, par thème, avec gravité et piste de correction |
-| [architecture.md](architecture.md) | modules, règles de dépendances, flux d'une image, garde-fous automatiques |
-| [simulation.md](simulation.md) | noyau de simulation : algorithme d'un pas, exports, horloge, RK4, saturation, déterminisme, procédures d'ajout |
-| [physique/ascenseur.md](physique/ascenseur.md) | modèle de l'ascenseur, formules, valeurs mesurées, fenêtre de réussite, stabilité |
-| [jeu.md](jeu.md) | logique du niveau 1 : phases, commandes, règles d'issue, instantané, événements, géométrie, contrats pour le rendu et l'interface |
-| [rendu.md](rendu.md) | rendu au crayon : démarrage WebGPU/WebGL2, cadrage, papier millimétré, traits, lots et budget, courbe, bonhomme, jauge, mesures |
-| [interface.md](interface.md) | interface du joueur : phases, bandeau d'aide, panneau Kp, table des touches, annonces, disposition, police |
-| [i18n-accessibilite.md](i18n-accessibilite.md) | i18n FR/EN et accessibilité (validés) |
+| [bilan-v0.1.md](bilan-v0.1.md) | bilan de la v0.1 : contenu, chiffres clés, méthode, leçons, suite du parcours (état `88ae23c`, avec des mentions datées) |
+| [defauts-connus.md](defauts-connus.md) | défauts connus K1 à K33, par thème, avec gravité et piste de correction ; défauts corrigés |
+| [architecture.md](architecture.md) | modules (dont `src/app`), règles de dépendances, rôle de `main.ts`, flux d'une image, garde-fous automatiques |
+| [simulation.md](simulation.md) | noyau de simulation : algorithme d'un pas, exports, horloge, RK4, saturation, contrôleur PI, déterminisme, procédures d'ajout |
+| [physique/ascenseur.md](physique/ascenseur.md) | modèle de l'ascenseur, formules, valeurs mesurées, fenêtre de réussite [1000 ; 5000], stabilité, boucle PI du niveau 2 |
+| [jeu.md](jeu.md) | logique des niveaux 1 et 2 : phases, commandes, règles d'issue, valeurs de jeu, instantané, événements, géométrie, contrats pour le rendu et l'interface |
+| [rendu.md](rendu.md) | rendu au crayon : démarrage WebGPU/WebGL2, cycle de vie de la session, cadrage, papier millimétré, traits, lots et budget, courbe, bonhomme, jauge, mesures |
+| [interface.md](interface.md) | interface du joueur : écrans titre et menu, phases, bandeau d'aide, panneau de réglage, niveau 2, table des touches, annonces, disposition, police |
+| [i18n-accessibilite.md](i18n-accessibilite.md) | i18n FR/EN (158 clés par langue) et accessibilité |
 | [tests.md](tests.md) | inventaire des tests unitaires et e2e, oracle, tolérances, couverture, tests de pixels, validation MATLAB, intégration continue |
 | [developpement.md](developpement.md) | prérequis, installation, scripts npm, conventions de code, intégration continue, déploiement |
 | [tutoriel-lancer-en-local.md](tutoriel-lancer-en-local.md) | pas à pas Windows/PowerShell : copie, installation, lancement, jouer, tests, validation MATLAB, dépannage (dont `npm.cmd`) |
@@ -33,6 +33,8 @@ Pour comprendre ce qui est affiché : [rendu.md](rendu.md) (dessin au crayon) et
 | [validation/T-012-v0.1.md](validation/T-012-v0.1.md) | rapport de validation finale de la v0.1, verdict « validée avec réserves » (rédigé par le validateur, non maintenu ici) |
 | [specs/T-001-tranche-verticale.md](specs/T-001-tranche-verticale.md) | spécification de la tranche verticale v0.1 (rédigée par le concepteur, non maintenue ici) |
 | [specs/T-001-errata.md](specs/T-001-errata.md) | corrections de la spécification établies depuis |
+| [specs/T-017-ecran-titre-et-menu.md](specs/T-017-ecran-titre-et-menu.md) | spécification de l'écran titre et du menu des niveaux (rédigée par le concepteur ; seule la section finale « Écarts à la réalisation » est ajoutée ici) |
+| [specs/T-018-niveau-2-ascenseur-ki.md](specs/T-018-niveau-2-ascenseur-ki.md) | spécification du niveau 2 avec Ki (rédigée par le concepteur ; seule la section finale « Écarts à la réalisation » est ajoutée ici) |
 
 ### Décisions (ADR)
 
@@ -52,14 +54,16 @@ Pour comprendre ce qui est affiché : [rendu.md](rendu.md) (dessin au crayon) et
 | [ADR-012](decisions/ADR-012-tests-navigateur.md) | tests navigateur hors de la VM des agents, captures de référence |
 | [ADR-013](decisions/ADR-013-ci-et-pages-manuel.md) | CI à chaque push, déploiement Pages manuel tant que le dépôt est privé |
 | [ADR-014](decisions/ADR-014-protocole-allege.md) | protocole allégé : autonomie, vérification proportionnée, outils natifs de Claude Code |
+| [ADR-015](decisions/ADR-015-etat-application-machine-ecrans.md) | état d'application : machine d'écrans pure (`src/app`), session de rendu unique, niveau jeté au retour au menu |
+| [ADR-016](decisions/ADR-016-controleur-pi-sans-anti-windup.md) | contrôleur PI sans anti-windup, validation unitaire seulement (oracle reporté), tolérance du niveau 2 |
 
 ### Captures
 
-Les images de `img/` sont produites par les tests e2e (T-008 à T-010, T-016), dans Chrome headless avec rendu logiciel. Elles servent de référence visuelle : l'orchestrateur les regarde à chaque exécution (leçon L9). Les pages les intègrent par des liens relatifs.
+Les images de `img/` sont produites par les tests e2e (T-008 à T-010, T-016, T-017, T-020, T-021b), dans Chrome headless avec rendu logiciel ; `t019-*.png` date de T-019. Cinq captures (t009-05, t009-06, t010-01, t010-02, t010-05) viennent de tests dont le réglage a changé depuis : leurs légendes le disent. Elles servent de référence visuelle : l'orchestrateur les regarde à chaque exécution (leçon L9). Les pages les intègrent par des liens relatifs.
 
 ### Pages prévues
 
-Aucune. Toutes les pages du plan de la spec T-001 §10 existent. L'intégration continue et la publication sont décrites dans [developpement.md](developpement.md#intégration-continue) et [tests.md](tests.md#intégration-continue) ; elles ne justifient pas une page à part.
+Aucune. Toutes les pages du plan de la spec T-001 §10 existent ; les pages que la spec T-017 §10 demandait (écrans titre et menu, `src/app`, ADR) sont réalisées dans `interface.md`, `architecture.md` et l'ADR-015. L'intégration continue et la publication sont décrites dans [developpement.md](developpement.md#intégration-continue) et [tests.md](tests.md#intégration-continue) ; elles ne justifient pas une page à part.
 
 ## Titre du jeu
 

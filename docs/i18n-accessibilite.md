@@ -1,6 +1,6 @@
 # Internationalisation et accessibilité
 
-À quoi sert cette page : décrire le module de traduction FR/EN (`src/i18n`, validé en T-006 et complété en T-010) et la façon d'ajouter une clé ou une langue. La seconde partie décrit l'accessibilité réalisée et testée en T-010. État au commit `13e8b7e`.
+À quoi sert cette page : décrire le module de traduction FR/EN (`src/i18n`, validé en T-006 et complété en T-010) et la façon d'ajouter une clé ou une langue. La seconde partie décrit l'accessibilité réalisée et testée en T-010. État au commit `119519b`.
 
 ## Partie 1 — i18n (validé, T-006)
 
@@ -8,7 +8,7 @@
 
 Le module est pur : il n'importe que lui-même (règle `i18n-is-pure` de dependency-cruiser) et n'utilise aucune bibliothèque externe ([ADR-007](decisions/ADR-007-i18n-maison.md)). Il ne touche pas au DOM : l'appelant lui passe `location.search` et `navigator.languages`.
 
-Il est branché depuis T-010 : `src/main.ts` crée le traducteur avec `detectLocale(location.search, navigator.languages)`, écrit `<html lang>` et le titre du document, et le passe à l'interface (`src/ui`), qui affiche tous les textes et propose le bouton de langue (voir [interface.md](interface.md#langue)).
+Il est branché depuis T-010 : `src/main.ts` crée le traducteur avec `detectLocale(location.search, navigator.languages)`, écrit `<html lang>` et le titre du document (et les met à jour à chaque changement de langue, par un abonnement ; c'était le rôle de l'interface du niveau avant T-017), et le passe aux écrans titre et menu et à l'interface du niveau (`src/ui`), qui affichent tous les textes et proposent le bouton de langue (voir [interface.md](interface.md#langue)).
 
 | Fichier | Rôle |
 |---|---|
@@ -24,7 +24,7 @@ Il est branché depuis T-010 : `src/main.ts` crée le traducteur avec `detectLoc
 ### Structure des locales
 
 - Un fichier JSON plat par langue : `{ "clé": "texte", … }`, sans imbrication.
-- 115 clés par langue, les mêmes dans les deux fichiers (comptage par script au commit `13e8b7e` ; 111 au commit `566a8a3`, T-014 en a ajouté 4 ; parité vérifiée par `tests/i18n/catalogs.test.ts`). T-006 en avait créé 89 ; T-010 en a ajouté 22 (liste plus bas).
+- 158 clés par langue, les mêmes dans les deux fichiers (comptage par script au commit `119519b` ; 115 au commit `13e8b7e`, 111 à `566a8a3`, T-014 en avait ajouté 4 ; parité vérifiée par `tests/i18n/catalogs.test.ts`). T-006 en avait créé 89 ; T-010 en a ajouté 22 (liste plus bas) ; T-017d, T-019 et T-021b en ont ajouté 43 (section « Clés ajoutées depuis T-017 »).
 - Fins de ligne LF, aucune clé dupliquée, aucune valeur vide (tests).
 
 ### Convention de clés
@@ -40,13 +40,16 @@ Exemples : `level1.fail.noLift`, `hud.status.win`. Aucune clé n'est le préfixe
 | Préfixe | Usage | Clés |
 |---|---|---|
 | `app.` | titre, chargement, langue, erreurs générales, invite de rotation | 10 |
+| `title.` | écran titre : bouton « Jouer », copyright, licence (T-017d) | 3 |
+| `menu.` | menu des niveaux : titre, retour, nom de la liste, annonces d'écran (T-017d) | 5 |
 | `level1.` | textes du niveau 1 : objectif, Kp, échecs, victoire | 25 |
-| `hud.` | courbes, légende, valeurs affichées, messages d'état, bandeau d'aide, étiquette de Kp | 38 |
-| `controls.` | boutons, aide des commandes, noms des touches | 24 |
+| `level2.` | textes du niveau 2 : objectif, Kp fixé, Ki, échecs, victoire (T-021b) | 18 |
+| `hud.` | courbes, légende, jauge, valeurs affichées, messages d'état, bandeau d'aide, étiquettes de Kp et de Ki | 49 |
+| `controls.` | boutons, aide des commandes, noms des touches | 30 |
 | `a11y.` | noms accessibles et descriptions pour lecteurs d'écran | 7 |
 | `fallback.` | page de repli : sans WebGPU ni WebGL2, contexte GPU perdu (`fallback.lost.*`), erreur inattendue (`fallback.error.*`) | 11 |
 
-Un texte identique en FR et en EN est suspect (oubli de traduction). Seules cinq clés y ont droit, avec une raison écrite dans le test : `controls.pause`, `controls.action`, `level1.dimension`, `app.title`, `hud.kp.value`.
+Un texte identique en FR et en EN est suspect (oubli de traduction). Seules neuf clés y ont droit, avec une raison écrite dans le test (cinq jusqu'à T-016) : `controls.pause`, `controls.action`, `controls.menu`, `level1.dimension`, `app.title`, `hud.gauge.max`, `hud.ki.tag`, `hud.kp.value`, `title.copyright`. Les préfixes `title.`, `menu.` et `level2.` sont dans la liste `PREFIXES` du test.
 
 Titre du jeu : `app.title` vaut « Huygens’s world » dans les deux langues (apostrophe typographique U+2019), titre provisoire décidé par l'utilisateur en hommage à Christiaan Huygens (décision D15). T-006 avait proposé « PID au crayon » / « Pencil PID » ; T-010 l'a remplacé.
 
@@ -79,6 +82,24 @@ Titre du jeu : `app.title` vaut « Huygens’s world » dans les deux langues (a
 
 Dans `hud.hint.item`, l'espace avant « : » est U+00A0 en français. Aucune clé n'a été supprimée ; seule `app.title` a changé de valeur.
 
+### Clés ajoutées depuis T-017
+
+43 clés ajoutées (158 − 115), identiques en nombre dans les deux langues. Textes et valeurs : `src/i18n/locales/fr.json` et `en.json`, décrits par page : [interface.md](interface.md) (écrans, jauge, niveau 2), [jeu.md](jeu.md) (règles du niveau 2).
+
+| Tâche | Préfixe | Clés |
+|---|---|---|
+| T-017d | `title.` | `play`, `copyright`, `license` |
+| T-017d | `menu.` | `title`, `back`, `listLabel`, `announce.title`, `announce.menu` |
+| T-017e | `controls.` | `menu` (bouton « Menu ») |
+| T-019 | `hud.` | `gauge.title`, `gauge.max`, `gauge.weight` |
+| T-021b | `level2.` | `title`, `goal`, `kp.fixed`, `ki.label`, `ki.help`, `ki.field`, `ki.valueText`, `ki.range`, `ki.locked`, `failTitle.step`, `failTitle.slow`, `failTitle.bonk`, `fail.step`, `fail.slow`, `fail.bonk`, `saturation`, `winTitle`, `win` |
+| T-021b | `hud.` | `status.readyKi`, `status.launchKi`, `status.winKi`, `status.fail.slow`, `status.resetKi`, `ki.tag`, `hint.tuneKi`, `hint.lockedKi` |
+| T-021b | `controls.` | `kiDecrease`, `kiIncrease`, `help.ki`, `help.pauseKi`, `help.touchKi` |
+
+Valeurs modifiées sans nouvelle clé : T-019 et T-020 (vocabulaire « plateau d'arrivée » à la place de « quai » en français, nombres 0,5 m et 3,36 m dans `level1.fail.step`, `level1.fail.bonk`, `hud.status.fail.step`, `hud.status.fail.bonk` ; `level1.goal` réécrit ; `hud.legend.setpoint`, `hud.status.win`, `level1.win`), T-021b (`level1.comingSoon` : « Le niveau 2 t’attend dans le menu : merci d’avoir joué ! »), P-006 (`fallback.lost.explanation` et `fallback.error.explanation` : « recommencer » au lieu de « reprendre »). Le test des nombres physiques cités (`catalogs.test.ts`) a été mis à jour en conséquence.
+
+**Copyright.** `title.copyright` vaut « Copyright (c) 2026 lucashg7892 » dans les deux langues, `title.license` « Licence MIT » / « MIT License ». `tests/i18n/license.test.ts` (5 tests) les compare au fichier `LICENSE` : exactement une ligne de copyright, année et titulaire, première ligne de la licence, et aucune autre clé qui contienne « copyright » ou « © ».
+
 ### Interpolation
 
 Un texte peut contenir des paramètres `{nom}`, où `nom` suit `[A-Za-z_][A-Za-z0-9_]*`. `{{` et `}}` produisent des accolades littérales.
@@ -102,7 +123,7 @@ Les messages d'erreur citent la clé d'origine quand elle est connue.
 
 - `MessageKey` est dérivé de `fr.json` (`keyof typeof fr`). Une clé absente du français ne compile pas.
 - Le catalogue anglais est typé `Catalog` contre le français : une clé manquante en anglais ne compile pas.
-- `MESSAGE_PARAMS` liste les paramètres de chaque clé qui en a (15 clés : T-010 a ajouté `hud.kp.value` et `hud.hint.item`). Un test vérifie que cette table correspond exactement aux `{…}` des deux catalogues.
+- `MESSAGE_PARAMS` liste les paramètres de chaque clé qui en a (22 clés au commit `119519b` ; 15 avant T-017 : T-010 avait ajouté `hud.kp.value` et `hud.hint.item`). Un test vérifie que cette table correspond exactement aux `{…}` des deux catalogues.
 - `t` a deux surcharges :
 
 ```ts
@@ -138,7 +159,7 @@ Un paramètre oublié, en trop ou mal nommé est donc refusé à la compilation.
 | nombre et unité | séparés par U+00A0 : `0,2 m` | U+00A0 : `0.2 m` |
 | pour cent | `12,5 %` (U+00A0) | `12.5%` (collé) |
 
-Unités disponibles (`Unit`) : `m`, `N`, `N/m`, `s`, `%`.
+Unités disponibles (`Unit`) : `m`, `N`, `N/m`, `N/(m·s)` (ajoutée par T-021b pour Ki), `s`, `%`.
 
 Erreurs : `RangeError` si la valeur n'est pas finie (NaN et ±Infinity ne sont jamais affichés) ou si les décimales ne sont pas des entiers de 0 à 20 avec minimum ≤ maximum.
 
@@ -174,7 +195,7 @@ Détails : une même fonction n'est abonnée qu'une fois ; un abonnement ou dés
 
 ### Exports de `src/i18n/index.ts`
 
-Liste complète au commit `c00e678`, inchangée à `13e8b7e` : 18 valeurs (dont la classe `I18nError`) et 12 types.
+Liste complète au commit `c00e678`, inchangée à `119519b` (seul le type `Unit` a gagné `'N/(m·s)'`) : 18 valeurs (dont la classe `I18nError`) et 12 types.
 
 | Nom | Nature | Rôle |
 |---|---|---|
@@ -205,7 +226,7 @@ Liste complète au commit `c00e678`, inchangée à `13e8b7e` : 18 valeurs (dont 
 | `MessageParams` | type | objet de paramètres d'une clé, valeurs `string` |
 | `TemplatePart` | type | morceau de gabarit : texte ou paramètre |
 | `NumberFormatOptions` | type | `minimumFractionDigits`, `maximumFractionDigits` |
-| `Unit` | type | `'m' \| 'N' \| 'N/m' \| 's' \| '%'` |
+| `Unit` | type | `'m' \| 'N' \| 'N/m' \| 'N/(m·s)' \| 's' \| '%'` |
 | `Translator` | type | traducteur |
 | `LocaleListener` | type | `(locale, previous) => void` |
 
@@ -223,7 +244,7 @@ Liste complète au commit `c00e678`, inchangée à `13e8b7e` : 18 valeurs (dont 
 Le code suppose aujourd'hui deux langues. Étapes :
 
 1. Ajouter l'étiquette BCP 47 à `SUPPORTED_LOCALES` (`src/i18n/catalogs.ts`).
-2. Créer `src/i18n/locales/<langue>.json` avec les 111 clés, l'importer dans `catalogs.ts`, le typer `Catalog` et l'ajouter à `CATALOGS`.
+2. Créer `src/i18n/locales/<langue>.json` avec les 158 clés, l'importer dans `catalogs.ts`, le typer `Catalog` et l'ajouter à `CATALOGS`.
 3. Revoir `otherLocale` : il renvoie l'autre langue d'une paire. Avec trois langues, la bascule doit devenir un choix.
 4. Revoir `formatQuantity` : le collage de `%` est codé pour l'anglais seulement.
 5. Ajouter les règles typographiques de la langue dans `tests/i18n/catalogs.test.ts` (les tests actuels traitent FR et EN nommément).
@@ -232,7 +253,7 @@ Le code suppose aujourd'hui deux langues. Étapes :
 
 ## Partie 2 — Accessibilité (validé, T-010)
 
-Réalisée en T-010 (`src/ui`), testée par les scénarios e2e (d), (e) et (f) de `tests/e2e/ui.spec.ts`, en français et en anglais. Les tests e2e sont exécutés par l'orchestrateur, pas par le rédacteur : 28 tests verts à `566a8a3` (log T-010 ; voir [tests.md](tests.md#tests-de-bout-en-bout-playwright)).
+Réalisée en T-010 (`src/ui`), testée par les scénarios e2e (d), (e) et (f) de `tests/e2e/ui.spec.ts`, en français et en anglais. Les tests e2e sont exécutés par l'orchestrateur, pas par le rédacteur : 28 tests verts à `566a8a3` (log T-010), 41 verts à la fin de T-020 (log T-020) et 58 verts à la fin de T-021a (log T-021a) ; `npx.cmd playwright test --list` en liste 69 au commit `119519b`, dont le rédacteur n'a exécuté aucun (voir [tests.md](tests.md#tests-de-bout-en-bout-playwright)).
 
 | Exigence de la spec §8 | Réalisation | Preuve |
 |---|---|---|
@@ -244,12 +265,15 @@ Réalisée en T-010 (`src/ui`), testée par les scénarios e2e (d), (e) et (f) d
 | perte de focus | marche arrêtée ; pause automatique pendant un trajet, pas en approche | e2e (f) et (f bis) |
 | fenêtre d'aide modale (T-015) | `role="dialog"` avec `aria-modal="true"` ; focus sur « Fermer l’aide » à l'ouverture, piégé dans l'aide, rendu à l'ouvreur à la fermeture ; pause pendant un trajet | e2e (j) à (m) ; `tests/ui/help.test.ts` |
 | bouton Pause (T-015) | nom accessible fixé par son libellé, sans `aria-pressed` ; focus sur « Rejouer le niveau » à l'apparition de l'issue | e2e (n) |
+| écrans titre et menu (T-017) | deux `<main>` nommés par leur titre ; boutons natifs d'au moins 44 px ; focus posé à l'arrivée (« Jouer », ou le niveau quitté) ; phrase annoncée dans une région `aria-live` de l'écran (`menu.announce.title`, `menu.announce.menu`) ; canvas `aria-hidden` hors d'un niveau, son nom rétabli à l'entrée dans un niveau ; ↑ ↓ et Échap au menu ; aucune animation | e2e `screens.spec.ts` (FR et EN) ; `tests/ui/screen-keys.test.ts`, `screens-model.test.ts` ; **pas d'essai avec un vrai lecteur d'écran** |
+| aide ouverte (T-017abc) | papier opaque (K23) ; commandes du niveau suspendues tant que l'aide est ouverte (K24) | e2e (o) et (p) de `ui.spec.ts` |
+| étiquettes de la jauge (T-019) | `aria-hidden` : le panneau des mesures et le nom de la jauge portent la même information | e2e (a) de `ui.spec.ts` |
 | couleurs : motif en plus de la teinte | consigne en pointillés, hauteur en trait plein, erreur hachurée ; seul le rouge de la jauge saturée est une couleur | captures ; [rendu.md](rendu.md#courbe-yt) |
 | contrastes ≥ 4,5:1 | texte ≈ 14:1, secondaire ≈ 9:1, rouge ≈ 7:1, déclarés dans `src/ui/ui.css` | **non mesuré par un test** |
-| mouvement réduit | « boiling » figé (`prefers-reduced-motion`), transitions CSS supprimées ; il n'y a pas de secousse de caméra | `tests/render/noise.test.ts`, `level-painter.test.ts` ; non testé en e2e |
+| mouvement réduit | « boiling » figé (`prefers-reduced-motion`), transitions CSS supprimées ; il n'y a pas de secousse de caméra ; les écrans titre et menu n'ont aucune animation | `tests/render/noise.test.ts`, `level-painter.test.ts` ; non testé en e2e (K13 ; la spec T-017 prévoyait un e2e en mouvement réduit émulé, il n'existe pas dans la liste des tests) |
 | sans WebGPU ni WebGL2 | page de repli statique traduite, sans exception | e2e `?renderer=none` (FR, EN) |
 | perte du contexte GPU, exception inattendue (T-014) | page de repli traduite, interface retirée (pas de boutons morts) | `tests/e2e/failure.spec.ts` (FR, EN) |
-| langue | bouton avec l'attribut `lang` de l'autre langue ; `<html lang>` mis à jour ; Kp et phase conservés | e2e (c) |
+| langue | bouton avec l'attribut `lang` de l'autre langue ; `<html lang>` mis à jour (par `main.ts` depuis T-017) ; Kp et phase conservés ; langue conservée entre titre, menu et niveau | e2e (c) de `ui.spec.ts`, (e) de `screens.spec.ts` |
 | tactile | boutons ◀ ▶ « Action » de 56 × 56 px (spec : ≥ 44 × 44) sur écran à pointeur grossier | **non essayé sur un vrai écran tactile** (log T-010) |
 
 Rendu de U+202F dans la police manuscrite : Patrick Hand couvre la plage U+2000-206F (`unicode-range` du sous-ensemble latin, `src/ui/ui.css`). Le rendu effectif n'a pas été vérifié par un test.

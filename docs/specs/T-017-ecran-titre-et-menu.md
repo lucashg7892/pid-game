@@ -364,3 +364,28 @@ Recommandation : option 1. Raison : cohérent avec D23 (Échap ferme ou recule) 
 Recommandation : option 1. Raison : option 2 ajoute un état partagé avec l'URL, des cas limites (rechargement en plein niveau, liens profonds, mode e2e) et n'est pas demandé par D22 ; à reprendre si des joueurs en demandent.
 
 Ce que la spec ne tranche pas non plus et laisse au réalisateur (décisions de détail, à signaler en une ligne dans son compte rendu) : noms de fichiers internes, structure interne du DOM des écrans, forme exacte du garde de K24 (`inert` ou garde), gestion d'une commande reçue pendant une notification de la machine.
+
+## Écarts à la réalisation
+
+Section ajoutée par le rédacteur après la réalisation, sur l'état du commit `119519b` (2026-11-13). Le reste de cette spec, rédigé par le concepteur au commit `0db54c1`, n'est pas modifié ; quand la spec et le code divergent, le code fait foi. Sources : le code et les tests du commit `119519b`, les commits `7e61f7d`, `6aef101` et `e9ce171`. Aucun log de T-017 n'a été lu par le rédacteur.
+
+### Ce qui a été réalisé, sous quels noms
+
+| Tâche de la spec | Réalisée sous le nom | Commit | Contenu réel |
+|---|---|---|---|
+| T-017a, T-017b, T-017c | **T-017abc** (classée N2 dans le message du commit ; la spec classait T-017b en N3, retouche d'un rendu approuvé) | `7e61f7d` | `src/app` (`index.ts`, `screens.ts`, `levels.ts`), règle `app-is-pure`, `render-deps` étendue à `app`, `tsconfig.sim.json` ; `RenderSession.attachLevel` et `detachLevel` ; `Ui.destroy()`, K23 (papier de l'aide opaque), K24 (`commandsBlocked`), `<html lang>` et titre du document déplacés vers `main.ts`, nom et `aria-hidden` du canvas |
+| T-017d | **T-017d** | `6aef101` | `src/ui/screens.ts`, `screens-model.ts`, `screen-keys.ts`, `screens.css` ; clés `title.` (3) et `menu.` (5) ; `tests/i18n/license.test.ts` |
+| T-017e | **T-017e** | `e9ce171` | composition dans `main.ts`, bouton « Menu », K18 (`ResizeObserver`), mode `?e2e=1&screen=`, `tests/e2e/screens.spec.ts`, captures `t017-*.png` |
+
+### Écarts
+
+- **Les e2e sans `e2e=1` passent désormais par le titre** : `open()` de `ui.spec.ts` clique « Jouer » puis le premier niveau. Avec `?e2e=1`, le paramètre `screen` (défaut `level1`) garde les autres tests valables sans réécriture, comme prévu au §3.3 ; il accepte en plus la valeur `level2` (ajoutée par T-021b).
+- **Bouton de retour au menu** (Q3) : réalisé selon l'option (ii) : visible **en pause** (barre du haut) et dans le **panneau d'issue**, pas en permanence dans la barre du haut. Pas de confirmation ; niveau jeté au retour. En portrait étroit (≤ 700 px), le titre et l'étiquette Kp de la barre sont masqués par CSS en pause pour faire tenir les quatre boutons : le risque R3 a été traité ainsi (défaut K26, à valider côté design).
+- **Écran titre** (Q2) : option 2 (titre, sous-titre `app.tagline`, bouton « Jouer », bouton de langue, copyright). Pas de `title.screenLabel` : le `<h1>` nomme l'écran. Le copyright est la ligne exacte de `LICENSE` (Q5 option i), sur le titre seulement, sans lien ; il est posé directement sur le papier et une ligne de grille le traverse (K27).
+- **Menu** : nom du niveau seul (Q4 contenu i) ; le niveau 2 y est entré avec T-021b, jouable (la spec ne prévoyait qu'une entrée). Pas de sauvegarde ni de déblocage (Q1 option 1). Échap : titre, rien ; menu, retour (Q6 option 1). Pas de gestion du bouton « Précédent » (Q7 option 1).
+- **Annonce d'écran** : chaque écran porte sa propre région `aria-live="polite"`, écrite 100 ms après le montage ; la spec prévoyait une région permanente hors de l'interface du niveau.
+- **Clés** : 8 clés (`title.play`, `title.copyright`, `title.license`, `menu.title`, `menu.back`, `menu.listLabel`, `menu.announce.title`, `menu.announce.menu`) plus `controls.menu` (T-017e). La liste des textes identiques en FR et EN est passée de 5 à 9 entrées avec les tâches suivantes (`title.copyright`, `controls.menu`, `hud.gauge.max`, `hud.ki.tag`), pas de 5 à 6. Total de clés au commit `119519b` : 158 (115 au commit de la spec).
+- **Tests prévus au §8 non réalisés** : l'e2e tactile émulé (`hasTouch`) et l'e2e en mouvement réduit émulé (K13 reste ouvert pour les écrans) ; la capture de l'aide ouverte pendant un trajet (K23) n'est pas dans `docs/img/` (`ui.spec.ts` (p) ne l'écrit que si la variable d'environnement `CAPTURE_DIR` est définie). Le test des allers-retours (e), le test de langue (g), le repli `?renderer=none` (h) et le repli après échec sur le menu existent (`screens.spec.ts` (d), (e), (f), (g)).
+- **Défauts de la §7** : K23, K24 et K18 sont corrigés comme prévu ; K10 et K22 restent ouverts ; K9 s'étend aux nouveaux écrans.
+- **Chiffres relevés au commit `119519b`** : `lint:arch` compte 67 modules (la spec n'en donnait pas), 9 règles (8 avant) ; `npm test` 586 tests ; `npx playwright test --list` 69 tests dans 7 fichiers.
+- **Documentation** (§10) : réalisée par D-015 ; la spec demandait « jeu.md : le niveau est recréé à chaque entrée depuis le menu », fait ; ADR-015 créée.

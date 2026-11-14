@@ -26,6 +26,7 @@ Le niveau 1 enchaîne marche, réglage, trajet, issue et pause (spec T-001 §6).
 - Le rendu et l'interface ne doivent ni conserver l'instantané ni les objets d'événements : ils les lisent et copient ce qu'ils gardent.
 - Au-delà de 32 événements non consommés, les plus anciens sont perdus ; l'interface doit appeler `drainEvents` à chaque image.
 - `Level1` n'expose pas le compteur `dropped` de la file.
+- Depuis T-021b (2026-11-13), la machine à cinq phases est extraite dans `createElevatorLevel` (`src/game/elevator-level.ts`), paramétrée par un identifiant, un réglage, une boucle et un arbitre ; `createLevel1` et `createLevel2` n'en sont que des enveloppes. Les décisions ci-dessus (instantané unique, file d'événements, `CommandResult`) s'appliquent à l'identique aux deux niveaux ; l'écran courant n'est pas une phase du niveau : il vit dans `src/app` ([ADR-015](ADR-015-etat-application-machine-ecrans.md)).
 
 Détails : [jeu.md](../jeu.md).
 

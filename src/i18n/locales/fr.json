@@ -111,7 +111,7 @@
   "fallback.tip.device": "Sinon, essaie sur un autre appareil.",
   "fallback.docs": "En savoir plus sur le projet",
   "fallback.lost.title": "L’affichage a été interrompu",
-  "fallback.lost.explanation": "Le navigateur a perdu la connexion avec la carte graphique, et le jeu ne peut plus dessiner sa scène. Recharge la page pour reprendre : ta progression dans le niveau sera perdue.",
+  "fallback.lost.explanation": "Le navigateur a perdu la connexion avec la carte graphique, et le jeu ne peut plus dessiner sa scène. Recharge la page pour recommencer : ta progression dans le niveau sera perdue.",
   "fallback.error.title": "Le jeu a rencontré un problème",
-  "fallback.error.explanation": "Une erreur inattendue a arrêté le jeu. Recharge la page pour reprendre : ta progression dans le niveau sera perdue."
+  "fallback.error.explanation": "Une erreur inattendue a arrêté le jeu. Recharge la page pour recommencer : ta progression dans le niveau sera perdue."
 }

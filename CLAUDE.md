@@ -59,6 +59,9 @@ Un commit par tâche validée, fait par l'orchestrateur, au nom de lucashg7892 <
 
 Claude Code tourne maintenant en local sur Windows, avec un vrai navigateur possible et les outils de fichiers ordinaires. Les points ci-dessous viennent de l'expérience de la v0.1 (leçons du registre) et ne valent que pour les sessions pilotées à distance (« session distante »), pas pour une session locale. Les e2e se lancent en local avec `npm.cmd run e2e` si Playwright est installé.
 
+- Depuis Git Bash, lancer l'e2e par `powershell -NoProfile -Command "npm.cmd run e2e"` (l'espace dans le chemin casse `npm.cmd` sinon).
+- L'e2e réécrit les PNG de `docs/img/` : après chaque e2e, lancer `git status` et ne committer que les captures voulues (restaurer les autres avec `git checkout -- docs/img`).
+
 ### Session distante
 
 - Le dépôt n'est accessible aux agents que par `device_bash`, dans `$HOME/mnt/PID_GAME`, jamais par leurs outils de fichiers locaux.

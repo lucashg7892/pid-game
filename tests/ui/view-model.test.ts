@@ -100,7 +100,7 @@ describe('modèle de vue par phase', () => {
     expect(fr.hintId).toBe('walk');
     expect(hintText(fr.hint)).toBe(HINTS.fr.walk);
     expect(fr.bubble).toBe(CATALOGS.fr['level1.goal']);
-    expect(fr.kpTag).toBe(`Kp = 500${NB}N/m`);
+    expect(fr.kpTag).toBe(`Kp = 2000${NB}N/m`);
     expect(fr.panelOpen).toBe(false);
     expect(fr.readoutVisible).toBe(false);
     expect(fr.outcomeVisible).toBe(false);

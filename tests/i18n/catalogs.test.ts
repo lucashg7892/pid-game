@@ -17,6 +17,8 @@ import {
   placeholdersOf,
   type MessageKey,
 } from '../../src/i18n';
+import { LEVEL2_ARRIVAL_TOLERANCE, TRIP_MAX_STEPS } from '../../src/game';
+import { SIM_DT } from '../../src/sim';
 
 const FR = CATALOGS.fr;
 const EN = CATALOGS.en;
@@ -176,6 +178,30 @@ describe('CA-2 : clés de la spec T-001 §6', () => {
     expect(EN['level1.fail.bonk']).toContain(`3.36${NBSP}m`);
     expect(FR['level1.win']).toContain('m·g/Kp');
     expect(EN['level1.win']).toContain('m·g/Kp');
+  });
+
+  it('niveau 2 : durée (10 s) et tolérance (0,1 m) citées = constantes du jeu (T-022)', () => {
+    expect(TRIP_MAX_STEPS * SIM_DT).toBeCloseTo(10, 12);
+    expect(LEVEL2_ARRIVAL_TOLERANCE).toBe(0.1);
+    for (const key of ['level2.fail.step', 'hud.status.fail.stepKi'] as const) {
+      expect(FR[key], key).toContain(`10${NBSP}s`);
+      expect(EN[key], key).toContain(`10${NBSP}s`);
+      expect(FR[key], key).toContain(`0,1${NBSP}m`);
+      expect(EN[key], key).toContain(`0.1${NBSP}m`);
+      expect(FR[key], key).not.toContain(`0,5${NBSP}m`);
+      expect(EN[key], key).not.toContain(`0.5${NBSP}m`);
+    }
+    for (const key of ['level2.fail.slow', 'hud.status.fail.slow'] as const) {
+      expect(FR[key], key).toContain(`10${NBSP}s`);
+      expect(EN[key], key).toContain(`10${NBSP}s`);
+    }
+    expect(FR['level2.goal']).toContain(`0,1${NBSP}m`);
+    expect(EN['level2.goal']).toContain(`0.1${NBSP}m`);
+    for (const l of SUPPORTED_LOCALES) {
+      for (const [key, value] of Object.entries(CATALOGS[l])) {
+        expect(value, `${l}:${key}`).not.toContain(`6${NBSP}s`);
+      }
+    }
   });
 });
 

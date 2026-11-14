@@ -61,7 +61,7 @@ export function announcementFor(
             ? tr.t('hud.status.winKi', { e: formatError(tr, Math.abs(s.finalError ?? s.e)) })
             : tr.t('hud.status.win', { e });
         case 'step':
-          return tr.t('hud.status.fail.step', { e });
+          return tr.t(ki ? 'hud.status.fail.stepKi' : 'hud.status.fail.step', { e });
         case 'slow':
           return tr.t('hud.status.fail.slow');
         case 'noLift':

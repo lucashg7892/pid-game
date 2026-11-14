@@ -72,8 +72,8 @@ describe('LevelPainter', () => {
   for (const [kp, outcome, k] of [
     [2500, 'win', 291],
     [7000, 'bonk', 56],
-    [800, 'step', 720],
-    [100, 'noLift', 720],
+    [800, 'step', 1200],
+    [100, 'noLift', 1200],
   ] as const) {
     it(`Kp = ${String(kp)} : ${outcome} au pas ${String(k)}, sans débordement, budget tenu`, () => {
       const painter = new LevelPainter();

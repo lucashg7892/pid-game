@@ -39,7 +39,7 @@ function defaultLoop(kp: number): SteppableClosedLoop {
 
 /**
  * Crée le niveau 1 en phase `approach` : bonhomme à l'entrée, cabine au sol, Kp initial (défaut
- * 500 N/m), essai n° 1. Mince enveloppe de la machine commune ({@link createElevatorLevel}).
+ * 2000 N/m), essai n° 1. Mince enveloppe de la machine commune ({@link createElevatorLevel}).
  * @param options voir {@link Level1Options}.
  * @throws RangeError si `options.initialKp` n'est pas fini ou sort de [0 ; 8000].
  */

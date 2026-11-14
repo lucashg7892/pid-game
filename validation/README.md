@@ -27,7 +27,7 @@ MATLAB sert uniquement à la validation : rien de ce dossier n'est importé par 
 | `matlab/t005_run_all.m`     | enchaîne A à E                                                                          |
 | `data/ts_traj_dt120.csv`    | trajectoires TS (y, ẏ) pour 12 Kp, dt = 1/120 s, 1200 pas, 17 chiffres significatifs    |
 | `data/ts_traj_dt240.csv`    | idem, dt = 1/240 s, 2400 pas (contrôle de l'ordre 4)                                    |
-| `data/ts_sweep_summary.csv` | balayage TS Kp = 100…8000 sur 720 pas : y_max, état final, pas saturés, issue, pas      |
+| `data/ts_sweep_summary.csv` | balayage TS Kp = 100…8000 sur 1200 pas : y_max, état final, pas saturés, issue, pas     |
 
 ## Relancer la validation
 
@@ -91,7 +91,7 @@ it('export', () => {
     let run = 0;
     let issue = '';
     let kIssue = -1;
-    for (let k = 1; k <= 720; k++) {
+    for (let k = 1; k <= 1200; k++) {
       const s = loop.step();
       if (s.saturated) sat++;
       const y = s.x[0] as number;
@@ -114,7 +114,7 @@ it('export', () => {
     }
     if (issue === '') {
       issue = kp <= 163.5 ? 'decolle_pas' : 'trop_faible';
-      kIssue = 720;
+      kIssue = 1200;
     }
     lines.push(
       [kp, f(yMax), kMax, f(loop.x[0] as number), f(loop.x[1] as number), sat, issue, kIssue].join(

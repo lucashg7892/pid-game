@@ -4,11 +4,13 @@
  * à un Ki fort, verrou pendant le trajet, retour au menu (pause et issue), crochet de test, niveau 1
  * inchangé, absence de recouvrement en 1280×720 et 390×844.
  *
- * Mesures du vrai niveau (boucle PI du noyau, sans anti-windup) : victoire pour Ki de 0 à 800
- * N/(m·s), choc contre la poutre de 900 à 8000.
+ * Mesures du vrai niveau (boucle PI du noyau, sans anti-windup, tolérance 0,1 m, 10 s, T-022) sur
+ * la grille de Ki : trop court de 0 à 100 N/(m·s), victoire de 200 à 800, choc contre la poutre de
+ * 900 à 8000 ; le Ki par défaut (2000) heurte la poutre.
  *
  * Captures : cinq PNG dans docs/img/t021-*.png (menu à deux entrées, réglage, victoire, choc, réglage
- * en portrait) ; les autres, seulement si la variable CAPTURE_DIR est définie.
+ * en portrait) et docs/img/t022-niveau2-trop-court.png (Ki = 0, fin de temps) ; les autres,
+ * seulement si la variable CAPTURE_DIR est définie.
  */
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
@@ -172,7 +174,7 @@ for (const lang of ['fr', 'en'] as const) {
     expect((await run(page, [])).levelId).toBe('level2');
 
     // Étiquette permanente (Kp reste, Ki s'y ajoute), bulle d'ouverture, titre du canvas.
-    await expect(page.locator('#ui .ui-kp-tag')).toHaveText(`Kp = 2500 · Ki = 500`);
+    await expect(page.locator('#ui .ui-kp-tag')).toHaveText(`Kp = 2500 · Ki = 2000`);
     await expect(page.locator('#ui .ui-bubble')).toHaveText(t('level2.goal'));
 
     await run(page, TO_CONSOLE);
@@ -180,16 +182,20 @@ for (const lang of ['fr', 'en'] as const) {
     await expect(page.locator('#ui .ui-fixed')).toHaveText(
       t('level2.kp.fixed').replace('{kp}', '2500'),
     );
-    await expect(page.locator('#ui .ui-kp-value')).toHaveText(`500${NB}N/(m·s)`);
+    await expect(page.locator('#ui .ui-kp-value')).toHaveText(`2000${NB}N/(m·s)`);
     await expect(page.locator('#ui .ui-panel')).toContainText(t('level2.ki.help'));
     await expect(page.locator('#ui .ui-panel')).toContainText(t('level2.ki.range'));
     await expect(banner).toContainText(lang === 'fr' ? 'régler Ki' : 'set Ki');
 
-    // Clavier : + trois fois = 800 (bornes du curseur et du champ : [0 ; 8000], pas de 100).
+    // Clavier, depuis le défaut 2000 : Page suiv. (− 1000), puis − trois fois et + une fois = 800
+    // (bornes du curseur et du champ : [0 ; 8000], pas de 100).
     await expect(slider(page)).toHaveAttribute('min', '0');
     await expect(slider(page)).toHaveAttribute('max', '8000');
     await expect(slider(page)).toHaveAttribute('step', '100');
-    for (let i = 0; i < 3; i += 1) await page.keyboard.press('+');
+    await page.keyboard.press('PageDown');
+    await expect(slider(page)).toHaveValue('1000');
+    for (let i = 0; i < 3; i += 1) await page.keyboard.press('-');
+    await page.keyboard.press('+');
     await expect(page.locator('#ui .ui-kp-value')).toHaveText(`800${NB}N/(m·s)`);
     await expect(slider(page)).toHaveValue('800');
     await expect(page.locator('#ui .ui-kp-tag')).toHaveText('Kp = 2500 · Ki = 800');
@@ -335,7 +341,7 @@ for (const lang of ['fr', 'en'] as const) {
     await level2Button(page).click();
     const fresh = await run(page, []);
     expect(fresh.phase).toBe('approach');
-    expect(fresh.ki).toBe(500);
+    expect(fresh.ki).toBe(2000);
     expect(problems, CONSOLE_FAILURE).toEqual([]);
   });
 
@@ -343,12 +349,12 @@ for (const lang of ['fr', 'en'] as const) {
     const problems = await open(page, `e2e=1&screen=menu&lang=${lang}`);
     await page.getByRole('button', { name: t('level1.title'), exact: true }).click();
     await expect(page.locator('#ui .ui-banner')).toBeVisible();
-    await expect(page.locator('#ui .ui-kp-tag')).toHaveText(`Kp = 500${NB}N/m`);
+    await expect(page.locator('#ui .ui-kp-tag')).toHaveText(`Kp = 2000${NB}N/m`);
     await expect(page.locator('#ui .ui-bubble')).toHaveText(t('level1.goal'));
     await run(page, TO_CONSOLE);
     await expect(page.getByRole('slider', { name: t('level1.kp.label') })).toBeFocused();
     await expect(page.locator('#ui .ui-fixed')).toBeHidden();
-    await expect(page.locator('#ui .ui-kp-value')).toHaveText(`500${NB}N/m`);
+    await expect(page.locator('#ui .ui-kp-value')).toHaveText(`2000${NB}N/m`);
     const s = await run(page, [['setKp', 2500], ['setKi', 100], ['launch'], ['advance', 4]]);
     expect(s.levelId).toBe('level1');
     expect(s.results.slice(0, 2)).toEqual(['accepted', 'ignored']);
@@ -365,20 +371,30 @@ for (const lang of ['fr', 'en'] as const) {
   });
 }
 
-test('(e) crochet de test : issues du vrai niveau 2 par le crochet (Ki = 0, 800, 900, 5000)', async ({
+test('(e) crochet de test : issues du vrai niveau 2 par le crochet (Ki = 0 à 5000, défaut 2000)', async ({
   page,
 }) => {
   const problems = await open(page, 'e2e=1&screen=level2&lang=fr');
   const outcomes: Record<number, string | null> = {};
   await run(page, TO_CONSOLE);
-  for (const ki of [0, 800, 900, 5000]) {
-    await run(page, [['setKi', ki], ['launch'], ['advance', 6]]);
+  // Le défaut (2000), lancé sans réglage, heurte la poutre.
+  expect((await run(page, [])).ki).toBe(2000);
+  for (const ki of [2000, 0, 100, 200, 800, 900, 5000]) {
+    await run(page, [['setKi', ki], ['launch'], ['advance', 10.5]]);
     const s = await run(page, []);
     outcomes[ki] = s.outcome;
     expect(s.phase).toBe('outcome');
     await run(page, [['restart']]);
   }
-  expect(outcomes).toEqual({ 0: 'win', 800: 'win', 900: 'bonk', 5000: 'bonk' });
+  expect(outcomes).toEqual({
+    0: 'step',
+    100: 'step',
+    200: 'win',
+    800: 'win',
+    900: 'bonk',
+    2000: 'bonk',
+    5000: 'bonk',
+  });
   // Le crochet accepte adjustKi comme setKi, et refuse hors réglage.
   const adjusted = await run(page, [
     ['setKi', 200],
@@ -420,6 +436,35 @@ test('(g) 1280×720 : aucun recouvrement du réglage, du trajet et de l’issue 
   await run(page, [['launch'], ['advance', 1]]);
   await checkNoOverlap(page, 1280, 720);
   await run(page, [['advance', 4]]);
+  await checkNoOverlap(page, 1280, 720);
+  expect(problems, CONSOLE_FAILURE).toEqual([]);
+});
+
+test('(h) T-022 : Ki = 0, le P seul reste trop court au bout de 10 s (tolérance 0,1 m), capture', async ({
+  page,
+}) => {
+  const t = T.fr;
+  const problems = await open(page, 'e2e=1&screen=level2&lang=fr', 1280, 720);
+  await run(page, [...TO_CONSOLE, ['setKi', 0], ['launch'], ['advance', 9.9]]);
+  // À 9,9 s, le trajet n'est pas fini ; il l'est à 10 s pile (1200 pas).
+  expect((await run(page, [])).phase).toBe('trip');
+  await run(page, [['advance', 0.2]]);
+  const s = await run(page, []);
+  expect(s.phase).toBe('outcome');
+  expect(s.outcome).toBe('step');
+  const k = await page.evaluate(() => window.__huygens?.snapshot().outcomeK);
+  expect(k).toBe(1200);
+  const outcome = page.locator('#ui .ui-outcome');
+  await expect(outcome).toContainText(t('level2.failTitle.step'));
+  await expect(outcome).toContainText(t('level2.fail.step').replace('{e}', '0,20'));
+  await expect(page.locator('[aria-live="polite"]')).toContainText(
+    t('hud.status.fail.stepKi').replace('{e}', '0,20'),
+  );
+  await expect(page.locator('[aria-live="polite"]')).not.toContainText(`0,5${NB}m`);
+  // La courbe va au bout des 10 s sans sortir du plancher : 1200 échantillons et la pointe.
+  const trace = await page.evaluate(() => window.__huygens?.trace() ?? []);
+  expect(trace.length / 2).toBe(1201);
+  await shot(page, 't022-niveau2-trop-court.png', true);
   await checkNoOverlap(page, 1280, 720);
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });

@@ -71,7 +71,7 @@ describe('modèle de vue du niveau 2', () => {
       expect(vm.fixedKp).toBe('');
       expect(vm.bubble).toBe(cat['level1.goal']);
       expect(vm.texts.kpLabel).toBe(cat['level1.kp.label']);
-      expect(vm.kpTag).toBe(cat['hud.kp.value'].replace('{kp}', '500'));
+      expect(vm.kpTag).toBe(cat['hud.kp.value'].replace('{kp}', '2000'));
     });
 
     it(`${locale} : issues du niveau 2 (victoire, choc), bouton et cote`, () => {
@@ -93,6 +93,32 @@ describe('modèle de vue du niveau 2', () => {
       expect(vb.outcomeMessage).toBe(cat['level2.fail.bonk']);
       expect(vb.outcomeButton).toBe(cat['controls.restart']);
       expect(vb.dimension).toBe('');
+    });
+
+    it(`${locale} : vrai « trop court » à Ki = 0 (10 s, 0,1 m) et vrai « trop lent » à Ki = 130`, () => {
+      const step = finished2(0);
+      expect(step.snapshot.outcome).toBe('step');
+      expect(step.snapshot.outcomeK).toBe(1200);
+      const builder = createViewModelBuilder(tr(locale), 'level2');
+      const vs = builder.build(step.snapshot, CLOSED);
+      expect(vs.outcomeTitle).toBe(cat['level2.failTitle.step']);
+      expect(vs.outcomeMessage).toBe(
+        cat['level2.fail.step'].replace('{e}', locale === 'fr' ? '0,20' : '0.20'),
+      );
+      expect(vs.outcomeMessage).toContain(`10${NB}s`);
+      expect(vs.outcomeMessage).toContain(locale === 'fr' ? `0,1${NB}m` : `0.1${NB}m`);
+      const slowLevel = createLevel2({ initialKi: 130 });
+      slowLevel.moveRight();
+      for (let i = 0; i < 10_000 && !slowLevel.snapshot.atConsole; i += 1) slowLevel.update(1 / 60);
+      slowLevel.interact();
+      slowLevel.launch();
+      for (let i = 0; i < 2000 && slowLevel.snapshot.phase === 'trip'; i += 1) {
+        slowLevel.update(1 / 30);
+      }
+      expect(slowLevel.snapshot.outcome).toBe('slow');
+      const vl = builder.build(slowLevel.snapshot, CLOSED);
+      expect(vl.outcomeTitle).toBe(cat['level2.failTitle.slow']);
+      expect(vl.outcomeMessage).toBe(cat['level2.fail.slow']);
     });
 
     it(`${locale} : « trop court » et « trop lent » ont leur titre et leur message`, () => {
@@ -204,11 +230,27 @@ describe('annonces du niveau 2', () => {
     );
   });
 
+  it('trop court : annonce propre au niveau 2 (10 s, tolérance 0,1 m), jamais celle du niveau 1', () => {
+    const step = finished2(0).snapshot;
+    expect(step.outcome).toBe('step');
+    expect(announcementFor(ev('outcome', 'step'), step, tr('fr'))).toBe(
+      `Échec${NB}: au bout de 10${NB}s, la cabine est encore 0,20${NB}m sous le plateau d’arrivée, plus loin que les 0,1${NB}m permis.`,
+    );
+    expect(announcementFor(ev('outcome', 'step'), step, tr('en'))).toBe(
+      `Failed: after 10${NB}s, the lift is still 0.20${NB}m below the ledge, further than the 0.1${NB}m allowed.`,
+    );
+    expect(announcementFor(ev('outcome', 'step'), step, tr('fr'))).not.toContain('0,5');
+    expect(announcementFor(ev('outcome', 'slow'), step, tr('en'))).toContain(`10${NB}s`);
+  });
+
   it('niveau 1 : annonces inchangées', () => {
     const s = createLevel1().snapshot;
     const t = tr('fr');
     expect(announcementFor(ev('tuningOpened'), s, t)).toBe(CATALOGS.fr['hud.status.ready']);
     expect(announcementFor(ev('firstSaturation'), s, t)).toBe(CATALOGS.fr['level1.saturation']);
     expect(announcementFor(ev('outcome', 'slow'), s, t)).toBe(CATALOGS.fr['hud.status.fail.slow']);
+    expect(announcementFor(ev('outcome', 'step'), copy(s, { finalError: 0.61 }), t)).toBe(
+      `Échec${NB}: la cabine s’est arrêtée 0,61${NB}m sous le plateau d’arrivée, au-delà des 0,5${NB}m que le bonhomme peut enjamber.`,
+    );
   });
 });

@@ -9,10 +9,11 @@ import {
   STEP_TOLERANCE,
   TRIP_MAX_STEPS,
   WIN_HOLD_STEPS,
+  createLevel1,
   type TripOutcome,
 } from '../../src/game';
 import { ELEVATOR_POSITION, createElevatorLoop } from '../../src/sim';
-import { runTrip } from './helpers';
+import { finishTrip, reachConsole, runTrip } from './helpers';
 
 /** Pic des échantillons y(k·dt) sur `steps` pas, boucle du noyau seule (sans arbitre). */
 function sampledPeak(kp: number, steps = TRIP_MAX_STEPS): number {
@@ -28,7 +29,7 @@ function sampledPeak(kp: number, steps = TRIP_MAX_STEPS): number {
 describe('CA-1 : issues de la spec §11', () => {
   const cases: [number, TripOutcome][] = [
     [150, 'noLift'],
-    [KP_DEFAULT, 'step'],
+    [KP_DEFAULT, 'win'],
     [800, 'step'],
     [2500, 'win'],
     [3500, 'win'],
@@ -50,7 +51,10 @@ describe("CA-2 : pas d'issue exacts (convention : état après chaque pas, k = p
     [5000, 'win', 293],
     [5100, 'bonk', 61],
     [7000, 'bonk', 56],
+    [KP_DEFAULT, 'win', 262],
+    [100, 'noLift', TRIP_MAX_STEPS],
     [150, 'noLift', TRIP_MAX_STEPS],
+    [200, 'step', TRIP_MAX_STEPS],
     [800, 'step', TRIP_MAX_STEPS],
     [900, 'step', TRIP_MAX_STEPS],
   ];
@@ -100,9 +104,10 @@ describe('fenêtre complète du niveau 1 (T-020) : ne doit pas dériver en silen
     ranges.push(`${String(start)}-${String(KP_MAX)}:${String(current)}`);
     expect(ranges.join(' | ')).toBe('0-100:noLift | 200-900:step | 1000-5000:win | 5100-8000:bonk');
     // Victoire la plus lente (Kp = 4000 et 4100) : 301 pas, maintien de 1 s compris, soit
-    // 419 pas (3,5 s) de marge avant la fin de temps.
+    // 899 pas (7,5 s) de marge avant la fin de temps (1200 pas, 10 s, D27).
+    expect(TRIP_MAX_STEPS).toBe(1200);
     expect(slowestWin).toBe(301);
-    expect(TRIP_MAX_STEPS - slowestWin).toBe(419);
+    expect(TRIP_MAX_STEPS - slowestWin).toBe(899);
     expect(slowestWin).toBeGreaterThan(WIN_HOLD_STEPS);
   });
 
@@ -114,6 +119,19 @@ describe('fenêtre complète du niveau 1 (T-020) : ne doit pas dériver en silen
     // Marges en mm, au centième de millimètre : toutes deux positives.
     expect(1000 * (BEAM_HEIGHT - peak5000)).toBeCloseTo(1.74, 2);
     expect(1000 * (peak5100 - BEAM_HEIGHT)).toBeCloseTo(1.79, 2);
+  });
+
+  it('Kp par défaut (2000, D28) dans la fenêtre : un lancement sans réglage gagne', () => {
+    expect(KP_DEFAULT).toBe(2000);
+    expect(KP_DEFAULT % KP_STEP).toBe(0);
+    expect(KP_DEFAULT).toBeGreaterThanOrEqual(1000);
+    expect(KP_DEFAULT).toBeLessThanOrEqual(5000);
+    const level = createLevel1();
+    expect(level.snapshot.kp).toBe(KP_DEFAULT);
+    reachConsole(level);
+    const r = finishTrip(level);
+    expect(r.outcome).toBe('win');
+    expect(r.outcomeK).toBe(262);
   });
 
   it('marge de la borne basse : m·g/1000 = 0,4905 m, 9,5 mm sous la tolérance de 0,5 m', () => {

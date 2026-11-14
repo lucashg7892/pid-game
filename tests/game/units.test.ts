@@ -92,12 +92,12 @@ describe("arbitre d'issue", () => {
     expect(j.holdSteps).toBe(0);
   });
 
-  it('choc strictement au-dessus de 3,3626 m ; victoire au pas 720 prioritaire ; NaN', () => {
+  it('choc strictement au-dessus de 3,3626 m ; victoire au pas 1200 prioritaire ; NaN', () => {
     const j = createOutcomeJudge();
     expect(j.evaluate(1, 3.3626, 0, 4000)).toBeNull();
     expect(j.evaluate(2, 3.3626001, 0, 4000)).toBe('bonk');
     j.reset();
-    expect(TRIP_MAX_STEPS).toBe(720);
+    expect(TRIP_MAX_STEPS).toBe(1200);
     expect(j.evaluate(TRIP_MAX_STEPS - 1, 1, 0, 800)).toBeNull();
     expect(j.evaluate(TRIP_MAX_STEPS, 1, 0, 800)).toBe('step');
     expect(j.evaluate(TRIP_MAX_STEPS, 0, 0, 100)).toBe('noLift');

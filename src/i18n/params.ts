@@ -28,6 +28,7 @@ export const MESSAGE_PARAMS = {
   'hud.status.winKi': ['e'],
   'hud.status.fail.noLift': ['kp'],
   'hud.status.fail.step': ['e'],
+  'hud.status.fail.stepKi': ['e'],
   'a11y.sceneState': ['y', 'r', 'e'],
 } as const satisfies Partial<Record<MessageKey, readonly string[]>>;
 

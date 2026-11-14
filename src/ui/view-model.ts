@@ -127,7 +127,7 @@ export interface ViewModel {
   hintId: HintId;
   /** Contenu du bandeau (même objet tant que bandeau et langue ne changent pas). */
   hint: HintLine;
-  /** Étiquette permanente « Kp = 2500 N/m » (niveau 1) ou « Kp = 2500 · Ki = 500 » (niveau 2). */
+  /** Étiquette permanente « Kp = 2500 N/m » (niveau 1) ou « Kp = 2500 · Ki = 2000 » (niveau 2). */
   kpTag: string;
   /** Kp fixé du niveau 2 (« Kp = 2500 N/m (fixé) ») ; vide au niveau 1, où Kp est le réglage. */
   fixedKp: string;
@@ -139,7 +139,7 @@ export interface ViewModel {
   panelLocked: boolean;
   /** Valeur réglée (Kp au niveau 1, Ki au niveau 2), pour le curseur et le champ. */
   kp: number;
-  /** Valeur affichée dans le panneau (« 2500 N/m », « 500 N/(m·s) »). */
+  /** Valeur affichée dans le panneau (« 2500 N/m », « 2000 N/(m·s) »). */
   kpValue: string;
   /** Valeur dite par les lecteurs d'écran (« 2500 newtons par mètre »). */
   kpValueText: string;

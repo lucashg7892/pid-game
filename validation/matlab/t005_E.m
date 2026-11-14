@@ -3,7 +3,7 @@
 %   simplifiée de l'ordre de mission (|e| final > tolérance de marche => marche ; y_max > poutre
 %   => choc). Comparaison avec l'issue calculée sur les trajectoires TypeScript
 %   (validation/data/ts_sweep_summary.csv). Règles d'issue de T-020 (t005_params) : poutre
-%   3,3626 m, marche 0,5 m, horizon 720 pas. Marges à la poutre à Kp = 5000 et 5100.
+%   3,3626 m, marche 0,5 m ; horizon 1200 pas (10 s, T-022). Marges à la poutre à Kp = 5000 et 5100.
 P = t005_params();
 addpath(fileparts(mfilename('fullpath')));
 TS = readtable(fullfile(P.root, 'validation', 'data', 'ts_sweep_summary.csv'), 'TextType', 'string');

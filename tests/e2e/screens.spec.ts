@@ -241,17 +241,17 @@ test('(d) trois allers-retours niveau → menu → niveau : une interface, un ef
     await expect(page.locator('#ui')).toHaveCount(1);
     await expect(page.locator('#ui .ui-top')).toHaveCount(1);
     await expect(page.locator('#screens')).toHaveCount(0);
-    // Niveau neuf : phase d'approche, Kp par défaut 500, bonhomme au départ.
+    // Niveau neuf : phase d'approche, Kp par défaut 2000, bonhomme au départ.
     const start = await page.evaluate(() => window.__huygens?.snapshot());
     expect(start?.phase, `cycle ${String(cycle)}`).toBe('approach');
-    expect(start?.kp).toBe(500);
+    expect(start?.kp).toBe(2000);
     const d = await draws();
     if (initialDraws < 0) initialDraws = d;
     expect(d, 'mêmes compteurs de dessin à chaque entrée').toBe(initialDraws);
     // Un seul effet par frappe : « + » ajoute exactement 100 N/m.
     await run(page, TO_CONSOLE);
     await page.keyboard.press('+');
-    expect((await run(page, [])).kp).toBe(600);
+    expect((await run(page, [])).kp).toBe(2100);
     // Une frappe d'Échap : un seul changement (réglage fermé), pas deux.
     await page.keyboard.press('Escape');
     expect((await run(page, [])).phase).toBe('approach');

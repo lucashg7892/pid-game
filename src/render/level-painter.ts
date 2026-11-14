@@ -118,8 +118,9 @@ import { StrokeBatch } from './stroke-batch';
 import { HAT_ANGLE_INDEX, JOINT, createPoseBuffer, poseWalker } from './walker-pose';
 
 /**
- * Capacités en sommets de chaque lot (préallouées). Mesuré sous Node (tests, 1280×720) : décor
- * 6 618 sommets ; courbe 10 896 au plus (1 801 points) ; erreur 906 ; éléments mobiles 1 332 ;
+ * Capacités en sommets de chaque lot (préallouées). Mesuré sous Node (tests, 1280×720, T-022,
+ * trajets de 10 s : niveau 1 à Kp = 800 et 100, niveau 2 à Ki = 0 et 100) : décor 6 798 sommets ;
+ * courbe 7 266 au plus (1 201 points) ; erreur 4 518 au plus (Kp = 100) ; éléments mobiles 1 620 au plus (1 338 à 1 620 selon le scénario) ;
  * rouge environ 200. Total préalloué 37 200 sommets = 12 400 triangles au plus, sous le budget de
  * 30 000 triangles même lots pleins.
  */

@@ -10,10 +10,12 @@
  * Échelle de temps à deux régimes ({@link curveTimeScale}) : {@link CURVE_MAX_SPEED} m/s tant que
  * le trajet dure au plus {@link CURVE_FULL_SPEED_SECONDS} s, puis la courbe entière est
  * resserrée pour que sa pointe reste au bord droit du plancher. Raison : les issues qui
- * s'apprennent sur la forme de la courbe sont courtes (choc avant 0,53 s, victoire vers 2,0 à
- * 2,5 s) et se lisent en grand ; les trajets de 6 s (marche trop haute, pas de décollage) n'ont
- * qu'une montée puis un palier, lisibles même resserrés (0,6 m/s). L'échelle fixe de la spec
- * (0,4 m/s) donnerait 2,4 m pour 6 s et seulement 0,2 m pour la montée.
+ * s'apprennent sur la forme de la courbe sont courtes au niveau 1 (choc avant 0,53 s, victoire
+ * vers 2,2 à 2,5 s) et se lisent en grand ; les trajets qui vont au bout des 10 s
+ * ({@link TRIP_MAX_STEPS} pas : marche trop haute, pas de décollage, niveau 2 trop court) n'ont
+ * qu'une montée puis un palier ou une lente approche, lisibles même resserrés (3,6 / 10 =
+ * 0,36 m/s, un trait tous les 0,36 m). L'échelle fixe de la spec (0,4 m/s) donnerait 4 m pour
+ * 10 s, plus que le plancher.
  */
 import { CABIN_CENTER_X, CABIN_WIDTH, TRIP_MAX_STEPS } from '../game';
 

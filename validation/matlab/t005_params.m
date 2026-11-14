@@ -12,7 +12,7 @@ P.hPoutre = 3.3626; % poutre : y > 3,3626 m => choc (m), T-020
 P.tolMarche = 0.5;    % marche franchissable (m), T-020
 P.tolVitesse = 0.10;  % |dy/dt| max pour la victoire (m/s)
 P.nVictoire = 120;    % pas consécutifs requis pour la victoire
-P.kMax = 720;         % horizon du niveau (pas) = 6 s, T-020
+P.kMax = 1200;        % horizon du niveau (pas) = 10 s, T-022 (D27)
 % Racine du dépôt, déduite de l'emplacement de ce fichier (validation/matlab/).
 P.root = fileparts(fileparts(fileparts(mfilename('fullpath'))));
 end

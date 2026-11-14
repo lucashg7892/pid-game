@@ -36,6 +36,9 @@ describe('échelle de temps', () => {
     expect(curveTimeScale(2.425)).toBe(CURVE_MAX_SPEED);
     expect(curveTimeScale(3)).toBe(CURVE_MAX_SPEED);
     expect(curveTimeScale(15)).toBeCloseTo(0.24, 12);
+    // Trajet qui va au bout des 10 s (T-022) : 3,6 m / 10 s.
+    expect(TRIP_MAX_STEPS * SIM_DT).toBeCloseTo(10, 12);
+    expect(curveTimeScale(TRIP_MAX_STEPS * SIM_DT)).toBeCloseTo(0.36, 12);
     expect(curveTimeScale(Number.NaN)).toBe(CURVE_MAX_SPEED);
     for (const tEnd of [0.5, 2.4, 3, 4, 9.9, 15]) {
       const end = curveX(tEnd, curveTimeScale(tEnd));
@@ -59,10 +62,11 @@ describe('CurveTrace', () => {
       expect(trace.points[2 * k]).toBeCloseTo(curveX(k * SIM_DT, curveTimeScale(tEnd)), 12);
     }
   });
-  it('capacité 1800 + pointe sans débordement, points dans la zone', () => {
+  it('capacité 1200 pas + pointe sans débordement, points dans la zone', () => {
     const rec = recorder(TRIP_MAX_STEPS, wave);
     const trace = new CurveTrace();
     expect(trace.capacity).toBe(CURVE_CAPACITY);
+    expect(CURVE_CAPACITY).toBe(1201);
     const tEnd = TRIP_MAX_STEPS * SIM_DT;
     trace.begin(tEnd);
     rec.forEach('y', trace.add);
@@ -102,7 +106,7 @@ describe('CurveTrace', () => {
       expect(Math.abs(mid - wave(k))).toBeLessThan(2e-6);
     }
   });
-  it('1801 points tiennent dans le lot de la courbe', () => {
+  it('1201 points tiennent dans le lot de la courbe', () => {
     const rec = recorder(TRIP_MAX_STEPS, wave);
     const trace = new CurveTrace();
     trace.begin(15);

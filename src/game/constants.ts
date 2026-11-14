@@ -24,14 +24,14 @@ export const LEVEL1_SETPOINT = ELEVATOR_SETPOINT;
  *
  * Réglée (T-020) pour que la borne haute de la fenêtre soit Kp = 5000 N/m : à peu près au
  * milieu des pics échantillonnés mesurés sur le noyau, 3,360855 m à Kp = 5000 (marge 1,74 mm)
- * et 3,364391 m à Kp = 5100 (dépassement 1,79 mm).
+ * et 3,364391 m à Kp = 5100 (dépassement 1,79 mm). Remesuré à 1200 pas (T-022) : inchangé.
  */
 export const BEAM_HEIGHT = 3.3626;
 
 /**
  * Tolérance de marche (m) : la cabine est « au quai » si |r − y| ≤ cette valeur. Borne basse
  * de la fenêtre (D25, T-020) : à Kp = 1000 N/m, l'erreur statique m·g/Kp vaut 0,4905 m (marge 9,5 mm) ;
- * à 900 N/m, 0,545 m.
+ * à 900 N/m, 0,545 m. Ne sert qu'au niveau 1 (voir {@link LEVEL2_ARRIVAL_TOLERANCE}).
  */
 export const STEP_TOLERANCE = 0.5;
 
@@ -42,10 +42,12 @@ export const SETTLE_SPEED_TOLERANCE = 0.1;
 export const WIN_HOLD_STEPS = 120;
 
 /**
- * Durée maximale d'un trajet, en pas de simulation (720 pas = 6 s à dt = 1/120 s, D24). La
- * victoire la plus lente de la fenêtre arrive au pas 301 (Kp = 4000 et 4100 N/m, mesuré T-020).
+ * Durée maximale d'un trajet, en pas de simulation (1200 pas = 10 s à dt = 1/120 s, D27), pour
+ * les deux niveaux. Mesures T-022 sur le jeu : au niveau 1, la victoire la plus lente de la
+ * fenêtre arrive au pas 301 (Kp = 4000 et 4100 N/m), marge 899 pas ; au niveau 2, sur la grille
+ * de Ki, au pas 733 (Ki = 200 N/(m·s)), marge 467 pas.
  */
-export const TRIP_MAX_STEPS = 720;
+export const TRIP_MAX_STEPS = 1200;
 
 /** Poids de la cabine, bonhomme compris : m·g (N), calculé depuis les paramètres du noyau. */
 export const CABIN_WEIGHT = ELEVATOR_PARAMS.mass * ELEVATOR_PARAMS.gravity;
@@ -68,10 +70,10 @@ export const KP_MAX = 8000;
 export const KP_STEP = 100;
 
 /**
- * Valeur de Kp au chargement du niveau (N/m), volontairement hors de la fenêtre de réussite
- * [1000 ; 5000] : un lancement sans réglage échoue (« trop court »).
+ * Valeur de Kp au chargement du niveau 1 (N/m), dans la fenêtre de réussite [1000 ; 5000] (D28) :
+ * un lancement sans réglage gagne (pas 262, erreur finale 0,245 m, mesuré T-022).
  */
-export const KP_DEFAULT = 500;
+export const KP_DEFAULT = 2000;
 
 // ─────────────────────────── Niveau 2 « La mémoire » (contrôleur PI) ────────────────────────────
 
@@ -79,11 +81,15 @@ export const KP_DEFAULT = 500;
 export const LEVEL2_KP = 2500;
 
 /**
- * Tolérance d'arrivée du niveau 2 (m) : propre au niveau, égale pour l'instant à celle du
- * niveau 1 ({@link STEP_TOLERANCE}). Le jeu n'utilise jamais `STEP_TOLERANCE` pour le niveau 2 :
- * on la changera ici, d'une seule ligne.
+ * Tolérance d'arrivée du niveau 2 (m), propre au niveau (D29, K32) : plus serrée que celle du
+ * niveau 1 ({@link STEP_TOLERANCE}) pour que Ki soit nécessaire. À Kp = {@link LEVEL2_KP}, le P
+ * seul (Ki = 0) s'arrête à m·g/Kp = 0,1962 m du plateau. Mesures T-022 (jeu, 1200 pas), grille de
+ * Ki au pas de 100 : `step` 0 à 100, victoire 200 à 800 (contiguë), choc 900 à 8000 ; pic
+ * échantillonné 3,350580 m à Ki = 800 (marge 12,02 mm sous la poutre), 3,379632 m à Ki = 900
+ * (dépassement 17,03 mm). Au pas de 10 (hors grille) : `step` 0 à 120, `slow` 130, victoire 140
+ * à 840 (pic 3,362216 m, marge 0,38 mm), choc dès 850.
  */
-export const LEVEL2_ARRIVAL_TOLERANCE = STEP_TOLERANCE;
+export const LEVEL2_ARRIVAL_TOLERANCE = 0.1;
 
 /** Valeur minimale de Ki (N/(m·s)), celle de Kp. */
 export const KI_MIN = KP_MIN;
@@ -94,7 +100,10 @@ export const KI_MAX = KP_MAX;
 /** Pas du réglage de Ki (N/(m·s)), celui de Kp. */
 export const KI_STEP = KP_STEP;
 
-/** Valeur de Ki au chargement du niveau 2 (N/(m·s)), celle de Kp au niveau 1. */
+/**
+ * Valeur de Ki au chargement du niveau 2 (N/(m·s)), celle de Kp au niveau 1 (2000) : hors de la
+ * fenêtre gagnante, un lancement sans réglage heurte la poutre (pas 57, mesuré T-022).
+ */
 export const KI_DEFAULT = KP_DEFAULT;
 
 // ───────────────────────────────── Géométrie du niveau (m) ──────────────────────────────────

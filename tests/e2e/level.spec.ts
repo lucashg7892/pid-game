@@ -267,18 +267,20 @@ test('(e) Kp = 7000 : choc au pas 56', async ({ page }) => {
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });
 
-test('(f, g) Kp = 800 : marche trop haute au pas 720, courbe dans sa zone, budget', async ({
+test('(f, g) Kp = 800 : marche trop haute au pas 1200 (10 s), courbe dans sa zone, budget', async ({
   page,
 }) => {
   const problems = await openGame(page);
-  const s = await run(page, [...TO_CONSOLE, ['setKp', 800], ['launch'], ['advance', 7]]);
+  const before = await run(page, [...TO_CONSOLE, ['setKp', 800], ['launch'], ['advance', 9.9]]);
+  expect(before.phase).toBe('trip');
+  const s = await run(page, [['advance', 0.2]]);
   expect(s.outcome).toBe('step');
-  expect(s.outcomeK).toBe(720);
+  expect(s.outcomeK).toBe(1200);
   const image = await capture(page, 't009-06-trop-court.png');
   const frame = computeFrame(WIDTH, HEIGHT);
   const report: string[] = [];
   const points = await trace(page);
-  expect(points.length).toBe(721);
+  expect(points.length).toBe(1201);
   for (const [x, y] of points) {
     expect(x).toBeGreaterThanOrEqual(CURVE_ORIGIN_X - 1e-9);
     expect(x).toBeLessThanOrEqual(CURVE_ORIGIN_X + CURVE_SPAN + 1e-9);
@@ -298,6 +300,9 @@ test('(f, g) Kp = 800 : marche trop haute au pas 720, courbe dans sa zone, budge
   expect(stats).toBeDefined();
   expect(stats?.drawCalls ?? 99).toBeLessThanOrEqual(50);
   expect(stats?.triangles ?? 99_999).toBeLessThanOrEqual(30_000);
+  // Capture documentaire (T-022), interface visible : issue « trop court » à 10 s.
+  await page.addStyleTag({ content: '#ui { visibility: visible !important; }' });
+  await capture(page, 't022-niveau1-trop-court.png');
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });
 

@@ -32,6 +32,7 @@ const IDENTICAL_ALLOWED: Readonly<Record<string, string>> = {
   'level1.dimension': 'cote mathématique « e = … m » : notation identique, seul {e} varie.',
   'app.title': 'titre du jeu « Huygens’s world » (décision D15), nom propre non traduit.',
   'hud.gauge.max': 'notation « 5000 N max » : nombre et unité SI identiques, seul {n} varie.',
+  'hud.ki.tag': 'notation « Kp = … · Ki = … » : symboles identiques, seuls {kp} et {ki} varient.',
   'hud.kp.value': 'notation « Kp = … N/m » : symbole et unité SI identiques, seul {kp} varie.',
   'title.copyright':
     'ligne de copyright du fichier LICENSE (titulaire et année), notice légale non traduite.',
@@ -49,7 +50,17 @@ const SPEC_KEYS = [
 ] as const;
 
 /** Préfixes autorisés pour l'organisation des clés. */
-const PREFIXES = ['app.', 'title.', 'menu.', 'level1.', 'hud.', 'controls.', 'a11y.', 'fallback.'];
+const PREFIXES = [
+  'app.',
+  'title.',
+  'menu.',
+  'level1.',
+  'level2.',
+  'hud.',
+  'controls.',
+  'a11y.',
+  'fallback.',
+];
 
 function readRaw(locale: string): string {
   return readFileSync(new URL(`../../src/i18n/locales/${locale}.json`, import.meta.url), 'utf8');

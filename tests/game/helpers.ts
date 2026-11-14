@@ -2,6 +2,7 @@
 import {
   createLevel1,
   quantizeKp,
+  type Level,
   type Level1,
   type Level1Options,
   type TripOutcome,
@@ -32,7 +33,7 @@ export function mulberry32(seed: number): () => number {
 }
 
 /** Amène le bonhomme à la console (marche à droite) et ouvre le réglage. */
-export function reachConsole(level: Level1, frame: () => number = () => 1 / 60): void {
+export function reachConsole(level: Level, frame: () => number = () => 1 / 60): void {
   level.moveRight();
   for (let i = 0; i < 100000 && !level.snapshot.atConsole; i++) level.update(frame());
   if (!level.snapshot.atConsole) throw new Error('console jamais atteinte');
@@ -40,7 +41,7 @@ export function reachConsole(level: Level1, frame: () => number = () => 1 / 60):
 }
 
 /** Copie la trace y de l'enregistreur. */
-export function copyTrace(level: Level1): Float64Array {
+export function copyTrace(level: Level): Float64Array {
   const out = new Float64Array(level.signals.length);
   let i = 0;
   level.signals.forEach('y', (_t, v) => {
@@ -50,7 +51,7 @@ export function copyTrace(level: Level1): Float64Array {
 }
 
 /** Joue le trajet déjà en phase `tuning` ou `trip` jusqu'à l'issue, images de durée `frame()`. */
-export function finishTrip(level: Level1, frame: () => number = () => 1 / 30): TripResult {
+export function finishTrip(level: Level, frame: () => number = () => 1 / 30): TripResult {
   if (level.snapshot.phase === 'tuning') level.launch();
   for (let i = 0; i < 1_000_000 && level.snapshot.phase === 'trip'; i++) level.update(frame());
   const s = level.snapshot;

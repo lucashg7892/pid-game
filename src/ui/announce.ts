@@ -34,17 +34,20 @@ export function announcementFor(
   s: Readonly<LevelSnapshot>,
   tr: Translator,
 ): string | null {
+  const ki = s.levelId === 'level2';
   switch (event.type) {
     case 'tuningOpened':
-      return tr.t('hud.status.ready');
+      return tr.t(ki ? 'hud.status.readyKi' : 'hud.status.ready');
     case 'tuningClosed':
       return null;
     case 'launch':
-      return tr.t('hud.status.launch', { kp: formatKp(tr, s.kp) });
+      return ki
+        ? tr.t('hud.status.launchKi', { kp: formatKp(tr, s.kp), ki: formatKp(tr, s.ki) })
+        : tr.t('hud.status.launch', { kp: formatKp(tr, s.kp) });
     case 'firstSaturation':
-      return tr.t('level1.saturation');
+      return tr.t(ki ? 'level2.saturation' : 'level1.saturation');
     case 'reset':
-      return tr.t('hud.status.reset');
+      return tr.t(ki ? 'hud.status.resetKi' : 'hud.status.reset');
     case 'pause':
       return tr.t('hud.status.paused');
     case 'resume':
@@ -54,9 +57,13 @@ export function announcementFor(
       const value = tr.t('hud.error.value', { e });
       switch (event.outcome) {
         case 'win':
-          return tr.t('hud.status.win', { e });
+          return ki
+            ? tr.t('hud.status.winKi', { e: formatError(tr, Math.abs(s.finalError ?? s.e)) })
+            : tr.t('hud.status.win', { e });
         case 'step':
           return tr.t('hud.status.fail.step', { e });
+        case 'slow':
+          return tr.t('hud.status.fail.slow');
         case 'noLift':
           return `${tr.t('hud.status.fail.noLift', { kp: formatKp(tr, s.kp) })} ${value}`;
         case 'bonk':

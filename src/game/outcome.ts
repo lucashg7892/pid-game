@@ -1,6 +1,7 @@
 import {
   BEAM_HEIGHT,
   LEVEL1_SETPOINT,
+  LEVEL2_ARRIVAL_TOLERANCE,
   NO_LIFT_KP_THRESHOLD,
   SETTLE_SPEED_TOLERANCE,
   STEP_TOLERANCE,
@@ -13,9 +14,11 @@ import {
  * - `win` : victoire ;
  * - `bonk` : choc contre la poutre ;
  * - `noLift` : la cabine ne décolle pas (Kp ≤ m·g/r) ;
- * - `step` : la cabine s'arrête trop bas, la marche est infranchissable.
+ * - `step` : la cabine s'arrête trop bas, la marche est infranchissable ;
+ * - `slow` (niveau 2 seulement) : à la fin du temps, la cabine est à moins de la tolérance du
+ *   plateau d'arrivée mais n'a pas fini de se stabiliser.
  */
-export type TripOutcome = 'win' | 'noLift' | 'step' | 'bonk';
+export type TripOutcome = 'win' | 'noLift' | 'step' | 'bonk' | 'slow';
 
 /** Arbitre des issues : à appeler une fois par pas de simulation, sur l'état APRÈS le pas. */
 export interface OutcomeJudge {
@@ -44,6 +47,39 @@ export function classifyTimeout(kp: number): 'noLift' | 'step' {
 }
 
 /**
+ * Arbitre générique : choc, victoire (tolérance donnée), puis fin de temps classée par `timeout`.
+ * @param setpoint consigne r (m).
+ * @param tolerance tolérance d'arrivée (m).
+ * @param timeout issue de fin de temps, d'après l'état au dernier pas.
+ */
+function makeJudge(
+  setpoint: number,
+  tolerance: number,
+  timeout: (y: number, kp: number) => TripOutcome,
+): OutcomeJudge {
+  let hold = 0;
+  return {
+    get holdSteps(): number {
+      return hold;
+    },
+    reset(): void {
+      hold = 0;
+    },
+    evaluate(n: number, y: number, v: number, kp: number): TripOutcome | null {
+      if (y > BEAM_HEIGHT) return 'bonk';
+      if (Math.abs(setpoint - y) <= tolerance && Math.abs(v) <= SETTLE_SPEED_TOLERANCE) {
+        hold += 1;
+        if (hold >= WIN_HOLD_STEPS) return 'win';
+      } else {
+        hold = 0;
+      }
+      if (n >= TRIP_MAX_STEPS) return timeout(y, kp);
+      return null;
+    },
+  };
+}
+
+/**
  * Crée l'arbitre des issues du niveau 1 (spec T-001 §6, point 5), évaluées sur l'état après
  * chaque pas (convention du validateur T-005) :
  * - choc dès que y > {@link BEAM_HEIGHT} ;
@@ -56,24 +92,34 @@ export function classifyTimeout(kp: number): 'noLift' | 'step' {
  * @param setpoint consigne r (m) ; défaut {@link LEVEL1_SETPOINT}.
  */
 export function createOutcomeJudge(setpoint: number = LEVEL1_SETPOINT): OutcomeJudge {
-  let hold = 0;
-  return {
-    get holdSteps(): number {
-      return hold;
-    },
-    reset(): void {
-      hold = 0;
-    },
-    evaluate(n: number, y: number, v: number, kp: number): TripOutcome | null {
-      if (y > BEAM_HEIGHT) return 'bonk';
-      if (Math.abs(setpoint - y) <= STEP_TOLERANCE && Math.abs(v) <= SETTLE_SPEED_TOLERANCE) {
-        hold += 1;
-        if (hold >= WIN_HOLD_STEPS) return 'win';
-      } else {
-        hold = 0;
-      }
-      if (n >= TRIP_MAX_STEPS) return classifyTimeout(kp);
-      return null;
-    },
-  };
+  return makeJudge(setpoint, STEP_TOLERANCE, (_y, kp) => classifyTimeout(kp));
+}
+
+/**
+ * Issue d'un trajet du niveau 2 arrivé au bout du temps sans victoire ni choc.
+ * @param y hauteur de la cabine au dernier pas (m).
+ * @param setpoint consigne r (m).
+ * @param tolerance tolérance d'arrivée (m).
+ * @returns `step` si |r − y| > tolérance (trop court), sinon `slow` (trop lent à se stabiliser).
+ */
+export function classifyTimeout2(
+  y: number,
+  setpoint: number = LEVEL1_SETPOINT,
+  tolerance: number = LEVEL2_ARRIVAL_TOLERANCE,
+): 'step' | 'slow' {
+  return Math.abs(setpoint - y) > tolerance ? 'step' : 'slow';
+}
+
+/**
+ * Crée l'arbitre des issues du niveau 2 : mêmes règles que le niveau 1 avec la tolérance
+ * {@link LEVEL2_ARRIVAL_TOLERANCE}, et une fin de temps classée par {@link classifyTimeout2}
+ * (`step` ou `slow`, jamais `noLift`).
+ * @param setpoint consigne r (m) ; défaut {@link LEVEL1_SETPOINT}.
+ * @param tolerance tolérance d'arrivée (m) ; défaut {@link LEVEL2_ARRIVAL_TOLERANCE}.
+ */
+export function createOutcomeJudge2(
+  setpoint: number = LEVEL1_SETPOINT,
+  tolerance: number = LEVEL2_ARRIVAL_TOLERANCE,
+): OutcomeJudge {
+  return makeJudge(setpoint, tolerance, (y) => classifyTimeout2(y, setpoint, tolerance));
 }

@@ -56,13 +56,17 @@ describe('écran titre', () => {
 describe('menu des niveaux', () => {
   it('une entrée par niveau du catalogue, titre par la clé du niveau', () => {
     const fr = buildMenuView(tr('fr'), LEVELS);
-    expect(fr.entries).toEqual([{ id: 'level1', label: 'Niveau 1 : le vide', playable: true }]);
+    expect(fr.entries).toEqual([
+      { id: 'level1', label: 'Niveau 1 : le vide', playable: true },
+      { id: 'level2', label: 'Niveau 2 : la mémoire', playable: true },
+    ]);
     expect(fr.title).toBe('Niveaux');
     expect(fr.back).toBe('Retour');
     expect(fr.listLabel).toBe('Liste des niveaux');
     expect(fr.announce).toBe('Menu des niveaux');
     const en = buildMenuView(tr('en'), LEVELS);
     expect(en.entries[0]?.label).toBe('Level 1: The Gap');
+    expect(en.entries[1]?.label).toBe('Level 2: Memory');
     expect(en.title).toBe('Levels');
     expect(en.back).toBe('Back');
   });

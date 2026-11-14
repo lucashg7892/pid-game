@@ -1,12 +1,12 @@
 /** Outils partagés des tests de `src/ui` (pas un fichier de test). */
-import { createLevel1, type Level1, type LevelSnapshot } from '../../src/game';
+import { createLevel1, type Level, type Level1, type LevelSnapshot } from '../../src/game';
 import { createTranslator, type Locale, type Translator } from '../../src/i18n';
 
 /** Durée d'une image des tests (s). */
 export const FRAME = 1 / 60;
 
 /** Avance le niveau de `seconds` par images de 1/60 s. */
-export function advance(level: Level1, seconds: number): void {
+export function advance(level: Level, seconds: number): void {
   const frames = Math.round(seconds / FRAME);
   for (let i = 0; i < frames; i += 1) level.update(FRAME);
 }

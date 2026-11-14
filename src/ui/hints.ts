@@ -6,7 +6,7 @@
  * en `<kbd>`) et « texte ». La forme « touches : action » vient de la clé `hud.hint.item`
  * (« {keys} : {action} » en français avec U+00A0, « {keys}: {action} » en anglais).
  */
-import type { LevelSnapshot } from '../game';
+import type { LevelId, LevelSnapshot } from '../game';
 import { CATALOGS, parseTemplate, type PlainKey, type Translator } from '../i18n';
 
 /**
@@ -119,9 +119,11 @@ function item(
  * langue change).
  * @param id bandeau.
  * @param tr traducteur.
+ * @param levelId niveau : le réglage et le verrou citent Kp (niveau 1) ou Ki (niveau 2).
  */
-export function hintLine(id: HintId, tr: Translator): HintLine {
+export function hintLine(id: HintId, tr: Translator, levelId: LevelId = 'level1'): HintLine {
   const escape = tr.t('controls.key.escape');
+  const ki = levelId === 'level2';
   switch (id) {
     case 'walk':
       return [item(tr, [KEY_SYMBOLS.right, KEY_SYMBOLS.walkRight], 'hud.hint.walk')];
@@ -129,13 +131,13 @@ export function hintLine(id: HintId, tr: Translator): HintLine {
       return [item(tr, [KEY_SYMBOLS.use], 'hud.hint.use')];
     case 'tune':
       return [
-        item(tr, [KEY_SYMBOLS.plus, KEY_SYMBOLS.minus], 'hud.hint.tune'),
+        item(tr, [KEY_SYMBOLS.plus, KEY_SYMBOLS.minus], ki ? 'hud.hint.tuneKi' : 'hud.hint.tune'),
         item(tr, [tr.t('controls.key.pageUp'), tr.t('controls.key.pageDown')], 'hud.hint.tuneBig'),
         item(tr, [KEY_SYMBOLS.use, tr.t('controls.key.enter')], 'hud.hint.launch', 'or'),
       ];
     case 'trip':
       return [
-        [text(tr.t('hud.hint.locked'))],
+        [text(tr.t(ki ? 'hud.hint.lockedKi' : 'hud.hint.locked'))],
         item(tr, [KEY_SYMBOLS.restart], 'hud.hint.restart'),
         item(tr, [escape], 'hud.hint.pause'),
       ];

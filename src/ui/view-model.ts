@@ -5,7 +5,13 @@
  * sinon la même chaîne est gardée : en régime établi, la couche DOM compare les références et
  * n'écrit rien, et le modèle n'alloue que lorsqu'un chiffre affiché change.
  */
-import { ELEVATOR_MAX_FORCE, type LevelPhase, type LevelSnapshot, type TripOutcome } from '../game';
+import {
+  ELEVATOR_MAX_FORCE,
+  type LevelId,
+  type LevelPhase,
+  type LevelSnapshot,
+  type TripOutcome,
+} from '../game';
 import { otherLocale, type Locale, type Translator } from '../i18n';
 import { ERROR_DIGITS, formatError, formatKp } from './announce';
 import { chooseHint, hintLine, type HintId, type HintLine } from './hints';
@@ -46,15 +52,18 @@ export interface StaticTexts {
   readonly resume: string;
   /** Bouton « Menu » (retour au menu des niveaux). */
   readonly menu: string;
-  /** Nom du panneau Kp. */
+  /** Nom du panneau de réglage. */
   readonly panelLabel: string;
-  /** Titre du panneau Kp. */
+  /**
+   * Titre du panneau de réglage. Les textes `kp*` du réglage sont ceux de Kp au niveau 1 et ceux
+   * de Ki au niveau 2 (les noms gardent le préfixe historique).
+   */
   readonly kpLabel: string;
   /** Nom du champ numérique. */
   readonly kpField: string;
-  /** Aide de Kp. */
+  /** Aide de la grandeur réglée. */
   readonly kpHelp: string;
-  /** Plage de Kp. */
+  /** Plage de la grandeur réglée. */
   readonly kpRange: string;
   /** Message de verrouillage. */
   readonly kpLocked: string;
@@ -118,17 +127,19 @@ export interface ViewModel {
   hintId: HintId;
   /** Contenu du bandeau (même objet tant que bandeau et langue ne changent pas). */
   hint: HintLine;
-  /** Étiquette permanente « Kp = 2500 N/m ». */
+  /** Étiquette permanente « Kp = 2500 N/m » (niveau 1) ou « Kp = 2500 · Ki = 500 » (niveau 2). */
   kpTag: string;
+  /** Kp fixé du niveau 2 (« Kp = 2500 N/m (fixé) ») ; vide au niveau 1, où Kp est le réglage. */
+  fixedKp: string;
   /** Bulle : objectif ou invite à la console ; vide si aucune. */
   bubble: string;
   /** Panneau Kp visible (réglage et trajet). */
   panelOpen: boolean;
   /** Panneau Kp verrouillé (trajet, pause). */
   panelLocked: boolean;
-  /** Kp courant (N/m), pour le curseur et le champ. */
+  /** Valeur réglée (Kp au niveau 1, Ki au niveau 2), pour le curseur et le champ. */
   kp: number;
-  /** Valeur affichée dans le panneau (« 2500 N/m »). */
+  /** Valeur affichée dans le panneau (« 2500 N/m », « 500 N/(m·s) »). */
   kpValue: string;
   /** Valeur dite par les lecteurs d'écran (« 2500 newtons par mètre »). */
   kpValueText: string;
@@ -186,8 +197,10 @@ export function effectivePhase(s: Readonly<LevelSnapshot>): LevelPhase {
 /**
  * Textes fixes d'une langue (alloue : une fois par changement de langue).
  * @param tr traducteur réglé sur la langue voulue.
+ * @param levelId niveau : les textes du réglage et de l'aide suivent la grandeur réglée.
  */
-export function staticTexts(tr: Translator): StaticTexts {
+export function staticTexts(tr: Translator, levelId: LevelId = 'level1'): StaticTexts {
+  const ki = levelId === 'level2';
   return {
     title: tr.t('app.title'),
     languageButton: tr.t('app.language.switch'),
@@ -201,24 +214,24 @@ export function staticTexts(tr: Translator): StaticTexts {
     helpLines: [
       tr.t('controls.help.move'),
       tr.t('controls.help.interact'),
-      tr.t('controls.help.kp'),
+      tr.t(ki ? 'controls.help.ki' : 'controls.help.kp'),
       tr.t('controls.help.restart'),
-      tr.t('controls.help.pause'),
+      tr.t(ki ? 'controls.help.pauseKi' : 'controls.help.pause'),
       tr.t('controls.help.mouse'),
-      tr.t('controls.help.touch'),
+      tr.t(ki ? 'controls.help.touchKi' : 'controls.help.touch'),
     ],
     helpClose: tr.t('controls.help.close'),
     pause: tr.t('controls.pause'),
     resume: tr.t('controls.resume'),
     menu: tr.t('controls.menu'),
     panelLabel: tr.t('a11y.kpPanel'),
-    kpLabel: tr.t('level1.kp.label'),
-    kpField: tr.t('level1.kp.field'),
-    kpHelp: tr.t('level1.kp.help'),
-    kpRange: tr.t('level1.kp.range'),
-    kpLocked: tr.t('level1.kp.locked'),
-    kpDecrease: tr.t('controls.kpDecrease'),
-    kpIncrease: tr.t('controls.kpIncrease'),
+    kpLabel: tr.t(ki ? 'level2.ki.label' : 'level1.kp.label'),
+    kpField: tr.t(ki ? 'level2.ki.field' : 'level1.kp.field'),
+    kpHelp: tr.t(ki ? 'level2.ki.help' : 'level1.kp.help'),
+    kpRange: tr.t(ki ? 'level2.ki.range' : 'level1.kp.range'),
+    kpLocked: tr.t(ki ? 'level2.ki.locked' : 'level1.kp.locked'),
+    kpDecrease: tr.t(ki ? 'controls.kiDecrease' : 'controls.kpDecrease'),
+    kpIncrease: tr.t(ki ? 'controls.kiIncrease' : 'controls.kpIncrease'),
     launch: tr.t('controls.launch'),
     restart: tr.t('controls.restart'),
     replay: tr.t('level1.replay'),
@@ -252,12 +265,69 @@ function quantize(value: number, scale: number): number {
   return Number.isFinite(value) ? Math.round(value * scale) : Number.NaN;
 }
 
+/** Textes d'une issue. */
+interface OutcomeTexts {
+  title: string;
+  message: string;
+  dimension: string;
+  formula: string;
+  button: string;
+}
+
+/** Titre et message d'une issue du niveau 2. */
+function outcomeTexts2(
+  tr: Translator,
+  outcome: TripOutcome,
+  s: Readonly<LevelSnapshot>,
+): OutcomeTexts {
+  const error = s.finalError ?? s.e;
+  const restart = tr.t('controls.restart');
+  switch (outcome) {
+    case 'win':
+      return {
+        title: tr.t('level2.winTitle'),
+        message: tr.t('level2.win'),
+        dimension: tr.t('level1.dimension', { e: formatError(tr, Math.abs(error)) }),
+        formula: '',
+        button: tr.t('level1.replay'),
+      };
+    case 'slow':
+      return {
+        title: tr.t('level2.failTitle.slow'),
+        message: tr.t('level2.fail.slow'),
+        dimension: '',
+        formula: '',
+        button: restart,
+      };
+    case 'bonk':
+      return {
+        title: tr.t('level2.failTitle.bonk'),
+        message: tr.t('level2.fail.bonk'),
+        dimension: '',
+        formula: '',
+        button: restart,
+      };
+    case 'step':
+    case 'noLift':
+      return {
+        title: tr.t('level2.failTitle.step'),
+        message: tr.t('level2.fail.step', { e: formatError(tr, error) }),
+        dimension: '',
+        formula: '',
+        button: restart,
+      };
+  }
+}
+
 /** Titre et message d'une issue. */
 function outcomeTexts(
   tr: Translator,
   outcome: TripOutcome,
   s: Readonly<LevelSnapshot>,
-): { title: string; message: string; dimension: string; formula: string; button: string } {
+): OutcomeTexts {
+  if (s.levelId === 'level2') {
+    return outcomeTexts2(tr, outcome, s);
+  }
   const measured = formatError(tr, s.finalError ?? s.e);
   switch (outcome) {
     case 'win':
@@ -275,6 +345,7 @@ function outcomeTexts(
         button: tr.t('level1.replay'),
       };
     case 'step':
+    case 'slow':
       return {
         title: tr.t('level1.failTitle.step'),
         message: tr.t('level1.fail.step', { e: measured }),
@@ -305,10 +376,15 @@ function outcomeTexts(
  * Crée un constructeur de modèle de vue lié à un traducteur (dont la langue peut changer : le
  * modèle suit la langue courante à chaque {@link ViewModelBuilder.build}).
  * @param tr traducteur.
+ * @param levelId niveau affiché (défaut `level1`).
  */
-export function createViewModelBuilder(tr: Translator): ViewModelBuilder {
+export function createViewModelBuilder(
+  tr: Translator,
+  levelId: LevelId = 'level1',
+): ViewModelBuilder {
+  const ki = levelId === 'level2';
   let locale: Locale | null = null;
-  let texts = staticTexts(tr);
+  let texts = staticTexts(tr, levelId);
   // Clés de mémoïsation : la chaîne n'est refaite que si la clé change.
   let hintKey = '';
   let kpKey = Number.NaN;
@@ -329,6 +405,7 @@ export function createViewModelBuilder(tr: Translator): ViewModelBuilder {
     hintId: 'walk',
     hint: [],
     kpTag: '',
+    fixedKp: '',
     bubble: '',
     panelOpen: false,
     panelLocked: false,
@@ -353,7 +430,7 @@ export function createViewModelBuilder(tr: Translator): ViewModelBuilder {
   const build = (s: Readonly<LevelSnapshot>, ui: UiState): Readonly<ViewModel> => {
     if (locale !== tr.locale) {
       locale = tr.locale;
-      texts = staticTexts(tr);
+      texts = staticTexts(tr, levelId);
       model.locale = locale;
       model.otherLocale = otherLocale(locale);
       model.texts = texts;
@@ -374,16 +451,26 @@ export function createViewModelBuilder(tr: Translator): ViewModelBuilder {
     if (hintId !== hintKey) {
       hintKey = hintId;
       model.hintId = hintId;
-      model.hint = hintLine(hintId, tr);
+      model.hint = hintLine(hintId, tr, levelId);
     }
 
-    if (s.kp !== kpKey) {
-      kpKey = s.kp;
+    // Valeur réglée : Kp au niveau 1 ; Ki au niveau 2 (Kp y est fixé).
+    const tuned = ki ? s.ki : s.kp;
+    if (tuned !== kpKey) {
+      kpKey = tuned;
       const kp = formatKp(tr, s.kp);
-      model.kp = s.kp;
-      model.kpTag = tr.t('hud.kp.value', { kp });
-      model.kpValue = tr.formatQuantity(s.kp, 'N/m', { maximumFractionDigits: 0 });
-      model.kpValueText = tr.t('level1.kp.valueText', { kp });
+      model.kp = tuned;
+      if (ki) {
+        const kiText = formatKp(tr, s.ki);
+        model.kpTag = tr.t('hud.ki.tag', { kp, ki: kiText });
+        model.fixedKp = tr.t('level2.kp.fixed', { kp });
+        model.kpValue = tr.formatQuantity(s.ki, 'N/(m·s)', { maximumFractionDigits: 0 });
+        model.kpValueText = tr.t('level2.ki.valueText', { ki: kiText });
+      } else {
+        model.kpTag = tr.t('hud.kp.value', { kp });
+        model.kpValue = tr.formatQuantity(s.kp, 'N/m', { maximumFractionDigits: 0 });
+        model.kpValueText = tr.t('level1.kp.valueText', { kp });
+      }
     }
 
     const bubble = phase !== 'approach' ? 'none' : s.atConsole ? 'prompt' : 'goal';
@@ -391,7 +478,7 @@ export function createViewModelBuilder(tr: Translator): ViewModelBuilder {
       bubbleKey = bubble;
       model.bubble =
         bubble === 'goal'
-          ? tr.t('level1.goal')
+          ? tr.t(ki ? 'level2.goal' : 'level1.goal')
           : bubble === 'prompt'
             ? tr.t('level1.console.prompt')
             : '';

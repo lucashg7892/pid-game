@@ -1,6 +1,6 @@
 /**
- * Interface DOM superposée au canvas (T-010) : barre du haut (titre, Kp, aide, langue, pause),
- * bulle, bandeau d'aide, panneau Kp, mesures du trajet et légende, issue, cote chiffrée, aide des
+ * Interface DOM superposée au canvas (T-010) : barre du haut (titre, Kp et Ki, aide, langue, pause),
+ * bulle, bandeau d'aide, panneau de réglage (Kp au niveau 1, Ki au niveau 2), mesures du trajet et légende, issue, cote chiffrée, aide des
  * commandes, commandes tactiles, invite d'orientation et région `aria-live`.
  *
  * Le DOM est construit une fois. À chaque image, {@link Ui.update} reconstruit le modèle de vue
@@ -8,7 +8,7 @@
  * (pure, `layout.ts`) puis n'écrit que les nœuds dont la valeur a changé (comparaison avant
  * écriture) : rien n'est écrit, et presque rien n'est alloué, en régime établi.
  */
-import { KP_MAX, KP_MIN, KP_STEP, type GameEvent, type Level1 } from '../game';
+import type { GameEvent, Level } from '../game';
 import type { Translator } from '../i18n';
 import { announcementFor } from './announce';
 import type { HintLine } from './hints';
@@ -28,7 +28,7 @@ export interface UiOptions {
   /** Conteneur de l'interface (ajouté au document par l'appelant). */
   readonly root: HTMLElement;
   /** Niveau piloté. */
-  readonly level: Level1;
+  readonly level: Level;
   /** Traducteur (langue courante, bascule). */
   readonly translator: Translator;
   /** Canvas de la scène (libellé accessible, clic sur la console). */
@@ -199,7 +199,11 @@ function renderHint(container: HTMLElement, line: HintLine): void {
  */
 export function createUi(options: UiOptions): Ui {
   const { root, level, translator: tr, canvas, onMenu } = options;
-  const builder = createViewModelBuilder(tr);
+  const builder = createViewModelBuilder(tr, level.snapshot.levelId);
+  const { tuning } = level;
+  const showsTeaser = level.snapshot.levelId === 'level1';
+  /** Valeur réglée courante (Kp au niveau 1, Ki au niveau 2). */
+  const tunedNow = (): number => (tuning.param === 'ki' ? level.snapshot.ki : level.snapshot.kp);
   const layout = createLayout();
   let geometry: Readonly<UiGeometry> | null = null;
   let helpOpen = false;
@@ -260,7 +264,7 @@ export function createUi(options: UiOptions): Ui {
   const bubble = new TextSlot(bubbleNode);
   const bubbleBox = new BoxSlot(bubbleNode);
 
-  // --- Panneau Kp ---
+  // --- Panneau de réglage ---
   const panel = el('form', 'ui-paper ui-panel', root);
   panel.noValidate = true;
   panel.setAttribute('role', 'group');
@@ -277,9 +281,9 @@ export function createUi(options: UiOptions): Ui {
   const minusLabel = new AttrSlot(minus, 'aria-label');
   const range = el('input', 'ui-kp-range', row);
   range.type = 'range';
-  range.min = String(KP_MIN);
-  range.max = String(KP_MAX);
-  range.step = String(KP_STEP);
+  range.min = String(tuning.min);
+  range.max = String(tuning.max);
+  range.step = String(tuning.step);
   range.setAttribute('aria-labelledby', 'ui-kp-title');
   const rangeText = new AttrSlot(range, 'aria-valuetext');
   const plus = el('button', 'ui-btn ui-kp-step', row);
@@ -290,10 +294,12 @@ export function createUi(options: UiOptions): Ui {
   const fieldText = new TextSlot(el('span', '', field));
   const numberInput = el('input', 'num', field);
   numberInput.type = 'number';
-  numberInput.min = String(KP_MIN);
-  numberInput.max = String(KP_MAX);
-  numberInput.step = String(KP_STEP);
+  numberInput.min = String(tuning.min);
+  numberInput.max = String(tuning.max);
+  numberInput.step = String(tuning.step);
   numberInput.inputMode = 'numeric';
+  const fixedNode = el('p', 'ui-small ui-fixed num', panel);
+  const fixedKp = new TextSlot(fixedNode);
   const kpHelp = new TextSlot(el('p', 'ui-small', panel));
   const kpRange = new TextSlot(el('p', 'ui-small', panel));
   const lockedNode = el('p', 'ui-locked', panel);
@@ -510,6 +516,8 @@ export function createUi(options: UiOptions): Ui {
     enable(minus, editable);
     enable(plus, editable);
     enable(launch, editable);
+    fixedKp.set(vm.fixedKp);
+    show(fixedNode, vm.fixedKp !== '');
     kpHelp.set(t.kpHelp);
     kpRange.set(t.kpRange);
     locked.set(t.kpLocked);
@@ -553,8 +561,8 @@ export function createUi(options: UiOptions): Ui {
     show(formulaNode, vm.formula !== '');
     teaser.set(t.teaser);
     soon.set(t.comingSoon);
-    show(teaserNode, vm.outcome === 'win');
-    show(soonNode, vm.outcome === 'win');
+    show(teaserNode, vm.outcome === 'win' && showsTeaser);
+    show(soonNode, vm.outcome === 'win' && showsTeaser);
     outcomeButtonText.set(vm.outcomeButton);
     show(dimensionNode, vm.dimension !== '');
     dimension.set(vm.dimension);
@@ -709,24 +717,24 @@ export function createUi(options: UiOptions): Ui {
   menuButton.addEventListener('click', leaveToMenu);
   outcomeMenu.addEventListener('click', leaveToMenu);
   minus.addEventListener('click', () => {
-    run(() => level.adjustKp(-KP_STEP));
+    run(() => level.adjustTuning(-tuning.step));
   });
   plus.addEventListener('click', () => {
-    run(() => level.adjustKp(KP_STEP));
+    run(() => level.adjustTuning(tuning.step));
   });
   range.addEventListener('input', () => {
-    run(() => level.setKp(range.valueAsNumber));
+    run(() => level.setTuning(range.valueAsNumber));
   });
   const commitNumber = (): void => {
     if (commandsBlocked(helpOpen)) {
-      numberInput.valueAsNumber = level.snapshot.kp;
+      numberInput.valueAsNumber = tunedNow();
       return;
     }
     const value = numberInput.valueAsNumber;
     if (Number.isFinite(value)) {
-      level.setKp(value);
+      level.setTuning(value);
     }
-    numberInput.valueAsNumber = level.snapshot.kp;
+    numberInput.valueAsNumber = tunedNow();
     update();
   };
   numberInput.addEventListener('change', commitNumber);

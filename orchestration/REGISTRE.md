@@ -57,6 +57,7 @@ Depuis D19 (ADR-014), les règles courantes sont dans `CLAUDE.md` : rôles dans 
 | T-017d | réalisateur | Écrans titre et menu (DOM, modèle de vue, touches, CSS, textes FR/EN, test de copyright contre LICENSE) | VALIDÉ (N2) | — |
 | T-017e | réalisateur | Composition titre → menu → niveau dans `main.ts`, bouton « Menu » (pause, issue), K18, e2e `screens.spec.ts` et captures | VALIDÉ (N2) | — |
 | T-021a | réalisateur + validateur | Contrôleur PI du noyau (`createProportionalIntegralController`, `createElevatorPiLoop`), Ki = 0 ≡ P bit à bit | VALIDÉ (N3) | logs/T-021a.md |
+| T-021b | réalisateur | Niveau 2 « La mémoire » (Kp fixé à 2500, réglage de Ki, issues choc / trop court / trop lent, menu à deux entrées), extraction de la machine commune | VALIDÉ (N2) | — |
 | T-000 | réalisateur | Pilote : git init, .gitignore, .gitattributes | VALIDÉ | logs/T-000.md |
 | T-001 | concepteur | Spec de la tranche verticale | VALIDÉ | logs/T-001.md |
 | T-002 | réalisateur | Socle outillé (npm, TS, Vite, lint, tests) | VALIDÉ (réserves) | logs/T-002.md |

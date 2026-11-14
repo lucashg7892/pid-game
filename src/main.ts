@@ -1,7 +1,7 @@
 /**
  * Point de composition (spec T-001 §3, T-017 §3.3) : démarre le rendu une seule fois (papier seul),
  * puis, d'après la machine d'application (src/app), monte l'écran courant et démonte le précédent :
- * titre et menu (src/ui), ou un niveau 1 neuf (rendu au crayon, interface DOM, clavier, géométrie
+ * titre et menu (src/ui), ou un niveau neuf, 1 ou 2 (rendu au crayon, interface DOM, clavier, géométrie
  * de l'écran et ancres du rendu transmises sous forme de données simples). Affiche la page de
  * repli traduite si aucun GPU n'est utilisable, sans passer par le titre. N'importe pas three :
  * tout le rendu vit dans src/render.
@@ -10,7 +10,7 @@
  * d'application, les commandes du niveau courant, une copie de l'instantané, une avance
  * déterministe du temps et les compteurs de rendu. Dans ce mode, le temps réel ne fait plus
  * avancer le niveau (ni le « boiling ») : seul `advance` le fait, par images fixes de
- * {@link E2E_FRAME_SECONDS}, puis met l'interface à jour. `&screen=title|menu|level1` (défaut
+ * {@link E2E_FRAME_SECONDS}, puis met l'interface à jour. `&screen=title|menu|level1|level2` (défaut
  * `level1`) choisit l'écran de départ ; ignoré sans `e2e=1`.
  */
 import {
@@ -19,8 +19,9 @@ import {
   VOID_MAX_X,
   VOID_MIN_X,
   createLevel1,
+  createLevel2,
   type CommandResult,
-  type Level1,
+  type Level,
   type LevelSnapshot,
 } from './game';
 import { LEVELS, createAppMachine, type AppMachine, type AppResult, type AppState } from './app';
@@ -58,8 +59,12 @@ export interface HuygensCommands {
   moveRight(): CommandResult;
   stop(): CommandResult;
   interact(): CommandResult;
+  /** Règle Kp (niveau 1) ; `'ignored'` au niveau 2, où Kp est fixé. */
   setKp(value: number): CommandResult;
   adjustKp(delta: number): CommandResult;
+  /** Règle Ki (niveau 2) ; `'ignored'` au niveau 1. */
+  setKi(value: number): CommandResult;
+  adjustKi(delta: number): CommandResult;
   launch(): CommandResult;
   restart(): CommandResult;
   pause(): CommandResult;
@@ -186,10 +191,10 @@ function isE2e(search: string): boolean {
   return new URLSearchParams(search).get('e2e') === '1';
 }
 
-/** Écran de départ du mode test (`screen=title|menu|level1`, défaut `level1`). */
-function e2eStartScreen(search: string): 'title' | 'menu' | 'level1' {
+/** Écran de départ du mode test (`screen=title|menu|level1|level2`, défaut `level1`). */
+function e2eStartScreen(search: string): 'title' | 'menu' | 'level1' | 'level2' {
   const value = new URLSearchParams(search).get('screen');
-  return value === 'title' || value === 'menu' ? value : 'level1';
+  return value === 'title' || value === 'menu' || value === 'level2' ? value : 'level1';
 }
 
 /** Rectangle écran d'un rectangle monde (pixels CSS). */
@@ -238,7 +243,7 @@ function uiGeometry(width: number, height: number, anchors: Readonly<LevelAnchor
 
 /** Niveau courant et ses points d'accès, partagés avec la boucle de rendu et le crochet de test. */
 interface CurrentLevel {
-  readonly level: Level1;
+  readonly level: Level;
   /** Met l'interface du niveau à jour (géométrie comprise). */
   readonly refreshUi: () => void;
   /** Recalcule la géométrie si la taille du canvas a changé. */
@@ -252,10 +257,13 @@ function installTestHook(
   current: () => CurrentLevel | null,
   crashNextFrame: () => void,
 ): void {
-  const command = (run: (level: Level1) => CommandResult): CommandResult => {
+  const command = (run: (level: Level) => CommandResult): CommandResult => {
     const c = current();
     return c === null ? 'ignored' : run(c.level);
   };
+  /** Commande de réglage, acceptée seulement si le niveau courant règle cette grandeur. */
+  const tuned = (param: 'kp' | 'ki', run: (level: Level) => CommandResult): CommandResult =>
+    command((l) => (l.tuning.param === param ? run(l) : 'ignored'));
   window.__huygens = {
     app: {
       state: () => ({ ...machine.state }),
@@ -269,8 +277,10 @@ function installTestHook(
       moveRight: () => command((l) => l.moveRight()),
       stop: () => command((l) => l.stop()),
       interact: () => command((l) => l.interact()),
-      setKp: (value: number) => command((l) => l.setKp(value)),
-      adjustKp: (delta: number) => command((l) => l.adjustKp(delta)),
+      setKp: (value: number) => tuned('kp', (l) => l.setTuning(value)),
+      adjustKp: (delta: number) => tuned('kp', (l) => l.adjustTuning(delta)),
+      setKi: (value: number) => tuned('ki', (l) => l.setTuning(value)),
+      adjustKi: (delta: number) => tuned('ki', (l) => l.adjustTuning(delta)),
       launch: () => command((l) => l.launch()),
       restart: () => command((l) => l.restart()),
       pause: () => command((l) => l.pause()),
@@ -425,8 +435,8 @@ async function main(): Promise<void> {
     };
   };
 
-  /** Monte un niveau 1 neuf : rendu, interface, clavier, géométrie. */
-  const mountLevel = (): (() => void) => {
+  /** Monte le niveau `levelId` neuf : rendu, interface, clavier, géométrie. */
+  const mountLevel = (levelId: string): (() => void) => {
     const cleanups: Array<() => void> = [];
     const unmountLevel = (): void => {
       for (const cleanup of cleanups.splice(0).reverse()) {
@@ -438,7 +448,7 @@ async function main(): Promise<void> {
       }
     };
     try {
-      const level = createLevel1();
+      const level = levelId === 'level2' ? createLevel2() : createLevel1();
       session.attachLevel(level);
       cleanups.push(() => {
         session.detachLevel();
@@ -507,7 +517,7 @@ async function main(): Promise<void> {
         return;
       case 'level':
         lastLevelId = state.levelId ?? undefined;
-        unmount = mountLevel();
+        unmount = mountLevel(state.levelId ?? 'level1');
         return;
     }
   };
@@ -518,8 +528,8 @@ async function main(): Promise<void> {
       if (start !== 'title') {
         machine.play();
       }
-      if (start === 'level1') {
-        machine.openLevel('level1');
+      if (start === 'level1' || start === 'level2') {
+        machine.openLevel(start);
       }
       installTestHook(
         machine,

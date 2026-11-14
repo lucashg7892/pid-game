@@ -7,7 +7,7 @@
  * relâchement = arrêt. Perte de focus (`blur`, onglet masqué) : arrêt de la marche et, pendant un
  * trajet, mise en pause.
  */
-import type { Level1 } from '../game';
+import type { Level } from '../game';
 import { keyToIntent, kpDeltaOf, walkSideOf, type FocusTarget } from './keys';
 import type { Ui } from './overlay';
 
@@ -43,7 +43,7 @@ export function focusTargetOf(active: Element | null): FocusTarget {
  * @param target cible des écouteurs.
  * @returns fonction qui retire les écouteurs.
  */
-export function bindKeyboard(level: Level1, ui: Ui, target: Window): () => void {
+export function bindKeyboard(level: Level, ui: Ui, target: Window): () => void {
   let left = false;
   let right = false;
   const walk = (): void => {
@@ -93,7 +93,7 @@ export function bindKeyboard(level: Level1, ui: Ui, target: Window): () => void 
       case 'kpDown':
       case 'kpUpBig':
       case 'kpDownBig':
-        level.adjustKp(kpDeltaOf(intent));
+        level.adjustTuning(kpDeltaOf(intent));
         break;
       case 'restart':
         level.restart();

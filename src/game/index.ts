@@ -1,15 +1,17 @@
 /**
- * Logique du niveau 1 « Le vide » (spec T-001 §6). Pure et déterministe : n'importe que
+ * Logique des niveaux 1 « Le vide » (spec T-001 §6) et 2 « La mémoire » (T-018). Pure et déterministe : n'importe que
  * `src/sim`, ni DOM, ni rendu, ni horloge murale, ni aléa ; données brutes en SI, le
  * formatage et les textes (i18n) sont l'affaire de l'UI.
  */
 export * from './constants';
 /** Force maximale du moteur (N), pour la graduation « max » de la jauge (affichage seulement). */
 export { ELEVATOR_MAX_FORCE } from '../sim';
-export { quantizeKp } from './kp';
+export { quantizeGain, quantizeKp } from './kp';
 export {
   classifyTimeout,
+  classifyTimeout2,
   createOutcomeJudge,
+  createOutcomeJudge2,
   type OutcomeJudge,
   type TripOutcome,
 } from './outcome';
@@ -22,10 +24,16 @@ export {
   type GameEventType,
 } from './events';
 export {
-  createLevel1,
+  createElevatorLevel,
   type CommandResult,
-  type Level1,
-  type Level1Options,
+  type ElevatorLevelConfig,
+  type Level,
+  type LevelId,
   type LevelPhase,
   type LevelSnapshot,
-} from './level';
+  type TripLoop,
+  type TunedParam,
+  type TuningSpec,
+} from './elevator-level';
+export { createLevel1, type Level1, type Level1Options } from './level';
+export { createLevel2, type Level2, type Level2Options } from './level2';

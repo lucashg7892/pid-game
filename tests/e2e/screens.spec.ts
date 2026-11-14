@@ -104,6 +104,8 @@ for (const lang of ['fr', 'en'] as const) {
     page.getByRole('button', { name: t('title.play'), exact: true });
   const levelButton = (page: Page): Locator =>
     page.getByRole('button', { name: t('level1.title'), exact: true });
+  const level2Button = (page: Page): Locator =>
+    page.getByRole('button', { name: t('level2.title'), exact: true });
   const menuButton = (page: Page): Locator =>
     page.getByRole('button', { name: t('controls.menu'), exact: true });
 
@@ -148,8 +150,13 @@ for (const lang of ['fr', 'en'] as const) {
     await expect(page.getByRole('main')).toHaveCount(1);
     await expect(levelButton(page)).toBeFocused();
     await expect(page.locator('#scene')).toHaveAttribute('aria-hidden', 'true');
+    // Deux niveaux puis « Retour » : les flèches parcourent la liste dans l'ordre du menu.
+    await page.keyboard.press('ArrowDown');
+    await expect(level2Button(page)).toBeFocused();
     await page.keyboard.press('ArrowDown');
     await expect(page.getByRole('button', { name: t('menu.back'), exact: true })).toBeFocused();
+    await page.keyboard.press('ArrowUp');
+    await expect(level2Button(page)).toBeFocused();
     await page.keyboard.press('ArrowUp');
     await expect(levelButton(page)).toBeFocused();
     await page.keyboard.press('Enter');

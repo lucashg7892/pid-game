@@ -33,8 +33,20 @@ function at(screen: ScreenId): AppMachine {
 }
 
 describe('catalogue', () => {
-  it('ne contient que le niveau 1, jouable', () => {
-    expect(LEVELS).toEqual([{ id: 'level1', playable: true }]);
+  it('contient les niveaux 1 et 2, jouables, dans cet ordre', () => {
+    expect(LEVELS).toEqual([
+      { id: 'level1', playable: true },
+      { id: 'level2', playable: true },
+    ]);
+  });
+
+  it('le menu ouvre le niveau 2 comme le niveau 1', () => {
+    const machine = createAppMachine(LEVELS);
+    machine.play();
+    expect(machine.openLevel('level2')).toBe('ok');
+    expect(machine.state).toEqual({ screen: 'level', levelId: 'level2' });
+    expect(machine.leaveLevel()).toBe('ok');
+    expect(machine.state).toEqual({ screen: 'menu', levelId: null });
   });
 });
 

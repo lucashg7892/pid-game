@@ -43,7 +43,7 @@ async function open(page: Page, query: string, width = 1280, height = 720): Prom
   if (!query.includes('e2e=1')) {
     // Sans le crochet, le jeu démarre sur le titre : « Jouer », puis le niveau 1.
     await page.locator('#screens .ui-primary').click();
-    await page.locator('#screens .ui-screen-level').click();
+    await page.locator('#screens .ui-screen-level').first().click();
   }
   await expect(page.locator('#ui .ui-banner')).toBeVisible();
   return problems;

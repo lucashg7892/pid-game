@@ -24,7 +24,7 @@ export const MINUS = '−';
 export const NNBSP = '\u202F';
 
 /** Unités affichées dans le jeu (symboles SI identiques en français et en anglais). */
-export type Unit = 'm' | 'N' | 'N/m' | 's' | '%';
+export type Unit = 'm' | 'N' | 'N/m' | 'N/(m·s)' | 's' | '%';
 
 /** Nombre de décimales affichées. Défaut : minimum 0, maximum max(minimum, 2). */
 export interface NumberFormatOptions {

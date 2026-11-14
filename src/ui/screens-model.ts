@@ -8,6 +8,7 @@ import { otherLocale, type Locale, type PlainKey, type Translator } from '../i18
 /** Clé i18n du titre de chaque niveau du catalogue (identifiant → clé). */
 export const LEVEL_TITLE_KEYS: Readonly<Record<string, PlainKey>> = Object.freeze({
   level1: 'level1.title',
+  level2: 'level2.title',
 });
 
 /** Textes de l'écran titre. */

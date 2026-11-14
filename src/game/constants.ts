@@ -73,6 +73,30 @@ export const KP_STEP = 100;
  */
 export const KP_DEFAULT = 500;
 
+// ─────────────────────────── Niveau 2 « La mémoire » (contrôleur PI) ────────────────────────────
+
+/** Kp fixé du niveau 2 (N/m) : le joueur ne règle que Ki. */
+export const LEVEL2_KP = 2500;
+
+/**
+ * Tolérance d'arrivée du niveau 2 (m) : propre au niveau, égale pour l'instant à celle du
+ * niveau 1 ({@link STEP_TOLERANCE}). Le jeu n'utilise jamais `STEP_TOLERANCE` pour le niveau 2 :
+ * on la changera ici, d'une seule ligne.
+ */
+export const LEVEL2_ARRIVAL_TOLERANCE = STEP_TOLERANCE;
+
+/** Valeur minimale de Ki (N/(m·s)), celle de Kp. */
+export const KI_MIN = KP_MIN;
+
+/** Valeur maximale de Ki (N/(m·s)), celle de Kp. */
+export const KI_MAX = KP_MAX;
+
+/** Pas du réglage de Ki (N/(m·s)), celui de Kp. */
+export const KI_STEP = KP_STEP;
+
+/** Valeur de Ki au chargement du niveau 2 (N/(m·s)), celle de Kp au niveau 1. */
+export const KI_DEFAULT = KP_DEFAULT;
+
 // ───────────────────────────────── Géométrie du niveau (m) ──────────────────────────────────
 
 /** Bord gauche du décor (m). */

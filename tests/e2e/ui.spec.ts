@@ -844,3 +844,93 @@ test('(q) cycle de vie de la vue : attach, detach, attach sans fuite ni erreur',
   }
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });
+
+/** A-02 : en paysage bas, les boutons de l'issue restent dans la partie visible du panneau. */
+const LOW_LANDSCAPE: readonly (readonly [number, number])[] = [
+  [1024, 600],
+  [844, 390],
+  [740, 360],
+  [667, 375],
+];
+
+for (const [width, height] of LOW_LANDSCAPE) {
+  for (const level of [1, 2]) {
+    for (const issue of ['win', 'bonk'] as const) {
+      test(`(r) issue ${issue} niveau ${String(level)} à ${String(width)}×${String(height)} : « Rejouer » et « Menu » visibles et cliquables`, async ({
+        page,
+      }) => {
+        const problems = await open(
+          page,
+          `?renderer=webgl&e2e=1&lang=fr&screen=level${String(level)}`,
+          width,
+          height,
+        );
+        await page.evaluate(
+          ([lvl, win]) => {
+            const hook = window.__huygens;
+            if (hook === undefined) throw new Error('window.__huygens absent');
+            hook.commands.moveRight();
+            hook.advance(2.6);
+            hook.commands.stop();
+            hook.commands.interact();
+            if (lvl === 1) hook.commands.setKp(win ? 2500 : 7000);
+            else hook.commands.setKi(win ? 800 : 2500);
+            hook.commands.launch();
+            hook.advance(12);
+            hook.advance(0);
+          },
+          [level, issue === 'win'] as const,
+        );
+        const outcome = page.locator('#ui .ui-outcome');
+        await expect(outcome).toBeVisible();
+        await settle(page);
+        const replay = outcome.locator('button.ui-primary');
+        const menu = outcome.locator('button.ui-menu');
+        await expect(replay).toBeFocused();
+        const result = await page.evaluate(() => {
+          const panel = document.querySelector('#ui .ui-outcome');
+          if (panel === null) throw new Error('panneau absent');
+          const p = panel.getBoundingClientRect();
+          const one = (selector: string) => {
+            const node = panel.querySelector(selector);
+            if (node === null) throw new Error(`${selector} absent`);
+            const r = node.getBoundingClientRect();
+            const hit = document.elementFromPoint((r.left + r.right) / 2, (r.top + r.bottom) / 2);
+            return {
+              left: r.left,
+              right: r.right,
+              top: r.top,
+              bottom: r.bottom,
+              hit: hit === node,
+            };
+          };
+          return {
+            panel: { left: p.left, right: p.right, top: p.top, bottom: p.bottom },
+            replay: one('button.ui-primary'),
+            menu: one('button.ui-menu'),
+            width: window.innerWidth,
+            height: window.innerHeight,
+          };
+        });
+        for (const b of [result.replay, result.menu]) {
+          expect(b.left).toBeGreaterThanOrEqual(result.panel.left - 0.5);
+          expect(b.right).toBeLessThanOrEqual(result.panel.right + 0.5);
+          expect(b.top).toBeGreaterThanOrEqual(result.panel.top - 0.5);
+          expect(b.bottom).toBeLessThanOrEqual(result.panel.bottom + 0.5);
+          expect(b.top).toBeGreaterThanOrEqual(0);
+          expect(b.bottom).toBeLessThanOrEqual(result.height);
+          expect(b.right).toBeLessThanOrEqual(result.width);
+          expect(b.hit).toBe(true);
+        }
+        await page.keyboard.press('Tab');
+        await expect(menu).toBeFocused();
+        if (process.env['CAPTURE_DIR'] !== undefined && process.env['CAPTURE_DIR'] !== '') {
+          await page.screenshot({
+            path: `${process.env['CAPTURE_DIR']}/a02-l${String(level)}-${issue}-${String(width)}x${String(height)}.png`,
+          });
+        }
+        expect(problems, CONSOLE_FAILURE).toEqual([]);
+      });
+    }
+  }
+}

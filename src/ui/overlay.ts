@@ -385,10 +385,12 @@ export function createUi(options: UiOptions): Ui {
   const teaser = new TextSlot(teaserNode);
   const soonNode = el('p', 'ui-small', outcome);
   const soon = new TextSlot(soonNode);
-  const outcomeButton = el('button', 'ui-btn ui-primary', outcome);
+  // Les boutons vivent dans un pied collé en bas du panneau : visibles même s'il défile (A-02).
+  const outcomeActions = el('div', 'ui-outcome-actions', outcome);
+  const outcomeButton = el('button', 'ui-btn ui-primary', outcomeActions);
   outcomeButton.type = 'button';
   const outcomeButtonText = new TextSlot(outcomeButton);
-  const outcomeMenu = el('button', 'ui-btn ui-menu', outcome);
+  const outcomeMenu = el('button', 'ui-btn ui-menu', outcomeActions);
   outcomeMenu.type = 'button';
   const outcomeMenuText = new TextSlot(outcomeMenu);
   const outcomeBox = new BoxSlot(outcome);

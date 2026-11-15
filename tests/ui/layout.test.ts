@@ -173,6 +173,18 @@ describe('computeLayout', () => {
     expect(boxExtent(l.readout).bottom).toBeLessThan(g.scene.top);
   });
 
+  it('667×375 : bandes sans place sous la scène, l’issue garde une hauteur utile dans l’écran', () => {
+    for (const level2 of [false, true]) {
+      const g = geometry(667, 375, WALKER_SPAWN_X, level2);
+      const l = computeLayout(g, createLayout());
+      expect(l.mode).toBe('bands');
+      const extent = boxExtent(l.outcome);
+      expect(l.outcome.maxHeight).toBeGreaterThanOrEqual(120);
+      expect(extent.top).toBeGreaterThanOrEqual(0);
+      expect(extent.bottom).toBeLessThanOrEqual(375);
+    }
+  });
+
   it('étiquettes de la jauge : posées à droite de la jauge, mesures au-delà (paysage)', () => {
     const g = geometry(1280, 720);
     const l = computeLayout(g, createLayout());

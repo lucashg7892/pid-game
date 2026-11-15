@@ -406,6 +406,15 @@
   font-size: 0.9em;
 }
 
+/* Pied collé en bas : si le panneau défile, les boutons restent dans la partie visible (A-02). */
+.ui-outcome-actions {
+  position: sticky;
+  bottom: -0.45em;
+  margin: 0 -0.7em -0.45em;
+  padding: 0 0.7em 0.45em;
+  background: #fbf7ec;
+}
+
 .ui-outcome .ui-btn {
   margin-top: 0.4em;
 }

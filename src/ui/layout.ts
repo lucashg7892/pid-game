@@ -158,6 +158,10 @@ export const WALKER_HALF_WIDTH = 0.3;
 export const CONSOLE_HALF_BOX = 0.35;
 /** Hauteur de la boîte de la console au-dessus du pupitre (levier) (m). */
 export const CONSOLE_BOX_ABOVE = 0.35;
+/** Hauteur minimale de la bande sous la scène pour y poser l'issue en mode bandes (px). */
+export const MIN_OUTCOME_ROOM = 120;
+/** Hauteur de l'issue quand la bande manque (px) : titre, message qui défile, boutons collés. */
+export const OUTCOME_FALLBACK_HEIGHT = 150;
 /** Largeurs maximales (px). */
 export const MAX_WIDTH = Object.freeze({
   banner: 960,
@@ -405,7 +409,21 @@ export function computeLayout(g: UiGeometry, out: UiLayout): UiLayout {
       bandTop - titleBand,
     );
     set(out.panel, MARGIN, Math.min(MAX_WIDTH.panel * 1.5, full), 'top', below, belowRoom);
-    set(out.outcome, MARGIN, Math.min(MAX_WIDTH.outcome * 1.5, full), 'top', below, belowRoom);
+    const outcomeWidth = Math.min(MAX_WIDTH.outcome * 1.5, full);
+    if (belowRoom >= MIN_OUTCOME_ROOM) {
+      set(out.outcome, MARGIN, outcomeWidth, 'top', below, belowRoom);
+    } else {
+      // Paysage trop bas pour la bande sous la scène : l'issue (finale, la cabine est arrêtée en
+      // haut) se pose au-dessus du bandeau, sur le bas de la cage, pour garder ses boutons visibles.
+      set(
+        out.outcome,
+        MARGIN,
+        outcomeWidth,
+        'bottom',
+        bannerTop - MARGIN,
+        Math.min(OUTCOME_FALLBACK_HEIGHT, bannerTop - MARGIN - TOP_BAR),
+      );
+    }
   }
   return out;
 }

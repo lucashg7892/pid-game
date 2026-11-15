@@ -62,9 +62,10 @@ module.exports = {
     {
       name: 'three-only-in-render',
       comment:
-        'three ne peut être importé que dans src/render (réserve E2 de T-002 levée en T-008).',
+        'three ne peut être importé que dans src/render (réserve E2 de T-002 levée en T-008), et dans ' +
+        'les maquettes jetables src/proto (lot B de la v0.3 : la maquette C en fait un post-traitement).',
       severity: 'error',
-      from: { pathNot: '^src/render/' },
+      from: { pathNot: '^src/(render|proto)/' },
       to: { path: '(^|/)node_modules/three/' },
     },
     {

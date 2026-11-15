@@ -358,6 +358,15 @@ function installTestHook(
 }
 
 async function main(): Promise<void> {
+  // Maquettes du lot B (v0.3) : `?proto=a|b|c|d|tous` monte une maquette jetable à la place du jeu
+  // (import dynamique : rien de `src/proto` n'entre dans le chargement normal).
+  const params = new URLSearchParams(location.search);
+  const proto = params.get('proto');
+  if (proto !== null) {
+    const { lancerProto } = await import('./proto');
+    await lancerProto(proto, params);
+    return;
+  }
   const translator = createTranslator(detectLocale(location.search, navigator.languages));
   const syncDocumentLanguage = (): void => {
     document.documentElement.lang = translator.locale;

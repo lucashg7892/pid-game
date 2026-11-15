@@ -4,7 +4,7 @@
  * {@link bootRenderer} : l'échec est une valeur.
  *
  * Aussi : boucle d'images ({@link createFrameLoop}), suivi de la taille de la surface de dessin
- * ({@link observeCanvasSize}) et préférence de mouvement réduit ({@link prefersReducedMotion}).
+ * ({@link observeCanvasSize}) et préférence de mouvement réduit ({@link watchReducedMotion}).
  */
 import { WebGPURenderer } from 'three/webgpu';
 import { capPixelRatio, type RendererChoice } from './options';
@@ -96,9 +96,57 @@ export function disposeRenderer(renderer: WebGPURenderer): void {
   }
 }
 
-/** Vrai si l'utilisateur demande moins d'animations (`prefers-reduced-motion: reduce`). */
-export function prefersReducedMotion(): boolean {
-  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+/** Requête média de la préférence « mouvement réduit ». */
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
+/** Partie de `MediaQueryList` utilisée par {@link createReducedMotionWatcher}. */
+export interface MediaQueryLike {
+  readonly matches: boolean;
+  addEventListener(type: 'change', listener: (event: { readonly matches: boolean }) => void): void;
+  removeEventListener(
+    type: 'change',
+    listener: (event: { readonly matches: boolean }) => void,
+  ): void;
+}
+
+/** Suivi de la préférence « mouvement réduit » : valeur courante lue sans coût. */
+export interface ReducedMotionWatcher {
+  /** Valeur courante, tenue à jour par l'écouteur `change`. */
+  readonly reduced: boolean;
+  /** Retire l'écouteur ; la dernière valeur reste lisible. Sans effet si déjà appelé. */
+  dispose(): void;
+}
+
+/**
+ * Suit une requête média `prefers-reduced-motion` : la valeur est lue une fois, puis mise à jour
+ * par l'événement `change` (aucune relecture par image).
+ * @param query requête média ; `null` si `matchMedia` est indisponible (valeur fixe `false`).
+ */
+export function createReducedMotionWatcher(query: MediaQueryLike | null): ReducedMotionWatcher {
+  let reduced = query?.matches ?? false;
+  const onChange = (event: { readonly matches: boolean }): void => {
+    reduced = event.matches;
+  };
+  query?.addEventListener('change', onChange);
+  let disposed = false;
+  return {
+    get reduced(): boolean {
+      return reduced;
+    },
+    dispose(): void {
+      if (!disposed) {
+        disposed = true;
+        query?.removeEventListener('change', onChange);
+      }
+    },
+  };
+}
+
+/** Suit la préférence `prefers-reduced-motion: reduce` du système (voir le suivi ci-dessus). */
+export function watchReducedMotion(): ReducedMotionWatcher {
+  return createReducedMotionWatcher(
+    typeof matchMedia === 'function' ? matchMedia(REDUCED_MOTION_QUERY) : null,
+  );
 }
 
 /** Boucle d'images pilotée par `renderer.setAnimationLoop`. */

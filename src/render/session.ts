@@ -7,7 +7,7 @@ import {
   bootRenderer,
   createFrameLoop,
   observeCanvasSize,
-  prefersReducedMotion,
+  watchReducedMotion,
   type Backend,
   disposeRenderer,
   type BootFailureReason,
@@ -57,7 +57,7 @@ export interface StartOptions {
 export interface RenderSession {
   /** Backend effectif. */
   readonly backend: Backend;
-  /** Préférence `prefers-reduced-motion` lue au démarrage. */
+  /** Préférence `prefers-reduced-motion` courante (suit les changements en cours de session). */
   readonly reducedMotion: boolean;
   /** Se résout après la première image dessinée, avec ses compteurs. */
   readonly firstFrame: Promise<RenderStats>;
@@ -112,7 +112,7 @@ export async function startRendering(
   }
   const { renderer, backend } = boot;
   const { onFrame } = options;
-  const reducedMotion = prefersReducedMotion();
+  const motion = watchReducedMotion();
   const stage = createPaperStage(renderer);
   const anchors = createAnchors();
   let surfaceWidth = 0;
@@ -151,7 +151,7 @@ export async function startRendering(
   const draw = (visualAdvance: number): void => {
     visualSeconds += visualAdvance;
     if (view !== null && level !== null) {
-      view.paint(level.snapshot, level.signals, visualSeconds, reducedMotion);
+      view.paint(level.snapshot, level.signals, visualSeconds, motion.reduced);
       computeAnchors(
         stage.frame,
         surfaceWidth,
@@ -201,6 +201,7 @@ export async function startRendering(
     stopped = true;
     loop.stop();
     stopObserving();
+    motion.dispose();
     detach();
     stage.dispose();
     disposeRenderer(renderer);
@@ -211,7 +212,9 @@ export async function startRendering(
     ok: true,
     session: {
       backend,
-      reducedMotion,
+      get reducedMotion(): boolean {
+        return motion.reduced;
+      },
       firstFrame,
       stats,
       anchors(): Readonly<LevelAnchors> {

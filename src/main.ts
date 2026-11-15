@@ -105,6 +105,8 @@ export interface HuygensTestHook {
   stats(): RenderStats;
   /** Points de la courbe y(t) de la dernière image (x0, y0, x1, y1… en m). */
   trace(): number[];
+  /** Préférence « mouvement réduit » courante de la session de rendu. */
+  reducedMotion(): boolean;
   /** Détache le niveau de la session de rendu (papier seul) ; essai du cycle de vie de la vue. */
   detachLevel(): void;
   /** Rattache le niveau à la session de rendu. */
@@ -319,6 +321,7 @@ function installTestHook(
     },
     stats: () => session.stats(),
     trace: () => session.trace(),
+    reducedMotion: () => session.reducedMotion,
     detachLevel: () => {
       session.detachLevel();
     },

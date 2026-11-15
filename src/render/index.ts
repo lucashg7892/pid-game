@@ -7,11 +7,14 @@ export {
   disposeRenderer,
   hasGraphicsApi,
   observeCanvasSize,
-  prefersReducedMotion,
+  createReducedMotionWatcher,
+  watchReducedMotion,
   type Backend,
   type BootFailureReason,
   type BootResult,
   type FrameLoop,
+  type MediaQueryLike,
+  type ReducedMotionWatcher,
 } from './bootstrap';
 export {
   PLAY_ZONE,

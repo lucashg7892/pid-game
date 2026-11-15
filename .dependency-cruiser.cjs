@@ -44,6 +44,22 @@ module.exports = {
       to: { path: '^src/(sim|render)/' },
     },
     {
+      name: 'proto-isolated',
+      comment:
+        'Les maquettes (src/proto) sont jetables : le jeu ne les importe pas (seuls src/main.ts, src/proto et tests/ le peuvent).',
+      severity: 'error',
+      from: { path: '^src/(sim|game|i18n|render|ui|app)/' },
+      to: { path: '^src/proto/' },
+    },
+    {
+      name: 'proto-common-pure',
+      comment:
+        'src/proto/common est pur : il ne dépend que de src/proto/common (ni rendu, ni ui, ni paquet externe ; le DOM est vérifié par tests/proto/pur.test.ts).',
+      severity: 'error',
+      from: { path: '^src/proto/common/' },
+      to: { pathNot: '^src/proto/common/' },
+    },
+    {
       name: 'three-only-in-render',
       comment:
         'three ne peut être importé que dans src/render (réserve E2 de T-002 levée en T-008).',

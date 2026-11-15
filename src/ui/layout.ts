@@ -54,6 +54,10 @@ export interface UiGeometry {
   readonly iGauge: ScreenXY;
   /** Vrai au niveau 2 : la jauge du terme intégral est dessinée. */
   readonly iGaugeVisible: boolean;
+  /** Coin haut gauche du chevalet du tableau d'école (zone cliquable). */
+  readonly boardTopLeft: ScreenXY;
+  /** Coin bas droit du chevalet, au sol. */
+  readonly boardBottomRight: ScreenXY;
   /** Milieu de la cote d'erreur. */
   readonly errorDimension: ScreenXY;
   /** Ordonnée écran du dessus du quai d'arrivée. */
@@ -165,6 +169,8 @@ export const CONSOLE_BOX_ABOVE = 0.35;
 export const MIN_OUTCOME_ROOM = 120;
 /** Hauteur de l'issue quand la bande manque (px) : titre, message qui défile, boutons collés. */
 export const OUTCOME_FALLBACK_HEIGHT = 150;
+/** Côté minimal de la zone cliquable du chevalet (px) : cible tactile. */
+export const BOARD_HIT_MIN = 44;
 /** Largeurs maximales (px). */
 export const MAX_WIDTH = Object.freeze({
   banner: 960,

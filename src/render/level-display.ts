@@ -12,6 +12,7 @@ import {
   ARRIVAL_LEDGE_HEIGHT,
   CABIN_CENTER_X,
   CONSOLE_X,
+  START_LEDGE_HEIGHT,
   type Facing,
   type LevelPhase,
   type LevelSnapshot,
@@ -21,6 +22,9 @@ import { GAUGE_WEIGHT_Y } from './gauge';
 import {
   CONSOLE_POST_HEIGHT,
   DIMENSION_X,
+  EASEL_CENTER_X,
+  EASEL_HEIGHT,
+  EASEL_WIDTH,
   GAUGE_I_MAX_X,
   GAUGE_I_MIN_X,
   GAUGE_MAX_X,
@@ -172,6 +176,10 @@ export interface LevelAnchors {
   readonly gaugeWeight: ScreenPoint;
   /** Milieu du bord haut de la jauge du terme intégral (niveau 2). */
   readonly iGauge: ScreenPoint;
+  /** Coin haut gauche du chevalet du tableau d'école (cadre et pieds : zone cliquable). */
+  readonly boardTopLeft: ScreenPoint;
+  /** Coin bas droit du chevalet, au sol. */
+  readonly boardBottomRight: ScreenPoint;
   /** Vrai si la cote d'erreur est dessinée. */
   errorDimensionVisible: boolean;
   /** Vrai au niveau 2 : la jauge du terme intégral est dessinée. */
@@ -189,6 +197,8 @@ export function createAnchors(): LevelAnchors {
     gaugeMax: { x: 0, y: 0 },
     gaugeWeight: { x: 0, y: 0 },
     iGauge: { x: 0, y: 0 },
+    boardTopLeft: { x: 0, y: 0 },
+    boardBottomRight: { x: 0, y: 0 },
     errorDimensionVisible: false,
     iGaugeVisible: false,
   };
@@ -205,6 +215,8 @@ export function resetAnchors(out: LevelAnchors): void {
     out.gaugeMax,
     out.gaugeWeight,
     out.iGauge,
+    out.boardTopLeft,
+    out.boardBottomRight,
   ]) {
     point.x = 0;
     point.y = 0;
@@ -266,6 +278,22 @@ export function computeAnchors(
   place(out.gaugeMax, frame, widthPx, heightPx, labelX, GAUGE_MAX_Y);
   place(out.gaugeWeight, frame, widthPx, heightPx, labelX, GAUGE_WEIGHT_Y);
   place(out.iGauge, frame, widthPx, heightPx, (GAUGE_I_MIN_X + GAUGE_I_MAX_X) / 2, GAUGE_MAX_Y);
+  place(
+    out.boardTopLeft,
+    frame,
+    widthPx,
+    heightPx,
+    EASEL_CENTER_X - EASEL_WIDTH / 2,
+    START_LEDGE_HEIGHT + EASEL_HEIGHT,
+  );
+  place(
+    out.boardBottomRight,
+    frame,
+    widthPx,
+    heightPx,
+    EASEL_CENTER_X + EASEL_WIDTH / 2,
+    START_LEDGE_HEIGHT,
+  );
   out.iGaugeVisible = withIntegral;
   out.errorDimensionVisible = display.phase === 'outcome' && s.outcome === 'win';
 }

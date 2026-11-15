@@ -1,6 +1,6 @@
 /**
  * Interface DOM superposée au canvas (T-010) : barre du haut (titre, Kp et Ki, aide, langue, pause),
- * bulle, bandeau d'aide, panneau de réglage (Kp au niveau 1, Ki au niveau 2), mesures du trajet et légende, issue, cote chiffrée, aide des
+ * bulle, bandeau d'aide, tableau d'école (zone cliquable sur le chevalet et fenêtre modale, T-042), panneau de réglage (Kp au niveau 1, Ki au niveau 2), mesures du trajet et légende, issue, cote chiffrée, aide des
  * commandes, commandes tactiles, invite d'orientation et région `aria-live`.
  *
  * Le DOM est construit une fois. À chaque image, {@link Ui.update} reconstruit le modèle de vue
@@ -12,8 +12,10 @@ import type { GameEvent, Level } from '../game';
 import type { Translator } from '../i18n';
 import { admitEvent, announcementFor, createLaunchGate, releaseLaunch } from './announce';
 import type { HintLine } from './hints';
-import { commandsBlocked, helpPauseDecision, trapFocusIndex } from './help';
+import { boardValues, buildBoardSections, renderBoard, type BoardValueNodes } from './board';
+import { commandsBlocked, modalPauseDecision, trapFocusIndex, type ModalKind } from './help';
 import {
+  BOARD_HIT_MIN,
   computeLayout,
   createLayout,
   isConsoleHit,
@@ -49,6 +51,8 @@ export interface UiOptions {
 export interface Ui {
   /** Vrai si l'aide des commandes est ouverte. */
   readonly helpOpen: boolean;
+  /** Vrai si le tableau d'école est ouvert. */
+  readonly boardOpen: boolean;
   /**
    * Met l'interface à jour d'après le niveau ; `geometry` absente : garde la dernière.
    * @param geometry géométrie de l'écran (objets lus, jamais modifiés).
@@ -59,6 +63,12 @@ export interface Ui {
    * @param open vrai pour ouvrir.
    */
   setHelp(open: boolean): void;
+  /**
+   * Ouvre ou ferme le tableau d'école. L'ouvrir ferme l'aide (et inversement) sans toucher à la
+   * pause ; il met le jeu en pause comme l'aide, et ne reprend que la pause qu'il a posée.
+   * @param open vrai pour ouvrir.
+   */
+  setBoard(open: boolean): void;
   /**
    * Démonte l'interface : retire les écouteurs du document, du canvas et du traducteur, vide le
    * conteneur et masque le canvas aux lecteurs d'écran. Sans effet si déjà appelée.
@@ -165,6 +175,35 @@ class BoxSlot {
   }
 }
 
+/** Rectangle d'une zone cliquable, écrit seulement s'il change. */
+class RectSlot {
+  private left = Number.NaN;
+  private top = Number.NaN;
+  private width = Number.NaN;
+  private height = Number.NaN;
+  constructor(readonly node: HTMLElement) {}
+  /** Place la zone (pixels CSS). */
+  apply(left: number, top: number, width: number, height: number): void {
+    const style = this.node.style;
+    if (left !== this.left) {
+      this.left = left;
+      style.left = `${String(left)}px`;
+    }
+    if (top !== this.top) {
+      this.top = top;
+      style.top = `${String(top)}px`;
+    }
+    if (width !== this.width) {
+      this.width = width;
+      style.width = `${String(width)}px`;
+    }
+    if (height !== this.height) {
+      this.height = height;
+      style.height = `${String(height)}px`;
+    }
+  }
+}
+
 /** Point d'ancrage d'une étiquette, écrit seulement s'il change. */
 class PointSlot {
   private x = Number.NaN;
@@ -213,8 +252,10 @@ export function createUi(options: UiOptions): Ui {
   const layout = createLayout();
   let geometry: Readonly<UiGeometry> | null = null;
   let helpOpen = false;
-  let pausedByHelp = false;
-  let helpOpener: HTMLElement | null = null;
+  let boardOpen = false;
+  /** Vrai si l'aide ou le tableau (une seule fenêtre modale à la fois) tient le jeu en pause. */
+  let pausedByModal = false;
+  let modalOpener: HTMLElement | null = null;
 
   root.classList.add('ui');
 
@@ -248,6 +289,15 @@ export function createUi(options: UiOptions): Ui {
 
   const rotate = new TextSlot(el('p', 'ui-rotate ui-paper', root));
 
+  // --- Chevalet : zone cliquable qui ouvre le tableau d'école ---
+  const boardHit = el('button', 'ui-board-hit', root);
+  boardHit.type = 'button';
+  boardHit.hidden = true;
+  boardHit.setAttribute('aria-controls', 'ui-board');
+  boardHit.setAttribute('aria-haspopup', 'dialog');
+  const boardHitLabel = new AttrSlot(boardHit, 'aria-label');
+  const boardHitRect = new RectSlot(boardHit);
+
   // --- Aide des commandes ---
   const help = el('section', 'ui-paper ui-help', root);
   help.id = 'ui-help';
@@ -264,6 +314,29 @@ export function createUi(options: UiOptions): Ui {
   const helpCloseText = new TextSlot(helpClose);
   let helpLines: readonly string[] = [];
   const helpBox = new BoxSlot(help);
+
+  // --- Tableau d'école (fenêtre modale en grand) ---
+  const boardBackdrop = el('div', 'ui-board-backdrop', root);
+  boardBackdrop.hidden = true;
+  const board = el('section', 'ui-board', boardBackdrop);
+  board.id = 'ui-board';
+  board.setAttribute('role', 'dialog');
+  board.setAttribute('aria-modal', 'true');
+  board.setAttribute('aria-labelledby', 'ui-board-title');
+  const boardHead = el('header', 'ui-board-head', board);
+  const boardTitleNode = el('h2', '', boardHead);
+  boardTitleNode.id = 'ui-board-title';
+  const boardTitle = new TextSlot(boardTitleNode);
+  const boardClose = el('button', 'ui-btn ui-board-close', boardHead);
+  boardClose.type = 'button';
+  const boardCloseText = new TextSlot(boardClose);
+  const boardBody = el('div', 'ui-board-body', board);
+  // Contenu construit à l'ouverture et à chaque changement de langue ; valeurs réécrites en direct.
+  let boardBuiltFor = '';
+  let boardKpSlot: TextSlot | null = null;
+  let boardKiSlot: TextSlot | null = null;
+  let boardKpShown = Number.NaN;
+  let boardKiShown = Number.NaN;
 
   // --- Bulle ---
   const bubbleNode = el('p', 'ui-paper ui-bubble', root);
@@ -506,6 +579,36 @@ export function createUi(options: UiOptions): Ui {
     canvasLabel.set(t.canvasLabel);
     liveLabel.set(t.liveLabel);
 
+    // Chevalet et tableau d'école.
+    boardHitLabel.set(t.boardOpen);
+    show(boardBackdrop, vm.boardOpen);
+    boardTitle.set(t.boardTitle);
+    boardCloseText.set(t.boardClose);
+    if (vm.boardOpen) {
+      const levelId = level.snapshot.levelId;
+      const key = `${vm.locale}|${levelId}`;
+      if (boardBuiltFor !== key) {
+        boardBuiltFor = key;
+        const nodes: BoardValueNodes = renderBoard(
+          document,
+          boardBody,
+          buildBoardSections(tr, levelId),
+        );
+        boardKpSlot = nodes.kp === undefined ? null : new TextSlot(nodes.kp);
+        boardKiSlot = nodes.ki === undefined ? null : new TextSlot(nodes.ki);
+        boardKpShown = Number.NaN;
+        boardKiShown = Number.NaN;
+      }
+      const { kp: kpNow, ki: kiNow } = level.snapshot;
+      if (kpNow !== boardKpShown || kiNow !== boardKiShown) {
+        boardKpShown = kpNow;
+        boardKiShown = kiNow;
+        const values = boardValues(tr, levelId, kpNow, kiNow);
+        boardKpSlot?.set(values.kp);
+        boardKiSlot?.set(values.ki);
+      }
+    }
+
     // Aide.
     show(help, vm.helpOpen);
     helpTitle.set(t.helpTitle);
@@ -655,6 +758,18 @@ export function createUi(options: UiOptions): Ui {
     outcomeBox.apply(layout.outcome, h);
     readoutBox.apply(layout.readout, h);
     helpBox.apply(layout.help, h);
+    const tl = g.boardTopLeft;
+    const br = g.boardBottomRight;
+    // Zone d'au moins BOARD_HIT_MIN px de côté (portrait : le chevalet y est tout petit), centrée.
+    const hitWidth = Math.max(BOARD_HIT_MIN, br.x - tl.x);
+    const hitHeight = Math.max(BOARD_HIT_MIN, br.y - tl.y);
+    boardHitRect.apply(
+      Math.round((tl.x + br.x - hitWidth) / 2),
+      Math.round((tl.y + br.y - hitHeight) / 2),
+      Math.round(hitWidth),
+      Math.round(hitHeight),
+    );
+    show(boardHit, true);
     forcePoint.apply(layout.force.x, layout.force.y);
     dimensionPoint.apply(layout.dimension.x, layout.dimension.y);
     gaugeTitlePoint.apply(layout.force.x, layout.force.y);
@@ -684,8 +799,8 @@ export function createUi(options: UiOptions): Ui {
       }
     }
     level.drainEvents(onEvent);
-    if (pausedByHelp && level.snapshot.phase !== 'paused') {
-      pausedByHelp = false;
+    if (pausedByModal && level.snapshot.phase !== 'paused') {
+      pausedByModal = false;
     }
     apply(builder.build(level.snapshot, ui));
     if (geometry !== null) {
@@ -699,31 +814,58 @@ export function createUi(options: UiOptions): Ui {
       ? true
       : node.closest('[hidden]') !== null;
 
-  const setHelp = (open: boolean): void => {
-    if (open === helpOpen) {
+  /** Fenêtre modale ouverte, ou `null`. */
+  const currentModal = (): ModalKind | null => (helpOpen ? 'help' : boardOpen ? 'board' : null);
+
+  /**
+   * Passe d'une fenêtre modale à l'autre (ou à aucune) : une seule pause est tenue pour les deux,
+   * le focus entre dans la nouvelle fenêtre et revient à son origine à la fermeture.
+   */
+  const setModal = (next: ModalKind | null): void => {
+    const current = currentModal();
+    if (next === current) {
       return;
     }
-    // Lu avant la mise à jour : masquer l'aide fait perdre le focus qu'elle contient.
+    // Lu avant la mise à jour : masquer une fenêtre fait perdre le focus qu'elle contient.
     const active = document.activeElement;
-    const focusInside = help.contains(active);
-    const decision = helpPauseDecision(open, level.snapshot.phase, pausedByHelp);
-    pausedByHelp = decision.pausedByHelp;
+    const focusInside = help.contains(active) || boardBackdrop.contains(active);
+    const decision = modalPauseDecision(current, next, level.snapshot.phase, pausedByModal);
+    pausedByModal = decision.pausedByHelp;
     if (decision.action === 'pause') {
       level.pause();
     } else if (decision.action === 'resume') {
       level.resume();
     }
-    helpOpen = open;
-    if (open) {
-      helpOpener = active instanceof HTMLElement && active !== document.body ? active : null;
+    helpOpen = next === 'help';
+    boardOpen = next === 'board';
+    if (current === null) {
+      modalOpener = active instanceof HTMLElement && active !== document.body ? active : null;
     }
     update();
-    if (open) {
+    if (next === 'help') {
       helpClose.focus({ preventScroll: true });
+    } else if (next === 'board') {
+      boardClose.focus({ preventScroll: true });
     } else if (focusInside || active === document.body) {
-      const back = helpOpener?.isConnected === true && !isDisabled(helpOpener) ? helpOpener : null;
-      (back ?? helpButton).focus({ preventScroll: true });
-      helpOpener = null;
+      const fallback = current === 'board' && !boardHit.hidden ? boardHit : helpButton;
+      const back =
+        modalOpener?.isConnected === true && !isDisabled(modalOpener) ? modalOpener : null;
+      (back ?? fallback).focus({ preventScroll: true });
+      modalOpener = null;
+    }
+  };
+  const setHelp = (open: boolean): void => {
+    if (open) {
+      setModal('help');
+    } else if (helpOpen) {
+      setModal(null);
+    }
+  };
+  const setBoard = (open: boolean): void => {
+    if (open) {
+      setModal('board');
+    } else if (boardOpen) {
+      setModal(null);
     }
   };
 
@@ -731,14 +873,19 @@ export function createUi(options: UiOptions): Ui {
     get helpOpen(): boolean {
       return helpOpen;
     },
+    get boardOpen(): boolean {
+      return boardOpen;
+    },
     update,
     setHelp,
+    setBoard,
     destroy,
   };
 
   // --- Événements ---
+  const blocked = (): boolean => commandsBlocked(helpOpen, boardOpen);
   const run = (command: () => unknown): void => {
-    if (commandsBlocked(helpOpen)) {
+    if (blocked()) {
       return;
     }
     command();
@@ -750,12 +897,46 @@ export function createUi(options: UiOptions): Ui {
   helpClose.addEventListener('click', () => {
     setHelp(false);
   });
-  // Piège de focus : Tab et Maj+Tab restent dans l'aide tant qu'elle est ouverte.
-  const onDocumentKeyDown = (event: KeyboardEvent): void => {
-    if (!helpOpen || event.key !== 'Tab') {
+  // Tableau d'école : le deuxième clic d'un double-clic est ignoré (A-01), y compris sur le fond
+  // (le clic hors du tableau le ferme, il ne doit pas fermer ce que le premier clic vient d'ouvrir).
+  boardHit.addEventListener('click', (event) => {
+    if (event.detail > 1) {
       return;
     }
-    const controls = Array.from(help.querySelectorAll<HTMLElement>('button'));
+    setBoard(true);
+  });
+  boardClose.addEventListener('click', () => {
+    setBoard(false);
+  });
+  boardBackdrop.addEventListener('click', (event) => {
+    if (event.target === boardBackdrop && event.detail <= 1) {
+      setBoard(false);
+    }
+  });
+  // Piège de focus : Tab et Maj+Tab restent dans la fenêtre modale ouverte (aide ou tableau).
+  // Tableau ouvert : les flèches et Page préc. / Page suiv. font défiler son texte (le jeu, lui,
+  // ne reçoit aucune commande).
+  const onDocumentKeyDown = (event: KeyboardEvent): void => {
+    if (boardOpen && !event.ctrlKey && !event.altKey && !event.metaKey) {
+      const page = boardBody.clientHeight * 0.9;
+      const step: Readonly<Record<string, number>> = {
+        ArrowDown: 40,
+        ArrowUp: -40,
+        PageDown: page,
+        PageUp: -page,
+      };
+      const by = step[event.code];
+      if (by !== undefined) {
+        boardBody.scrollBy({ top: by });
+      } else if (event.code === 'Home' || event.code === 'End') {
+        boardBody.scrollTo({ top: event.code === 'Home' ? 0 : boardBody.scrollHeight });
+      }
+    }
+    if ((!helpOpen && !boardOpen) || event.key !== 'Tab') {
+      return;
+    }
+    const modal = boardOpen ? board : help;
+    const controls = Array.from(modal.querySelectorAll<HTMLElement>('button'));
     const index = controls.findIndex((node) => node === document.activeElement);
     const next = trapFocusIndex(index, controls.length, event.shiftKey);
     if (next !== null) {
@@ -774,7 +955,7 @@ export function createUi(options: UiOptions): Ui {
     run(() => (level.snapshot.phase === 'paused' ? level.resume() : level.pause()));
   });
   const leaveToMenu = (): void => {
-    if (!commandsBlocked(helpOpen)) {
+    if (!blocked()) {
       onMenu?.();
     }
   };
@@ -782,7 +963,7 @@ export function createUi(options: UiOptions): Ui {
   outcomeMenu.addEventListener('click', leaveToMenu);
   // Comme les autres boutons de navigation : le deuxième clic d'un double-clic est ignoré (A-01).
   outcomeNext?.addEventListener('click', (event) => {
-    if (event.detail > 1 || commandsBlocked(helpOpen)) {
+    if (event.detail > 1 || blocked()) {
       return;
     }
     onNext?.();
@@ -797,7 +978,7 @@ export function createUi(options: UiOptions): Ui {
     run(() => level.setTuning(range.valueAsNumber));
   });
   const commitNumber = (): void => {
-    if (commandsBlocked(helpOpen)) {
+    if (blocked()) {
       numberInput.valueAsNumber = tunedNow();
       return;
     }
@@ -870,7 +1051,7 @@ export function createUi(options: UiOptions): Ui {
 
   // Souris : clic sur la console = interagir (en approche).
   const onCanvasClick = (event: MouseEvent): void => {
-    if (!commandsBlocked(helpOpen) && geometry !== null && level.snapshot.phase === 'approach') {
+    if (!blocked() && geometry !== null && level.snapshot.phase === 'approach') {
       const rect = canvas.getBoundingClientRect();
       if (isConsoleHit(event.clientX - rect.left, event.clientY - rect.top, geometry)) {
         run(() => level.interact());
@@ -888,6 +1069,7 @@ export function createUi(options: UiOptions): Ui {
     canvas.removeEventListener('click', onCanvasClick);
     unsubscribeLocale();
     helpOpen = false;
+    boardOpen = false;
     root.replaceChildren();
     root.classList.remove('ui');
     canvas.setAttribute('aria-hidden', 'true');

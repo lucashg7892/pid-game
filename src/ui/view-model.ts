@@ -20,6 +20,8 @@ import { chooseHint, hintLine, type HintId, type HintLine } from './hints';
 export interface UiState {
   /** Aide des commandes ouverte. */
   readonly helpOpen: boolean;
+  /** Tableau d'école ouvert (absent : fermé). */
+  readonly boardOpen?: boolean;
 }
 
 /** Textes qui ne dépendent que de la langue. */
@@ -46,6 +48,12 @@ export interface StaticTexts {
   readonly helpLines: readonly string[];
   /** Bouton de fermeture de l'aide. */
   readonly helpClose: string;
+  /** Nom de la zone cliquable du chevalet (ouvre le tableau d'école). */
+  readonly boardOpen: string;
+  /** Titre du tableau d'école. */
+  readonly boardTitle: string;
+  /** Bouton de fermeture du tableau d'école. */
+  readonly boardClose: string;
   /** Bouton pause. */
   readonly pause: string;
   /** Bouton reprise. */
@@ -125,6 +133,8 @@ export interface ViewModel {
   paused: boolean;
   /** Aide des commandes ouverte. */
   helpOpen: boolean;
+  /** Tableau d'école ouvert. */
+  boardOpen: boolean;
   /** Bandeau courant. */
   hintId: HintId;
   /** Contenu du bandeau (même objet tant que bandeau et langue ne changent pas). */
@@ -226,8 +236,12 @@ export function staticTexts(tr: Translator, levelId: LevelId = 'level1'): Static
       tr.t(ki ? 'controls.help.pauseKi' : 'controls.help.pause'),
       tr.t('controls.help.mouse'),
       tr.t(ki ? 'controls.help.touchKi' : 'controls.help.touch'),
+      tr.t('controls.help.board'),
     ],
     helpClose: tr.t('controls.help.close'),
+    boardOpen: tr.t('board.open'),
+    boardTitle: tr.t('board.title'),
+    boardClose: tr.t('board.close'),
     pause: tr.t('controls.pause'),
     resume: tr.t('controls.resume'),
     menu: tr.t('controls.menu'),
@@ -412,6 +426,7 @@ export function createViewModelBuilder(
     phase: 'approach',
     paused: false,
     helpOpen: false,
+    boardOpen: false,
     hintId: 'use',
     hint: [],
     kpTag: '',
@@ -459,8 +474,10 @@ export function createViewModelBuilder(
     model.phase = phase;
     model.paused = s.phase === 'paused';
     model.helpOpen = ui.helpOpen;
+    const boardOpen = ui.boardOpen === true;
+    model.boardOpen = boardOpen;
 
-    const hintId = chooseHint(s, ui.helpOpen);
+    const hintId = chooseHint(s, ui.helpOpen, boardOpen);
     if (hintId !== hintKey) {
       hintKey = hintId;
       model.hintId = hintId;

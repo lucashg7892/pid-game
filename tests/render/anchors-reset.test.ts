@@ -8,7 +8,7 @@ describe('resetAnchors', () => {
       p.x = 157;
       p.y = 611;
     }
-    for (const p of [a.gaugeMax, a.gaugeWeight, a.iGauge]) {
+    for (const p of [a.gaugeMax, a.gaugeWeight, a.iGauge, a.boardTopLeft, a.boardBottomRight]) {
       p.x = 3;
       p.y = 4;
     }

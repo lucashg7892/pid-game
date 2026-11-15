@@ -261,6 +261,8 @@ function uiGeometry(width: number, height: number, anchors: Readonly<LevelAnchor
     get iGaugeVisible(): boolean {
       return anchors.iGaugeVisible;
     },
+    boardTopLeft: anchors.boardTopLeft,
+    boardBottomRight: anchors.boardBottomRight,
     errorDimension: anchors.errorDimension,
     arrivalLedgeY: worldYToPixel(frame, height, ARRIVAL_LEDGE_HEIGHT),
     groundY: worldYToPixel(frame, height, START_LEDGE_HEIGHT),

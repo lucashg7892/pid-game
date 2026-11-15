@@ -213,13 +213,14 @@ test('(a) état initial : le bonhomme est dessiné', async ({ page }) => {
     .info()
     .annotations.push({ type: 'bonhomme', description: `${String(box)} pixels de graphite` });
   expect(box, 'pixels sombres dans la boîte du bonhomme').toBeGreaterThanOrEqual(60);
-  // Témoin : la même boîte décalée de 2 m vers la droite (papier vierge) n'a pas de graphite.
+  // Témoin : la même boîte décalée de 2,8 m vers la droite (papier vierge, entre le chevalet du
+  // tableau d'école, T-042, et la console) n'a pas de graphite.
   const empty = countGraphite(
     image,
     frame,
-    s.walkerX + 1.55,
+    s.walkerX + 2.8,
     0.15,
-    s.walkerX + 2.45,
+    s.walkerX + 3.7,
     WALKER_HEAD_TOP,
   );
   expect(empty, 'témoin vide').toBe(0);

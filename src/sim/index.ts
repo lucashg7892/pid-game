@@ -38,6 +38,7 @@ export {
   createElevator,
   createElevatorLoop,
   createElevatorPiLoop,
+  elevatorAcceleration,
   type ElevatorLoopOptions,
   type ElevatorParams,
   type ElevatorPiLoop,

@@ -10,7 +10,9 @@
  * - champ numérique : comportement natif pour tout sauf Échap ;
  * - bouton (ou autre contrôle activable) : Entrée et Espace restent natifs ;
  * - curseur : flèches, Début et Fin restent natives (elles règlent la valeur) ;
- * - aide ouverte (K24) : aucune commande du jeu ; seuls Échap, Tab et le comportement natif des
+ * - T (par `code`, comme E et R) : ouvre ou ferme le tableau d'école en tout temps, sauf dans le
+ *   champ numérique (la frappe y reste native) ; une répétition ne fait rien ;
+ * - aide ou tableau ouvert (K24) : aucune commande du jeu ; seuls Échap, Tab et le comportement natif des
  *   contrôles de l'aide (Entrée, Espace sur un bouton) passent ;
  * - toute touche du jeu, et les touches qui feraient défiler la page, sont bloquées
  *   (`preventDefault`).
@@ -49,6 +51,8 @@ export interface KeyInput {
   readonly focus: FocusTarget;
   /** Vrai si le panneau d'aide des commandes est ouvert. */
   readonly helpOpen: boolean;
+  /** Vrai si le tableau d'école est ouvert. */
+  readonly boardOpen: boolean;
 }
 
 /**
@@ -73,6 +77,8 @@ export type KeyIntent =
   | 'pause'
   | 'resume'
   | 'closeHelp'
+  | 'openBoard'
+  | 'closeBoard'
   | 'closeTuning';
 
 /** Écart de Kp d'une touche + ou − (N/m). */
@@ -159,7 +165,7 @@ function useIntentOf(phase: LevelPhase, repeat: boolean): KeyIntent {
   return 'block';
 }
 
-/** Intention quand l'aide est ouverte : touches du jeu et de défilement bloquées, le reste natif. */
+/** Intention quand l'aide ou le tableau est ouvert : touches du jeu et de défilement bloquées, le reste natif. */
 function blockedIntentOf(code: string, key: string, focus: FocusTarget): KeyIntent {
   const isActivation = code === 'Enter' || code === 'NumpadEnter' || code === 'Space';
   if (isActivation && focus === 'button') {
@@ -189,6 +195,9 @@ export function keyToIntent(input: KeyInput): KeyIntent {
     if (input.repeat) {
       return 'block';
     }
+    if (input.boardOpen) {
+      return 'closeBoard';
+    }
     if (input.helpOpen) {
       return 'closeHelp';
     }
@@ -197,13 +206,22 @@ export function keyToIntent(input: KeyInput): KeyIntent {
     }
     return phase === 'paused' ? 'resume' : 'pause';
   }
+  if (code === 'KeyT') {
+    if (focus === 'number') {
+      return 'none';
+    }
+    if (input.repeat) {
+      return 'block';
+    }
+    return input.boardOpen ? 'closeBoard' : 'openBoard';
+  }
   const isActivation = code === 'Enter' || code === 'NumpadEnter' || code === 'Space';
   // Entrée maintenue sur un bouton (« Menu », « Rejouer »…) : pas de clic synthétisé à chaque
   // répétition (A-01).
   if (isActivation && focus === 'button' && input.repeat) {
     return 'block';
   }
-  if (commandsBlocked(input.helpOpen)) {
+  if (commandsBlocked(input.helpOpen, input.boardOpen)) {
     return blockedIntentOf(code, key, focus);
   }
   if (focus === 'number') {

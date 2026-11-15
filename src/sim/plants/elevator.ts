@@ -89,6 +89,42 @@ export function createElevator(params: Readonly<ElevatorParams> = ELEVATOR_PARAM
   };
 }
 
+/**
+ * Accélération verticale ÿ (m/s²) de la cabine, d'après le modèle (somme des forces / masse), à
+ * l'état (y, ẏ) sous la force du moteur `force` (N, déjà saturée) :
+ *
+ *   ÿ = (u − m·g − c·ẏ) / m,
+ *
+ * avec exactement les mêmes opérations, dans le même ordre, que la composante vitesse des
+ * dérivées de {@link createElevator} : hors contact, le résultat est identique bit à bit à
+ * `derivative(x, u, out)` puis `out[ELEVATOR_VELOCITY]`. C'est l'accélération au début du pas
+ * (avant intégration), celle de l'état où la commande a été calculée ; elle ne vient jamais d'une
+ * différence entre deux pas.
+ *
+ * Contact au sol : si y ≤ 0, ẏ ≤ 0 et la force nette u − m·g − c·ẏ < 0, la cabine est posée et le
+ * sol la retient : renvoie 0 (+0), comme la contrainte du modèle qui garde y = 0 et ẏ ≥ 0 après
+ * le pas. Si la force nette est ≥ 0 (décollage) ou si ẏ > 0, la formule s'applique. Un NaN sur ẏ
+ * ou sur la force est propagé ; y n'entre que dans le test de contact (comme dans le modèle, ÿ ne
+ * dépend pas de y) : y NaN n'est jamais au sol. Les paramètres ne sont pas revalidés : ils doivent
+ * respecter le domaine de {@link createElevator}. Pure, sans allocation.
+ * @param y hauteur du plancher de la cabine (m, sol = 0).
+ * @param v vitesse verticale ẏ (m/s, positive vers le haut).
+ * @param force force du moteur appliquée u (N), après saturation.
+ * @param params paramètres physiques ; défaut {@link ELEVATOR_PARAMS}.
+ * @returns ÿ (m/s²), positive vers le haut.
+ */
+export function elevatorAcceleration(
+  y: number,
+  v: number,
+  force: number,
+  params: Readonly<ElevatorParams> = ELEVATOR_PARAMS,
+): number {
+  const { mass, gravity, damping } = params;
+  const net = force - mass * gravity - damping * v;
+  if (y <= GROUND_HEIGHT && v <= 0 && net < 0) return 0;
+  return net / mass;
+}
+
 /** Options d'assemblage de la boucle de l'ascenseur. */
 export interface ElevatorLoopOptions {
   /** Gain proportionnel Kp (N/m), fini et ≥ 0. */

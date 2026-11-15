@@ -4,7 +4,13 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { LevelPhase } from '../../src/game';
-import { commandsBlocked, helpPauseDecision, trapFocusIndex } from '../../src/ui/help';
+import {
+  commandsBlocked,
+  helpPauseDecision,
+  modalPauseDecision,
+  trapFocusIndex,
+  type ModalKind,
+} from '../../src/ui/help';
 
 const PHASES: readonly LevelPhase[] = [
   'approach',
@@ -75,5 +81,64 @@ describe('commandsBlocked (K24)', () => {
   it("suspend les commandes du niveau tant que l'aide est ouverte", () => {
     expect(commandsBlocked(true)).toBe(true);
     expect(commandsBlocked(false)).toBe(false);
+  });
+
+  it("suspend aussi les commandes tant que le tableau d'école est ouvert (T-042)", () => {
+    expect(commandsBlocked(false, true)).toBe(true);
+    expect(commandsBlocked(true, true)).toBe(true);
+    expect(commandsBlocked(false, false)).toBe(false);
+  });
+});
+
+describe("modalPauseDecision : l'aide et le tableau partagent la pause (T-042)", () => {
+  const KINDS: readonly ModalKind[] = ['help', 'board'];
+
+  it("à l'ouverture depuis le jeu, applique la règle de l'aide, pour l'une et l'autre fenêtre", () => {
+    for (const kind of KINDS) {
+      for (const phase of PHASES) {
+        expect(modalPauseDecision(null, kind, phase, false), `${kind} ${phase}`).toEqual(
+          helpPauseDecision(true, phase, false),
+        );
+      }
+    }
+  });
+
+  it('à la fermeture, reprend seulement la pause que la fenêtre a posée', () => {
+    for (const kind of KINDS) {
+      expect(modalPauseDecision(kind, null, 'paused', true)).toEqual({
+        action: 'resume',
+        pausedByHelp: false,
+      });
+      // Pause du joueur : jamais reprise.
+      expect(modalPauseDecision(kind, null, 'paused', false)).toEqual({
+        action: 'none',
+        pausedByHelp: false,
+      });
+    }
+  });
+
+  it("passer de l'une à l'autre ne reprend ni ne remet en pause, et garde qui tient la pause", () => {
+    for (const [from, to] of [
+      ['help', 'board'],
+      ['board', 'help'],
+    ] as const) {
+      for (const phase of PHASES) {
+        expect(modalPauseDecision(from, to, phase, true), `${from}→${to} ${phase}`).toEqual({
+          action: 'none',
+          pausedByHelp: true,
+        });
+        expect(modalPauseDecision(from, to, phase, false), `${from}→${to} ${phase}`).toEqual({
+          action: 'none',
+          pausedByHelp: false,
+        });
+      }
+    }
+  });
+
+  it('aucune fenêtre avant ni après : rien à faire', () => {
+    expect(modalPauseDecision(null, null, 'trip', true)).toEqual({
+      action: 'none',
+      pausedByHelp: true,
+    });
   });
 });

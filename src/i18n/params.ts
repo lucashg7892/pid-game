@@ -32,6 +32,10 @@ export const MESSAGE_PARAMS = {
   'hud.status.fail.step': ['e'],
   'hud.status.fail.stepKi': ['e'],
   'a11y.sceneState': ['y', 'r', 'e'],
+  'board.motion.values': ['m', 'g', 'c'],
+  'board.error.where': ['r'],
+  'board.sat.intro': ['umax'],
+  'board.value.ki': ['ki'],
 } as const satisfies Partial<Record<MessageKey, readonly string[]>>;
 
 /** Clés qui attendent des paramètres. */

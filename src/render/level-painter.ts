@@ -66,6 +66,16 @@ import {
   DIMENSION_EXT_MAX_X,
   DIMENSION_EXT_MIN_X,
   DIMENSION_X,
+  EASEL_CENTER_X,
+  EASEL_CROSSBAR_Y,
+  EASEL_FRAME_BOTTOM,
+  EASEL_FRAME_HALF_WIDTH,
+  EASEL_HEIGHT,
+  EASEL_LEG_FOOT_HALF,
+  EASEL_LEG_TOP_HALF,
+  EASEL_SCRIBBLE_POINTS,
+  EASEL_SHELF_BOTTOM,
+  EASEL_SHELF_HALF_WIDTH,
   ERROR_HATCH_ANGLE,
   ERROR_HATCH_SPACING,
   GAUGE_HATCH_ANGLE,
@@ -143,6 +153,24 @@ const INTERSECTION_CAPACITY = 64;
 /** Bord gauche et droit du plancher de la cabine (m). */
 const CABIN_MIN_X = CABIN_CENTER_X - CABIN_WIDTH / 2;
 const CABIN_MAX_X = CABIN_CENTER_X + CABIN_WIDTH / 2;
+
+/** Trait d'écriture du tableau : ordonnée, bornes (depuis le centre du chevalet) et phase (rad). */
+interface EaselScribble {
+  readonly y: number;
+  readonly from: number;
+  readonly to: number;
+  readonly phase: number;
+}
+/** Demi-largeur utile du tableau pour l'écriture (m). */
+const EASEL_INNER = EASEL_FRAME_HALF_WIDTH - 0.1;
+/** Traits ondulés évoquant une écriture : longueurs et phases différentes, aucun texte lisible. */
+const EASEL_SCRIBBLES: readonly EaselScribble[] = Object.freeze([
+  { y: 1.47, from: -EASEL_INNER, to: 0.1, phase: 0.4 },
+  { y: 1.33, from: -EASEL_INNER, to: EASEL_INNER - 0.08, phase: 1.7 },
+  { y: 1.19, from: -EASEL_INNER, to: 0.02, phase: 2.9 },
+  { y: 1.05, from: -EASEL_INNER, to: EASEL_INNER, phase: 4.1 },
+  { y: 0.91, from: -EASEL_INNER, to: -0.08, phase: 5.3 },
+]);
 
 /** Lots de traits du niveau et leur remplissage. */
 export class LevelPainter {
@@ -375,6 +403,66 @@ export class LevelPainter {
     // Jauge du terme intégral (niveau 2), en dernier : le décor du niveau 1 reste inchangé.
     if (this.integralGauge) {
       this.gaugeFrame(GAUGE_I_MIN_X, GAUGE_I_MAX_X);
+    }
+    // Chevalet du tableau d'école (T-042), tout à la fin : les traits précédents gardent leur
+    // graine de tremblé.
+    this.paintEasel();
+  }
+
+  /**
+   * Chevalet et tableau d'école sur le quai de départ : cadre, tablette à craie, pieds, traverse
+   * et quelques traits ondulés évoquant une écriture (aucun texte lisible).
+   */
+  private paintEasel(): void {
+    const b = this.decor;
+    const cx = EASEL_CENTER_X;
+    const half = EASEL_FRAME_HALF_WIDTH;
+    const ground = START_LEDGE_HEIGHT;
+    // Pieds, sous la tablette ; traverse à mi-hauteur, au point où chaque pied la rencontre.
+    const legSpan = EASEL_SHELF_BOTTOM - ground;
+    for (let k = 0; k < 2; k += 1) {
+      const side = k === 0 ? -1 : 1;
+      b.line(
+        cx + side * EASEL_LEG_TOP_HALF,
+        EASEL_SHELF_BOTTOM,
+        cx + side * EASEL_LEG_FOOT_HALF,
+        ground,
+        STYLE_OUTLINE,
+      );
+    }
+    const barT = (EASEL_SHELF_BOTTOM - (ground + EASEL_CROSSBAR_Y)) / legSpan;
+    const barHalf = EASEL_LEG_TOP_HALF + (EASEL_LEG_FOOT_HALF - EASEL_LEG_TOP_HALF) * barT;
+    b.line(
+      cx - barHalf,
+      ground + EASEL_CROSSBAR_Y,
+      cx + barHalf,
+      ground + EASEL_CROSSBAR_Y,
+      STYLE_THIN,
+    );
+    // Tablette à craie, avec un bâton de craie et un chiffon.
+    b.rect(
+      cx - EASEL_SHELF_HALF_WIDTH,
+      EASEL_SHELF_BOTTOM,
+      cx + EASEL_SHELF_HALF_WIDTH,
+      EASEL_FRAME_BOTTOM,
+      STYLE_THIN,
+    );
+    const shelfMid = (EASEL_SHELF_BOTTOM + EASEL_FRAME_BOTTOM) / 2;
+    b.line(cx - 0.22, shelfMid, cx - 0.12, shelfMid, STYLE_OUTLINE);
+    b.rect(cx + 0.2, EASEL_SHELF_BOTTOM + 0.012, cx + 0.32, EASEL_FRAME_BOTTOM - 0.012, STYLE_THIN);
+    // Cadre du tableau.
+    b.rect(cx - half, EASEL_FRAME_BOTTOM, cx + half, EASEL_HEIGHT, STYLE_OUTLINE);
+    // Écriture : traits ondulés (sans texte lisible).
+    const points = this.polygon;
+    const count = EASEL_SCRIBBLE_POINTS;
+    for (let r = 0; r < EASEL_SCRIBBLES.length; r += 1) {
+      const row = EASEL_SCRIBBLES[r] as EaselScribble;
+      for (let i = 0; i < count; i += 1) {
+        const t = i / (count - 1);
+        points[2 * i] = cx + row.from + (row.to - row.from) * t;
+        points[2 * i + 1] = row.y + 0.022 * Math.sin(row.phase + i * 1.9);
+      }
+      b.polyline(points, count, STYLE_HATCH);
     }
   }
 

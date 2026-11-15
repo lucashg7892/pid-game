@@ -27,6 +27,7 @@ const HINTS: Readonly<Record<'fr' | 'en', Readonly<Record<HintId, string>>>> = {
     outcome: `R${NB}: réessayer`,
     paused: `Jeu en pause. · Échap${NB}: reprendre`,
     help: `Échap${NB}: fermer l’aide`,
+    board: `Échap${NB}: fermer le tableau`,
   },
   en: {
     use: 'E: set up the lift',
@@ -36,6 +37,7 @@ const HINTS: Readonly<Record<'fr' | 'en', Readonly<Record<HintId, string>>>> = {
     outcome: 'R: try again',
     paused: 'Game paused. · Esc: resume',
     help: 'Esc: close the help',
+    board: 'Esc: close the blackboard',
   },
 };
 
@@ -378,7 +380,7 @@ describe('Kp toujours présent, langue et mémoïsation', () => {
     for (const locale of ['fr', 'en'] as const) {
       const texts = staticTexts(tr(locale));
       expect(texts.title).toBe('Huygens’s world');
-      expect(texts.helpLines).toHaveLength(8);
+      expect(texts.helpLines).toHaveLength(9);
       expect(texts.legendLines).toHaveLength(4);
       for (const value of Object.values(texts)) {
         if (typeof value === 'string') expect(value.length).toBeGreaterThan(0);
@@ -394,5 +396,35 @@ describe('Kp toujours présent, langue et mémoïsation', () => {
       expect(texts.menu).toBe('Menu');
       expect(texts.menu).not.toBe(texts.resume);
     }
+  });
+});
+
+describe("tableau d'école ouvert (T-042)", () => {
+  it('le bandeau annonce la fermeture du tableau, avant celui de l’aide, et le modèle le reflète', () => {
+    for (const locale of ['fr', 'en'] as const) {
+      const level = tuning(2500);
+      const vm = createViewModelBuilder(tr(locale)).build(level.snapshot, {
+        helpOpen: false,
+        boardOpen: true,
+      });
+      expect(vm.boardOpen).toBe(true);
+      expect(vm.hintId).toBe('board');
+      expect(hintText(vm.hint)).toBe(HINTS[locale].board);
+      const both = createViewModelBuilder(tr(locale)).build(level.snapshot, {
+        helpOpen: true,
+        boardOpen: true,
+      });
+      expect(both.hintId).toBe('board');
+      expect(build(level, locale).boardOpen).toBe(false);
+    }
+  });
+
+  it("les textes du tableau et la ligne d'aide de la touche T suivent la langue", () => {
+    const fr = staticTexts(tr('fr'));
+    const en = staticTexts(tr('en'));
+    expect(fr.boardOpen).toBe('Ouvrir le tableau d’école');
+    expect(en.boardOpen).toBe('Open the blackboard');
+    expect(fr.helpLines).toContain(CATALOGS.fr['controls.help.board']);
+    expect(en.helpLines).toContain(CATALOGS.en['controls.help.board']);
   });
 });

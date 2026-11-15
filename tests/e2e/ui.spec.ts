@@ -386,6 +386,7 @@ for (const lang of ['fr', 'en'] as const) {
       t('controls.help.show'),
       t('app.language.switch'),
       t('controls.pause'),
+      t('board.open'),
       t('controls.kpDecrease'),
       t('controls.kpIncrease'),
       t('controls.launch'),
@@ -422,7 +423,7 @@ for (const lang of ['fr', 'en'] as const) {
     const helpName = t('controls.help.show');
     await page.getByRole('button', { name: helpName }).focus();
     const order: string[] = [(await focused()).label];
-    for (let i = 0; i < 7; i += 1) {
+    for (let i = 0; i < 8; i += 1) {
       await page.keyboard.press('Tab');
       order.push((await focused()).label);
     }
@@ -430,6 +431,7 @@ for (const lang of ['fr', 'en'] as const) {
       helpName,
       t('app.language.switch'),
       t('controls.pause'),
+      t('board.open'),
       t('controls.kpDecrease'),
       'slider',
       t('controls.kpIncrease'),

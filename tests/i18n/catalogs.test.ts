@@ -36,6 +36,8 @@ const IDENTICAL_ALLOWED: Readonly<Record<string, string>> = {
   'hud.gauge.max': 'notation « 5000 N max » : nombre et unité SI identiques, seul {n} varie.',
   'hud.ki.tag': 'notation « Kp = … · Ki = … » : symboles identiques, seuls {kp} et {ki} varient.',
   'hud.kp.value': 'notation « Kp = … N/m » : symbole et unité SI identiques, seul {kp} varie.',
+  'board.value.ki':
+    'notation « Ki = … N/(m·s) » : symbole et unité SI identiques, seul {ki} varie.',
   'title.copyright':
     'ligne de copyright du fichier LICENSE (titulaire et année), notice légale non traduite.',
 };
@@ -58,6 +60,7 @@ const PREFIXES = [
   'menu.',
   'level1.',
   'level2.',
+  'board.',
   'hud.',
   'controls.',
   'a11y.',

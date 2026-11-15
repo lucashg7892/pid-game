@@ -79,6 +79,7 @@ function intent(
     phase,
     focus,
     helpOpen: false,
+    boardOpen: false,
     ...extra,
   });
 }
@@ -299,5 +300,71 @@ describe('kpDeltaOf, walkSideOf', () => {
     expect(walkSideOf('KeyD')).toBe('right');
     expect(walkSideOf('KeyQ')).toBeNull();
     expect(walkSideOf('KeyW')).toBeNull();
+  });
+});
+
+describe("tableau d'école : touche T (T-042)", () => {
+  const KEY_T = K('KeyT', 't');
+  /** T sur un clavier AZERTY ou autre : seule la position physique compte. */
+  const OTHER_LAYOUT_T = K('KeyT', 'ŧ');
+
+  it("ouvre le tableau dans toutes les phases, hors du champ numérique, quel que soit l'autre focus", () => {
+    for (const phase of PHASES) {
+      for (const focus of FOCUSES.filter((f) => f !== 'number')) {
+        expect(intent(KEY_T, phase, focus), `${phase}/${focus}`).toBe('openBoard');
+        expect(intent(OTHER_LAYOUT_T, phase, focus), `${phase}/${focus}`).toBe('openBoard');
+      }
+    }
+  });
+
+  it('dans le champ numérique, la frappe reste native : aucune intention', () => {
+    for (const phase of PHASES) {
+      for (const boardOpen of [false, true]) {
+        for (const helpOpen of [false, true]) {
+          expect(intent(KEY_T, phase, 'number', { boardOpen, helpOpen })).toBe('none');
+        }
+      }
+    }
+  });
+
+  it('une répétition automatique est ignorée (bloquée, rien ne s’ouvre ni ne se ferme)', () => {
+    for (const phase of PHASES) {
+      for (const boardOpen of [false, true]) {
+        expect(intent(KEY_T, phase, 'none', { repeat: true, boardOpen })).toBe('block');
+      }
+    }
+  });
+
+  it('tableau ouvert : T le ferme ; aide ouverte : T ouvre le tableau', () => {
+    for (const phase of PHASES) {
+      expect(intent(KEY_T, phase, 'button', { boardOpen: true })).toBe('closeBoard');
+      expect(intent(KEY_T, phase, 'button', { helpOpen: true })).toBe('openBoard');
+    }
+  });
+
+  it('Ctrl, Alt ou Meta : raccourci du navigateur intact', () => {
+    expect(intent(KEY_T, 'approach', 'none', { ctrlKey: true })).toBe('none');
+    expect(intent(KEY_T, 'approach', 'none', { altKey: true })).toBe('none');
+    expect(intent(KEY_T, 'approach', 'none', { metaKey: true })).toBe('none');
+  });
+
+  it('tableau ouvert : Échap le ferme sans pause, aucune commande du jeu ne passe', () => {
+    for (const phase of PHASES) {
+      for (const focus of FOCUSES) {
+        expect(intent(ESCAPE, phase, focus, { boardOpen: true })).toBe('closeBoard');
+      }
+      expect(intent(KEY_E, phase, 'none', { boardOpen: true })).toBe('block');
+      expect(intent(KEY_R, phase, 'none', { boardOpen: true })).toBe('block');
+      expect(intent(KEY_D, phase, 'none', { boardOpen: true })).toBe('block');
+      expect(intent(ARROW_LEFT, phase, 'none', { boardOpen: true })).toBe('block');
+      expect(intent(PLUS, phase, 'none', { boardOpen: true })).toBe('block');
+      expect(intent(SPACE, phase, 'none', { boardOpen: true })).toBe('block');
+      expect(intent(SPACE, phase, 'button', { boardOpen: true })).toBe('none');
+      expect(intent(TAB, phase, 'button', { boardOpen: true })).toBe('none');
+    }
+  });
+
+  it('tableau ouvert : Échap maintenue est ignorée', () => {
+    expect(intent(ESCAPE, 'trip', 'none', { boardOpen: true, repeat: true })).toBe('block');
   });
 });

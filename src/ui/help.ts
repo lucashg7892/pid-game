@@ -36,14 +36,43 @@ export function helpPauseDecision(
     : { action: 'none', pausedByHelp: false };
 }
 
+/** Fenêtre modale ouverte au-dessus du jeu : l'aide des commandes ou le tableau d'école. */
+export type ModalKind = 'help' | 'board';
+
+/**
+ * Décide de la pause quand la fenêtre modale change (T-042). L'aide et le tableau se partagent la
+ * même règle ({@link helpPauseDecision}) et s'excluent : passer de l'une à l'autre ne change pas la
+ * pause (ni reprise, ni seconde pause) ; `pausedByHelp` désigne alors « la pause tenue par une
+ * fenêtre modale ».
+ * @param from fenêtre ouverte avant, ou `null`.
+ * @param to fenêtre ouverte après, ou `null`.
+ * @param phase phase courante du niveau.
+ * @param pausedByModal vrai si une fenêtre modale tenait le jeu en pause.
+ */
+export function modalPauseDecision(
+  from: ModalKind | null,
+  to: ModalKind | null,
+  phase: LevelPhase,
+  pausedByModal: boolean,
+): HelpPauseDecision {
+  if (from === null && to !== null) {
+    return helpPauseDecision(true, phase, pausedByModal);
+  }
+  if (from !== null && to === null) {
+    return helpPauseDecision(false, phase, pausedByModal);
+  }
+  return { action: 'none', pausedByHelp: pausedByModal };
+}
+
 /**
  * Vrai si les commandes du niveau (pause, reprise, réglage, tactile...) sont suspendues : tant
- * que l'aide est ouverte, seul sa fermeture agit (K24) ; la reprise se fait par
- * {@link helpPauseDecision}.
+ * que l'aide ou le tableau d'école est ouvert, seule sa fermeture agit (K24) ; la reprise se fait
+ * par {@link modalPauseDecision}.
  * @param helpOpen vrai si l'aide est ouverte.
+ * @param boardOpen vrai si le tableau d'école est ouvert.
  */
-export function commandsBlocked(helpOpen: boolean): boolean {
-  return helpOpen;
+export function commandsBlocked(helpOpen: boolean, boardOpen = false): boolean {
+  return helpOpen || boardOpen;
 }
 
 /**

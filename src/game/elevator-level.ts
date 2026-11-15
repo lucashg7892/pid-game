@@ -3,6 +3,7 @@ import {
   ELEVATOR_VELOCITY,
   createFixedStepClock,
   createSignalRecorder,
+  elevatorAcceleration,
   type SignalRecorder,
   type SteppableClosedLoop,
 } from '../sim';
@@ -101,7 +102,9 @@ export interface TuningSpec {
 /**
  * Instantané du niveau, pour le rendu et l'UI. Objet unique réécrit après chaque `update` et
  * chaque commande acceptée : à lire, jamais à modifier, à copier pour le conserver.
- * Les grandeurs de la cabine décrivent l'état x(k·dt) APRÈS le dernier pas exécuté.
+ * Les grandeurs de la cabine décrivent l'état x(k·dt) APRÈS le dernier pas exécuté, sauf les
+ * signaux du dernier pas (`stepY` … `iTermUsed`, `uSat`, `saturated`), pris à l'instant où sa
+ * commande a été calculée, (k − 1)·dt.
  */
 export interface LevelSnapshot {
   /** Identifiant du niveau (`level1` : contrôleur P ; `level2` : contrôleur PI, Kp fixé). */
@@ -157,11 +160,17 @@ export interface LevelSnapshot {
   atConsole: boolean;
   /** Vrai si le bonhomme est au poste du pupitre ({@link CONSOLE_POST_X}), panneau ouvert. */
   atPost: boolean;
-  /** Hauteur du plancher de la cabine y (m), après le dernier pas. */
+  /**
+   * Hauteur du plancher de la cabine y (m), état APRÈS le dernier pas. Son homologue « avant le
+   * pas » est {@link LevelSnapshot.stepY} (la mesure du contrôleur).
+   */
   cabinY: number;
   /** Hauteur de la cabine au pas précédent (m) : afficher lerp(cabinPrevY, cabinY, alpha). */
   cabinPrevY: number;
-  /** Vitesse verticale de la cabine ẏ (m/s), après le dernier pas. */
+  /**
+   * Vitesse verticale de la cabine ẏ (m/s), état APRÈS le dernier pas. Son homologue « avant le
+   * pas » est {@link LevelSnapshot.stepVelocity}.
+   */
   cabinVelocity: number;
   /** Fraction de pas en attente dans l'horloge, dans [0, 1), pour interpoler l'affichage. */
   alpha: number;
@@ -170,7 +179,8 @@ export interface LevelSnapshot {
   /** Gain intégral courant (N/(m·s)) : 0 au niveau 1, réglé au niveau 2. */
   ki: number;
   /**
-   * Terme intégral I accumulé (N), lu sur le contrôleur après le dernier pas ; 0 au niveau 1 et
+   * Terme intégral I accumulé (N), lu sur le contrôleur APRÈS le dernier pas (son homologue « avant
+   * le pas », celui qui a servi à calculer `uCmd`, est {@link LevelSnapshot.iTermUsed}) ; 0 au niveau 1 et
    * avant le premier lancement. Il garde sa valeur à l'issue (affiché par la jauge de I du niveau 2
    * et par la ligne « Terme I » du panneau de mesures) et retombe à 0 au recommencement.
    */
@@ -180,11 +190,55 @@ export interface LevelSnapshot {
    * pendant le trajet, la sortie et l'issue.
    */
   r: number;
-  /** Erreur e = r − cabinY (m). */
+  /**
+   * Erreur e = r − cabinY (m), état APRÈS le dernier pas. Son homologue « avant le pas » est
+   * {@link LevelSnapshot.stepError}.
+   */
   e: number;
+  /**
+   * Signaux du dernier pas simulé (`stepY` … `iTermUsed`, `uSat`, `saturated`) : ils
+   * décrivent tous le même instant, celui où la commande du dernier pas a été calculée,
+   * t = (k − 1)·dt (convention `LoopSample` du noyau : état AVANT le pas), et sont cohérents :
+   * uCmd = pTerm + iTermUsed, uSat = uCmd borné à ±Umax, stepError = r − stepY,
+   * stepAcceleration = (uSat − m·g − c·stepVelocity)/m (contact au sol compris). Tous à 0 (et
+   * `saturated` faux) avant le premier lancement, pendant l'embarquement et après `restart` :
+   * cabine posée, moteur coupé. À l'issue (et pendant la sortie), ils gardent les valeurs du
+   * dernier pas pour que l'issue puisse les afficher.
+   *
+   * Hauteur de la cabine y (m) à cet instant (la mesure du contrôleur).
+   */
+  stepY: number;
+  /** Vitesse verticale de la cabine ẏ (m/s) à l'instant du dernier pas (avant le pas). */
+  stepVelocity: number;
+  /**
+   * Accélération verticale de la cabine ÿ (m/s²) à l'instant du dernier pas, donnée par le modèle
+   * (somme des forces / masse, `elevatorAcceleration` du noyau, avec les paramètres physiques du
+   * noyau) sous la force appliquée `uSat` : jamais une différence entre deux pas ni deux images.
+   * Cabine posée au sol et force nette vers le bas : 0.
+   */
+  stepAcceleration: number;
+  /** Erreur vue par le contrôleur au dernier pas, e = r − stepY (m). */
+  stepError: number;
+  /**
+   * Force demandée par le contrôleur au dernier pas, avant saturation (N) ; elle décrit le pas
+   * k−1 → k, état AVANT intégration, comme les champs `step*` ; uCmd = pTerm + iTermUsed.
+   */
+  uCmd: number;
+  /**
+   * Terme proportionnel Kp·e du dernier pas (N), e = {@link LevelSnapshot.stepError} : pas k−1 → k,
+   * état AVANT intégration, comme les champs `step*`.
+   */
+  pTerm: number;
+  /**
+   * Terme intégral utilisé pour calculer `uCmd` au dernier pas (N), pas k−1 → k, état AVANT
+   * intégration comme les champs `step*` : l'intégrale AVANT sa mise à
+   * jour par ce pas (le contrôleur PI calcule u = Kp·e + I puis I ← I + Ki·dt·e). 0 au niveau 1.
+   * À distinguer de {@link LevelSnapshot.iTerm}, l'intégrale après le pas.
+   */
+  iTermUsed: number;
   /** Force appliquée au dernier pas, après saturation (N) ; 0 hors trajet. */
   uSat: number;
-  /** Vrai si la force du dernier pas a été écrêtée par la saturation. */
+  /** Vrai si la force du dernier pas a été écrêtée par la saturation (uSat ≠ uCmd). */
   saturated: boolean;
   /** Nombre de pas exécutés depuis le départ du trajet (sans unité) ; 0 hors trajet. */
   k: number;
@@ -211,10 +265,12 @@ export interface LevelSnapshot {
 
 /**
  * Boucle d'un trajet : boucle à pas fixe du noyau, avec en option un contrôleur qui expose son
- * terme intégral (`createElevatorPiLoop`).
+ * terme intégral et son terme proportionnel (`createElevatorPiLoop`). Sans contrôleur exposé
+ * (boucle P du niveau 1), la commande demandée est le terme proportionnel et le terme intégral
+ * vaut 0.
  */
 export type TripLoop = SteppableClosedLoop & {
-  readonly controller?: { readonly integral: number };
+  readonly controller?: { readonly integral: number; readonly proportionalTerm: number };
 };
 
 /** Configuration de la machine commune aux niveaux de l'ascenseur. */
@@ -351,6 +407,13 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
   let cabinY = 0;
   let cabinPrevY = 0;
   let cabinVelocity = 0;
+  let stepY = 0;
+  let stepVelocity = 0;
+  let stepAcceleration = 0;
+  let stepError = 0;
+  let uCmd = 0;
+  let pTerm = 0;
+  let iTermUsed = 0;
   let uSat = 0;
   let saturated = false;
   let k = 0;
@@ -400,6 +463,13 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
     iTerm,
     r: 0,
     e: 0,
+    stepY,
+    stepVelocity,
+    stepAcceleration,
+    stepError,
+    uCmd,
+    pTerm,
+    iTermUsed,
     uSat,
     saturated,
     k,
@@ -458,6 +528,13 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
     snapshot.iTerm = iTerm;
     snapshot.r = r;
     snapshot.e = r - cabinY;
+    snapshot.stepY = stepY;
+    snapshot.stepVelocity = stepVelocity;
+    snapshot.stepAcceleration = stepAcceleration;
+    snapshot.stepError = stepError;
+    snapshot.uCmd = uCmd;
+    snapshot.pTerm = pTerm;
+    snapshot.iTermUsed = iTermUsed;
     snapshot.uSat = uSat;
     snapshot.saturated = saturated;
     snapshot.k = k;
@@ -480,6 +557,13 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
     cabinY = 0;
     cabinPrevY = 0;
     cabinVelocity = 0;
+    stepY = 0;
+    stepVelocity = 0;
+    stepAcceleration = 0;
+    stepError = 0;
+    uCmd = 0;
+    pTerm = 0;
+    iTermUsed = 0;
     uSat = 0;
     saturated = false;
     k = 0;
@@ -576,10 +660,22 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
   /** Un pas de simulation du trajet ; les nombres sont copiés depuis l'échantillon. */
   function stepTrip(): void {
     cabinPrevY = cabinY;
+    const controller = loop.controller;
+    // Lus AVANT le pas : la vitesse de l'état où la commande est calculée, et l'intégrale que le
+    // contrôleur PI ajoute à Kp·e à ce pas (il ne la met à jour qu'après avoir calculé u).
+    const vBefore = loop.x[ELEVATOR_VELOCITY] as number;
+    const iBefore = controller === undefined ? 0 : controller.integral;
     const sample = loop.step();
     recorder.push(sample);
     uSat = sample.uSat;
     saturated = sample.saturated;
+    stepY = sample.y;
+    stepVelocity = vBefore;
+    stepAcceleration = elevatorAcceleration(sample.y, vBefore, sample.uSat);
+    stepError = sample.e;
+    uCmd = sample.uCmd;
+    pTerm = controller === undefined ? sample.uCmd : controller.proportionalTerm;
+    iTermUsed = iBefore;
     k = sample.k + 1;
     const x = loop.x;
     cabinY = x[ELEVATOR_POSITION] as number;

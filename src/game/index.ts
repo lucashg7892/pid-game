@@ -4,8 +4,11 @@
  * formatage et les textes (i18n) sont l'affaire de l'UI.
  */
 export * from './constants';
-/** Force maximale du moteur (N), pour la graduation « max » de la jauge (affichage seulement). */
-export { ELEVATOR_MAX_FORCE } from '../sim';
+/**
+ * Force maximale du moteur (N), paramètres physiques de la cabine (m, g, c) :
+ * pour la graduation « max » de la jauge et le tableau d'école (affichage seulement).
+ */
+export { ELEVATOR_MAX_FORCE, ELEVATOR_PARAMS } from '../sim';
 export { quantizeGain, quantizeKp } from './kp';
 export {
   classifyTimeout,

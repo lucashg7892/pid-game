@@ -330,6 +330,33 @@ export const CONSOLE_LEVER_LENGTH = 0.28;
 export const CONSOLE_LEVER_SWING = 0.7;
 
 // ---------------------------------------------------------------------------------------------
+// Chevalet et tableau d'école, sur le quai de départ (T-042)
+// ---------------------------------------------------------------------------------------------
+
+/** Chevalet : abscisse du centre (m), entre le point d'apparition (−5,5) et le poste (−1,55). */
+export const EASEL_CENTER_X = -3.5;
+/** Chevalet : largeur totale, pieds compris (m). */
+export const EASEL_WIDTH = 1.1;
+/** Chevalet : hauteur totale, du sol au haut du cadre (m). */
+export const EASEL_HEIGHT = 1.6;
+/** Tableau : demi-largeur du cadre (m). */
+export const EASEL_FRAME_HALF_WIDTH = 0.5;
+/** Tableau : ordonnée du bas du cadre, au-dessus de la tablette à craie (m). */
+export const EASEL_FRAME_BOTTOM = 0.72;
+/** Tablette à craie : demi-largeur (m) et ordonnée de son bas (m). */
+export const EASEL_SHELF_HALF_WIDTH = 0.52;
+/** Voir {@link EASEL_SHELF_HALF_WIDTH}. */
+export const EASEL_SHELF_BOTTOM = 0.65;
+/** Pieds : demi-écart en haut, sous la tablette, et au sol (m). */
+export const EASEL_LEG_TOP_HALF = 0.44;
+/** Voir {@link EASEL_LEG_TOP_HALF}. */
+export const EASEL_LEG_FOOT_HALF = EASEL_WIDTH / 2;
+/** Hauteur de la traverse entre les pieds (m). */
+export const EASEL_CROSSBAR_Y = 0.3;
+/** Traits d'écriture sur le tableau : nombre de points d'un trait ondulé. */
+export const EASEL_SCRIBBLE_POINTS = 16;
+
+// ---------------------------------------------------------------------------------------------
 // Courbe y(t) sur le mur de la cage
 // ---------------------------------------------------------------------------------------------
 

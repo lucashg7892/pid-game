@@ -23,6 +23,9 @@ import {
 } from '../../src/render/level-display';
 import {
   DIMENSION_X,
+  EASEL_CENTER_X,
+  EASEL_HEIGHT,
+  EASEL_WIDTH,
   GAUGE_I_MAX_X,
   GAUGE_I_MIN_X,
   GAUGE_MAX_X,
@@ -78,6 +81,8 @@ function geometry(
     gaugeWeight: { x: x(level2 ? GAUGE_I_LABEL_X : GAUGE_LABEL_X), y: y(GAUGE_WEIGHT_Y) },
     iGauge: { x: x((GAUGE_I_MIN_X + GAUGE_I_MAX_X) / 2), y: y(GAUGE_MAX_Y) },
     iGaugeVisible: level2,
+    boardTopLeft: { x: x(EASEL_CENTER_X - EASEL_WIDTH / 2), y: y(EASEL_HEIGHT) },
+    boardBottomRight: { x: x(EASEL_CENTER_X + EASEL_WIDTH / 2), y: y(START_LEDGE_HEIGHT) },
     errorDimension: { x: x(DIMENSION_X), y: y(2.9) },
     arrivalLedgeY: y(ARRIVAL_LEDGE_HEIGHT),
     groundY: y(START_LEDGE_HEIGHT),

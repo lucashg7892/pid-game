@@ -17,9 +17,10 @@ import { CATALOGS, parseTemplate, type PlainKey, type Translator } from '../i18n
  * - `trip` : trajet en cours ;
  * - `outcome` : issue affichée ;
  * - `paused` : jeu en pause ;
- * - `help` : aide des commandes ouverte.
+ * - `help` : aide des commandes ouverte ;
+ * - `board` : tableau d'école ouvert.
  */
-export type HintId = 'use' | 'tune' | 'skip' | 'trip' | 'outcome' | 'paused' | 'help';
+export type HintId = 'use' | 'tune' | 'skip' | 'trip' | 'outcome' | 'paused' | 'help' | 'board';
 
 /** Morceau d'un élément du bandeau. */
 export interface HintSegment {
@@ -50,8 +51,16 @@ export const KEY_SEPARATOR = ' / ';
  * Choisit le bandeau d'après l'instantané (fonction pure).
  * @param s instantané du niveau.
  * @param helpOpen vrai si l'aide des commandes est ouverte.
+ * @param boardOpen vrai si le tableau d'école est ouvert.
  */
-export function chooseHint(s: Readonly<LevelSnapshot>, helpOpen: boolean): HintId {
+export function chooseHint(
+  s: Readonly<LevelSnapshot>,
+  helpOpen: boolean,
+  boardOpen = false,
+): HintId {
+  if (boardOpen) {
+    return 'board';
+  }
   if (helpOpen) {
     return 'help';
   }
@@ -152,6 +161,8 @@ export function hintLine(id: HintId, tr: Translator, levelId: LevelId = 'level1'
       return [[text(tr.t('hud.status.paused'))], item(tr, [escape], 'hud.hint.resume')];
     case 'help':
       return [item(tr, [escape], 'hud.hint.closeHelp')];
+    case 'board':
+      return [item(tr, [escape], 'hud.hint.closeBoard')];
   }
 }
 

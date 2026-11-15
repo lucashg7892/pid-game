@@ -168,8 +168,11 @@ for (const lang of ['fr', 'en'] as const) {
     const win = await run(page, WIN);
     expect(win.phase).toBe('outcome');
     await expect(page.locator('#ui .ui-outcome')).toBeVisible();
-    // « Rejouer » a le focus : Entrée recommence (réglage), Échap ferme le réglage puis met en pause.
-    await expect(page.locator('#ui .ui-outcome button').first()).toBeFocused();
+    // « Niveau suivant » a le focus ; Tab mène à « Rejouer » : Entrée recommence (réglage), Échap
+    // ferme le réglage puis met en pause.
+    await expect(page.locator('#ui .ui-outcome button.ui-next')).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#ui .ui-outcome button.ui-primary:not(.ui-next)')).toBeFocused();
     await page.keyboard.press('Enter');
     expect((await run(page, [])).phase).toBe('tuning');
     await page.keyboard.press('Escape');

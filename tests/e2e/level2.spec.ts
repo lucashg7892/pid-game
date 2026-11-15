@@ -345,7 +345,9 @@ for (const lang of ['fr', 'en'] as const) {
     await expect(outcome).toContainText(t('level2.win'));
     // Ni teaser ni « bientôt » au niveau 2 ; la cote chiffrée de l'erreur finale reste.
     await expect(outcome.getByText(t('level1.teaser'), { exact: true })).toBeHidden();
-    await expect(outcome.getByText(t('level1.comingSoon'), { exact: true })).toBeHidden();
+    // Le niveau 2 est le dernier : pas de bouton « Niveau suivant » (ni dans le DOM).
+    await expect(outcome.locator('button.ui-next')).toHaveCount(0);
+    await expect(outcome.getByRole('button', { name: t('controls.nextLevel') })).toHaveCount(0);
     await expect(page.locator('#ui .ui-dimension')).toBeVisible();
     await expect(live).toContainText(
       lang === 'fr'
@@ -566,9 +568,8 @@ for (const lang of ['fr', 'en'] as const) {
     const outcome = page.locator('#ui .ui-outcome');
     await expect(outcome).toContainText(t('level1.win'));
     await expect(outcome).toContainText(t('level1.teaser'));
-    // La phrase de fin renvoie au niveau 2 du menu.
-    await expect(outcome).toContainText(t('level1.comingSoon'));
-    expect(t('level1.comingSoon')).toContain(lang === 'fr' ? 'niveau 2' : 'Level 2');
+    // Le bouton « Niveau suivant » mène au niveau 2.
+    await expect(outcome.locator('button.ui-next')).toHaveText(t('controls.nextLevel'));
     expect(problems, CONSOLE_FAILURE).toEqual([]);
   });
 }

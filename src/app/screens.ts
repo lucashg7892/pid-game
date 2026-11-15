@@ -3,7 +3,7 @@
  * connaît que des identifiants de niveau, ni DOM, ni rendu, ni textes. Aucune commande ne lève
  * d'exception.
  */
-import type { LevelEntry } from './levels';
+import { nextLevelId, type LevelEntry } from './levels';
 
 /** Écran courant. */
 export type ScreenId = 'title' | 'menu' | 'level';
@@ -32,6 +32,8 @@ export interface AppMachine {
   back(): AppResult;
   /** Niveau vers menu. */
   leaveLevel(): AppResult;
+  /** Niveau vers le niveau suivant du catalogue, neuf ; ignoré hors niveau ou s'il n'y en a pas. */
+  nextLevel(): AppResult;
   /** S'abonne aux changements ; renvoie la fonction de désabonnement. */
   subscribe(listener: AppListener): () => void;
 }
@@ -116,6 +118,19 @@ export function createAppMachine(levels: readonly LevelEntry[]): AppMachine {
           return 'ignored';
         }
         move({ screen: 'menu', levelId: null });
+        return 'ok';
+      });
+    },
+    nextLevel(): AppResult {
+      return submit('level', () => {
+        if (state.screen !== 'level' || state.levelId === null) {
+          return 'ignored';
+        }
+        const next = nextLevelId(state.levelId, levels);
+        if (next === null) {
+          return 'ignored';
+        }
+        move({ screen: 'level', levelId: next });
         return 'ok';
       });
     },

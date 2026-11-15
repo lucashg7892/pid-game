@@ -97,8 +97,8 @@ export interface StaticTexts {
   readonly integralTitle: string;
   /** Teaser du terme I. */
   readonly teaser: string;
-  /** « Ce niveau arrive bientôt ». */
-  readonly comingSoon: string;
+  /** Bouton « Niveau suivant » du panneau de réussite. */
+  readonly nextLevel: string;
   /** Invite à tourner l'appareil. */
   readonly rotateHint: string;
   /** Nom du groupe des commandes tactiles. */
@@ -259,7 +259,7 @@ export function staticTexts(tr: Translator, levelId: LevelId = 'level1'): Static
     gaugeWeight: tr.t('hud.gauge.weight'),
     integralTitle: tr.t('hud.igauge.title'),
     teaser: tr.t('level1.teaser'),
-    comingSoon: tr.t('level1.comingSoon'),
+    nextLevel: tr.t('controls.nextLevel'),
     rotateHint: tr.t('app.rotateHint'),
     touchLabel: tr.t('a11y.touchControls'),
     moveLeft: tr.t('controls.moveLeft'),

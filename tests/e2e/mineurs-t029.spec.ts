@@ -118,17 +118,21 @@ test('B-04 : à l’issue, la pause désactive « Rejouer le niveau » ; la repr
   const problems = await open(page, 'e2e=1&screen=level1&lang=fr');
   const win = await run(page, [...TO_CONSOLE, ['setKp', 2500], ['launch'], ['advance', 4]]);
   expect(win.phase).toBe('outcome');
-  const replay = page.locator('#ui .ui-outcome button.ui-primary');
+  const replay = page.locator('#ui .ui-outcome button.ui-primary:not(.ui-next)');
+  const next = page.locator('#ui .ui-outcome button.ui-next');
   const pause = page.locator('#ui .ui-pause');
-  await expect(replay).toBeFocused();
+  // Réussite du niveau 1 : « Niveau suivant » a le focus, désactivé aussi pendant la pause.
+  await expect(next).toBeFocused();
   await expect(replay).toBeEnabled();
   // Pause au clavier : le focus ne reste pas sur un bouton désactivé.
   await page.keyboard.press('Escape');
   expect((await run(page, [])).phase).toBe('paused');
   await expect(replay).toBeDisabled();
+  await expect(next).toBeDisabled();
   await expect(pause).toBeFocused();
   await pause.click();
   await expect(replay).toBeEnabled();
+  await expect(next).toBeEnabled();
   // Pause à la souris, puis reprise.
   await pause.click();
   await expect(replay).toBeDisabled();

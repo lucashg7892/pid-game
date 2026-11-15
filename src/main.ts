@@ -1,7 +1,7 @@
 /**
  * Point de composition (spec T-001 §3, T-017 §3.3) : démarre le rendu une seule fois (papier seul),
  * puis, d'après la machine d'application (src/app), monte l'écran courant et démonte le précédent :
- * titre et menu (src/ui), ou un niveau neuf, 1 ou 2 (rendu au crayon, interface DOM, clavier, géométrie
+ * titre et menu (src/ui), ou un niveau neuf, 1 ou 2 (aussi depuis l'issue de réussite du précédent) (rendu au crayon, interface DOM, clavier, géométrie
  * de l'écran et ancres du rendu transmises sous forme de données simples). Affiche la page de
  * repli traduite si aucun GPU n'est utilisable, sans passer par le titre. N'importe pas three :
  * tout le rendu vit dans src/render.
@@ -27,6 +27,7 @@ import {
 import {
   LEVELS,
   createAppMachine,
+  nextLevelId,
   type AppMachine,
   type AppResult,
   type AppState,
@@ -86,6 +87,7 @@ export interface HuygensApp {
   openLevel(id: string): AppResult;
   back(): AppResult;
   leaveLevel(): AppResult;
+  nextLevel(): AppResult;
 }
 
 /** Crochet de test (`?e2e=1` seulement). */
@@ -284,6 +286,7 @@ function installTestHook(
       openLevel: (id: string) => machine.openLevel(id),
       back: () => machine.back(),
       leaveLevel: () => machine.leaveLevel(),
+      nextLevel: () => machine.nextLevel(),
     },
     commands: {
       moveLeft: () => command((l) => l.moveLeft()),
@@ -480,6 +483,14 @@ async function main(): Promise<void> {
         onMenu: () => {
           machine.leaveLevel();
         },
+        // Seulement s'il existe un niveau suivant : sinon le bouton « Niveau suivant » n'existe pas.
+        ...(nextLevelId(levelId) === null
+          ? {}
+          : {
+              onNext: () => {
+                machine.nextLevel();
+              },
+            }),
       });
       cleanups.push(() => {
         ui.destroy();

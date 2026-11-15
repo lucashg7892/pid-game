@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   LEVELS,
   createAppMachine,
+  nextLevelId,
   type AppMachine,
   type AppResult,
   type AppState,
@@ -14,7 +15,7 @@ const CATALOG: readonly LevelEntry[] = [
   { id: 'soon', playable: false },
 ];
 
-type Command = 'play' | 'openLevel' | 'back' | 'leaveLevel';
+type Command = 'play' | 'openLevel' | 'back' | 'leaveLevel' | 'nextLevel';
 
 function send(machine: AppMachine, command: Command): AppResult {
   return command === 'openLevel' ? machine.openLevel('level1') : machine[command]();
@@ -60,14 +61,18 @@ describe('machine d’application : table de transitions', () => {
     ['title', 'openLevel', 'ignored', { screen: 'title', levelId: null }],
     ['title', 'back', 'ignored', { screen: 'title', levelId: null }],
     ['title', 'leaveLevel', 'ignored', { screen: 'title', levelId: null }],
+    ['title', 'nextLevel', 'ignored', { screen: 'title', levelId: null }],
     ['menu', 'play', 'ignored', { screen: 'menu', levelId: null }],
     ['menu', 'openLevel', 'ok', { screen: 'level', levelId: 'level1' }],
     ['menu', 'back', 'ok', { screen: 'title', levelId: null }],
     ['menu', 'leaveLevel', 'ignored', { screen: 'menu', levelId: null }],
+    ['menu', 'nextLevel', 'ignored', { screen: 'menu', levelId: null }],
     ['level', 'play', 'ignored', { screen: 'level', levelId: 'level1' }],
     ['level', 'openLevel', 'ignored', { screen: 'level', levelId: 'level1' }],
     ['level', 'back', 'ignored', { screen: 'level', levelId: 'level1' }],
     ['level', 'leaveLevel', 'ok', { screen: 'menu', levelId: null }],
+    // Le catalogue de test n'a pas de niveau jouable après level1 : rien à enchaîner.
+    ['level', 'nextLevel', 'ignored', { screen: 'level', levelId: 'level1' }],
   ];
   it.each(table)('%s + %s : %s', (from, command, result, expected) => {
     const machine = at(from);
@@ -89,6 +94,46 @@ describe('machine d’application : table de transitions', () => {
       send(machine, step);
       expect(machine.state.levelId !== null).toBe(machine.state.screen === 'level');
     }
+  });
+});
+
+describe('niveau suivant', () => {
+  it('nextLevelId : suivant jouable du catalogue, null pour le dernier ou un inconnu', () => {
+    expect(nextLevelId('level1')).toBe('level2');
+    expect(nextLevelId('level2')).toBeNull();
+    expect(nextLevelId('nope')).toBeNull();
+    expect(nextLevelId('level1', CATALOG)).toBeNull();
+    const gap: readonly LevelEntry[] = [
+      { id: 'a', playable: true },
+      { id: 'b', playable: false },
+      { id: 'c', playable: true },
+    ];
+    expect(nextLevelId('a', gap)).toBe('c');
+    expect(nextLevelId('c', gap)).toBeNull();
+  });
+
+  it('nextLevel : level1 → level2, notifié avec l’écran précédent « level » ; level2 : ignoré', () => {
+    const machine = createAppMachine(LEVELS);
+    machine.play();
+    machine.openLevel('level1');
+    const seen: Array<[AppState, ScreenId]> = [];
+    machine.subscribe((state, previous) => {
+      seen.push([state, previous]);
+    });
+    expect(machine.nextLevel()).toBe('ok');
+    expect(machine.state).toEqual({ screen: 'level', levelId: 'level2' });
+    expect(machine.nextLevel()).toBe('ignored');
+    expect(machine.state).toEqual({ screen: 'level', levelId: 'level2' });
+    expect(seen).toEqual([[{ screen: 'level', levelId: 'level2' }, 'level']]);
+  });
+
+  it('nextLevel : deux commandes de suite ne sautent pas le niveau 2 vers un troisième', () => {
+    const machine = createAppMachine(LEVELS);
+    machine.play();
+    machine.openLevel('level1');
+    machine.nextLevel();
+    machine.nextLevel();
+    expect(machine.state.levelId).toBe('level2');
   });
 });
 

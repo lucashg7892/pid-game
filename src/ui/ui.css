@@ -160,7 +160,8 @@
   cursor: not-allowed;
 }
 
-.ui-primary {
+.ui-primary,
+.ui-next {
   border-width: 2px;
   font-size: 1.1em;
 }
@@ -421,6 +422,11 @@
 
 .ui-outcome .ui-menu {
   margin-left: 0.5em;
+}
+
+/* « Niveau suivant » précède « Rejouer » ; les boutons passent à la ligne si la place manque. */
+.ui-outcome .ui-next {
+  margin-right: 0.5em;
 }
 
 /* Aide des commandes. */

@@ -284,7 +284,7 @@ test('(a) FR, clavier réel : aide, marche, panneau Kp, + ×5, Entrée, victoire
   await expect(outcome).toContainText(FR('level1.winTitle'));
   await expect(outcome).toContainText(FR('level1.win'));
   await expect(outcome).toContainText(FR('level1.teaser'));
-  await expect(outcome).toContainText(FR('level1.comingSoon'));
+  await expect(outcome.locator('button.ui-next')).toHaveText(FR('controls.nextLevel'));
   await expect(page.locator('#ui .ui-dimension')).toHaveText(`e = 0,20${NB}m`);
   await expect(page.locator('#ui .ui-dimension')).toBeVisible();
   await expect(outcome.locator('.ui-formula')).toHaveText(
@@ -699,7 +699,9 @@ test('(m) aide modale : focus dedans, Tab piégé, focus rendu à l’ouvreur', 
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });
 
-test('(n) bouton Pause sans aria-pressed ; focus sur « Rejouer » à l’issue', async ({ page }) => {
+test('(n) bouton Pause sans aria-pressed ; focus sur « Niveau suivant » (réussite niveau 1) ou « Rejouer » à l’issue', async ({
+  page,
+}) => {
   const problems = await open(page, '?renderer=webgl&e2e=1&lang=fr');
   const pause = page.locator('#ui .ui-pause');
   await expect(pause).not.toHaveAttribute('aria-pressed', /.*/);
@@ -709,9 +711,12 @@ test('(n) bouton Pause sans aria-pressed ; focus sur « Rejouer » à l’issue'
   await pause.click();
   await expect(pause).toHaveText(FR('controls.pause'));
 
-  const replay = page.locator('#ui .ui-outcome button.ui-primary');
+  const replay = page.locator('#ui .ui-outcome button.ui-primary:not(.ui-next)');
+  const next = page.locator('#ui .ui-outcome button.ui-next');
   const win = await run(page, [...TO_CONSOLE, ['setKp', 2500], ['launch'], ['advance', 4.0]]);
   expect(win.phase).toBe('outcome');
+  await expect(next).toBeFocused();
+  await page.keyboard.press('Tab');
   await expect(replay).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(replay).toBeHidden();
@@ -845,18 +850,22 @@ test('(q) cycle de vie de la vue : attach, detach, attach sans fuite ni erreur',
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });
 
-/** A-02 : en paysage bas, les boutons de l'issue restent dans la partie visible du panneau. */
+/**
+ * A-02 : en paysage bas (et en portrait), les boutons de l'issue restent dans la partie visible du
+ * panneau, avec « Niveau suivant » en plus à la réussite du niveau 1 (T-036).
+ */
 const LOW_LANDSCAPE: readonly (readonly [number, number])[] = [
   [1024, 600],
   [844, 390],
   [740, 360],
   [667, 375],
+  [390, 844],
 ];
 
 for (const [width, height] of LOW_LANDSCAPE) {
   for (const level of [1, 2]) {
     for (const issue of ['win', 'bonk'] as const) {
-      test(`(r) issue ${issue} niveau ${String(level)} à ${String(width)}×${String(height)} : « Rejouer » et « Menu » visibles et cliquables`, async ({
+      test(`(r) issue ${issue} niveau ${String(level)} à ${String(width)}×${String(height)} : boutons de l’issue visibles et cliquables`, async ({
         page,
       }) => {
         const problems = await open(
@@ -884,9 +893,18 @@ for (const [width, height] of LOW_LANDSCAPE) {
         const outcome = page.locator('#ui .ui-outcome');
         await expect(outcome).toBeVisible();
         await settle(page);
-        const replay = outcome.locator('button.ui-primary');
+        const replay = outcome.locator('button.ui-primary:not(.ui-next)');
         const menu = outcome.locator('button.ui-menu');
-        await expect(replay).toBeFocused();
+        const next = outcome.locator('button.ui-next');
+        const hasNext = level === 1 && issue === 'win';
+        // Le bouton existe au niveau 1 seulement ; il n'est visible qu'à la réussite.
+        await expect(next).toHaveCount(level === 1 ? 1 : 0);
+        await expect(next).toBeVisible({ visible: hasNext });
+        if (hasNext) {
+          await expect(next).toBeFocused();
+        } else {
+          await expect(replay).toBeFocused();
+        }
         const result = await page.evaluate(() => {
           const panel = document.querySelector('#ui .ui-outcome');
           if (panel === null) throw new Error('panneau absent');
@@ -906,13 +924,18 @@ for (const [width, height] of LOW_LANDSCAPE) {
           };
           return {
             panel: { left: p.left, right: p.right, top: p.top, bottom: p.bottom },
-            replay: one('button.ui-primary'),
+            next:
+              panel.querySelector('button.ui-next:not([hidden])') === null
+                ? null
+                : one('button.ui-next'),
+            replay: one('button.ui-primary:not(.ui-next)'),
             menu: one('button.ui-menu'),
             width: window.innerWidth,
             height: window.innerHeight,
           };
         });
-        for (const b of [result.replay, result.menu]) {
+        const buttons = result.next === null ? [] : [result.next];
+        for (const b of [...buttons, result.replay, result.menu]) {
           expect(b.left).toBeGreaterThanOrEqual(result.panel.left - 0.5);
           expect(b.right).toBeLessThanOrEqual(result.panel.right + 0.5);
           expect(b.top).toBeGreaterThanOrEqual(result.panel.top - 0.5);
@@ -921,6 +944,11 @@ for (const [width, height] of LOW_LANDSCAPE) {
           expect(b.bottom).toBeLessThanOrEqual(result.height);
           expect(b.right).toBeLessThanOrEqual(result.width);
           expect(b.hit).toBe(true);
+        }
+        if (hasNext) {
+          // Ordre de tabulation : Niveau suivant, Rejouer, Menu.
+          await page.keyboard.press('Tab');
+          await expect(replay).toBeFocused();
         }
         await page.keyboard.press('Tab');
         await expect(menu).toBeFocused();

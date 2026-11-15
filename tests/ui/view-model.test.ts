@@ -217,7 +217,8 @@ describe('issues : titres, messages pédagogiques complets, cote et formule', ()
     expect(fr.formula).toBe(`e = m·g/Kp = 490,5${NB}N ÷ 2500${NB}N/m ≈ 0,20${NB}m`);
     expect(fr.outcomeButton).toBe(CATALOGS.fr['level1.replay']);
     expect(fr.texts.teaser).toBe(CATALOGS.fr['level1.teaser']);
-    expect(fr.texts.comingSoon).toBe(CATALOGS.fr['level1.comingSoon']);
+    expect(fr.texts.nextLevel).toBe(CATALOGS.fr['controls.nextLevel']);
+    expect(fr.texts.nextLevel).toBe('Niveau suivant');
     expect(fr.panelOpen).toBe(false);
     expect(fr.readoutVisible).toBe(true);
     expect(fr.kpTag).toBe(`Kp = 2500${NB}N/m`);

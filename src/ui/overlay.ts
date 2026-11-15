@@ -38,6 +38,11 @@ export interface UiOptions {
    * action est fournie ; il est visible en pause et dans le panneau d'issue.
    */
   readonly onMenu?: () => void;
+  /**
+   * Passage direct au niveau suivant. Le bouton « Niveau suivant » n'existe que si cette action
+   * est fournie ; il n'est visible qu'à l'issue de réussite.
+   */
+  readonly onNext?: () => void;
 }
 
 /** Interface en cours. */
@@ -198,7 +203,7 @@ function renderHint(container: HTMLElement, line: HintLine): void {
  * @param options conteneur, niveau, traducteur et canvas.
  */
 export function createUi(options: UiOptions): Ui {
-  const { root, level, translator: tr, canvas, onMenu } = options;
+  const { root, level, translator: tr, canvas, onMenu, onNext } = options;
   const builder = createViewModelBuilder(tr, level.snapshot.levelId);
   const { tuning } = level;
   const showsTeaser = level.snapshot.levelId === 'level1';
@@ -383,10 +388,15 @@ export function createUi(options: UiOptions): Ui {
   const formula = new TextSlot(formulaNode);
   const teaserNode = el('p', 'ui-small', outcome);
   const teaser = new TextSlot(teaserNode);
-  const soonNode = el('p', 'ui-small', outcome);
-  const soon = new TextSlot(soonNode);
   // Les boutons vivent dans un pied collé en bas du panneau : visibles même s'il défile (A-02).
   const outcomeActions = el('div', 'ui-outcome-actions', outcome);
+  let outcomeNext: HTMLButtonElement | null = null;
+  let outcomeNextText: TextSlot | null = null;
+  if (onNext !== undefined) {
+    outcomeNext = el('button', 'ui-btn ui-primary ui-next', outcomeActions);
+    outcomeNext.type = 'button';
+    outcomeNextText = new TextSlot(outcomeNext);
+  }
   const outcomeButton = el('button', 'ui-btn ui-primary', outcomeActions);
   outcomeButton.type = 'button';
   const outcomeButtonText = new TextSlot(outcomeButton);
@@ -581,9 +591,15 @@ export function createUi(options: UiOptions): Ui {
     formula.set(vm.formula);
     show(formulaNode, vm.formula !== '');
     teaser.set(t.teaser);
-    soon.set(t.comingSoon);
     show(teaserNode, vm.outcome === 'win' && showsTeaser);
-    show(soonNode, vm.outcome === 'win' && showsTeaser);
+    if (outcomeNext !== null && outcomeNextText !== null) {
+      outcomeNextText.set(t.nextLevel);
+      show(outcomeNext, vm.outcome === 'win');
+      enable(outcomeNext, !vm.paused);
+      if (vm.paused && document.activeElement === outcomeNext) {
+        pauseButton.focus({ preventScroll: true });
+      }
+    }
     outcomeButtonText.set(vm.outcomeButton);
     enable(outcomeButton, !vm.paused);
     if (vm.paused && document.activeElement === outcomeButton) {
@@ -610,7 +626,10 @@ export function createUi(options: UiOptions): Ui {
     if (!vm.outcomeVisible) {
       releaseFocus(outcome);
     } else if (!previousOutcome) {
-      outcomeButton.focus({ preventScroll: true });
+      // Réussite avec un niveau suivant : l'action naturelle a le focus ; sinon « Rejouer ».
+      (outcomeNext !== null && vm.outcome === 'win' ? outcomeNext : outcomeButton).focus({
+        preventScroll: true,
+      });
     }
     previousOutcome = vm.outcomeVisible;
     previousPhase = phase;
@@ -745,6 +764,13 @@ export function createUi(options: UiOptions): Ui {
   };
   menuButton.addEventListener('click', leaveToMenu);
   outcomeMenu.addEventListener('click', leaveToMenu);
+  // Comme les autres boutons de navigation : le deuxième clic d'un double-clic est ignoré (A-01).
+  outcomeNext?.addEventListener('click', (event) => {
+    if (event.detail > 1 || commandsBlocked(helpOpen)) {
+      return;
+    }
+    onNext?.();
+  });
   minus.addEventListener('click', () => {
     run(() => level.adjustTuning(-tuning.step));
   });

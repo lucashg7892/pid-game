@@ -4,14 +4,14 @@
  * textes DOM de l'interface (contrat T-010). Fonctions pures, sans three ni allocation.
  *
  * Interpolation (contrat T-007) : cabine à lerp(cabinPrevY, cabinY, alpha) pendant le trajet,
- * bonhomme à lerp(walkerPrevX, walkerX, alpha) sur le quai. À l'issue, la cabine est figée à
- * l'état du pas de l'issue (`cabinY`).
+ * bonhomme à lerp(walkerPrevX, walkerX, alpha) partout, pieds à lerp(walkerPrevY, walkerY, alpha)
+ * pendant le trajet et le pas de sortie. À l'issue, la cabine est figée à l'état du pas de
+ * l'issue (`cabinY`).
  */
 import {
   ARRIVAL_LEDGE_HEIGHT,
   CABIN_CENTER_X,
   CONSOLE_X,
-  START_LEDGE_HEIGHT,
   type Facing,
   type LevelPhase,
   type LevelSnapshot,
@@ -100,15 +100,15 @@ export function computeDisplay(s: Readonly<LevelSnapshot>, out: LevelDisplay): v
   out.phase = phase;
   out.tripVisible = phase === 'trip' || phase === 'exit' || phase === 'outcome';
   out.cabinY = phase === 'trip' ? s.cabinPrevY + (s.cabinY - s.cabinPrevY) * s.alpha : s.cabinY;
-  if (s.walkerInCabin) {
-    out.walkerX = CABIN_CENTER_X;
-    out.walkerGround = out.cabinY;
-    out.facing = 1;
-  } else {
-    out.walkerX = s.walkerPrevX + (s.walkerX - s.walkerPrevX) * s.alpha;
-    out.walkerGround = START_LEDGE_HEIGHT;
-    out.facing = s.walkerFacing;
-  }
+  // Le bonhomme est dessiné où le dit l'instantané, dans toutes les phases (T-038). La hauteur
+  // n'est interpolée que là où la cabine l'est aussi (trajet) ou quand elle bouge avec l'abscisse
+  // (pas de sortie) ; ailleurs elle est constante ou suit `cabinY` figé.
+  out.walkerX = s.walkerPrevX + (s.walkerX - s.walkerPrevX) * s.alpha;
+  out.walkerGround =
+    phase === 'trip' || s.walkerAction === 'stepping'
+      ? s.walkerPrevY + (s.walkerY - s.walkerPrevY) * s.alpha
+      : s.walkerY;
+  out.facing = s.walkerFacing;
   out.pose = choosePose(phase, s);
 }
 
@@ -118,12 +118,6 @@ export function computeDisplay(s: Readonly<LevelSnapshot>, out: LevelDisplay): v
  * @param s instantané.
  */
 export function choosePose(phase: LevelPhase, s: Readonly<LevelSnapshot>): WalkerPoseKind {
-  if (phase === 'approach') {
-    return s.walkerMoving ? 'walk' : 'stand';
-  }
-  if (phase === 'tuning') {
-    return 'reach';
-  }
   if (phase === 'outcome') {
     switch (s.outcome) {
       case 'win':
@@ -138,7 +132,20 @@ export function choosePose(phase: LevelPhase, s: Readonly<LevelSnapshot>): Walke
         return 'stand';
     }
   }
-  return 'stand';
+  switch (s.walkerAction) {
+    case 'free':
+      return s.walkerMoving ? 'walk' : 'stand';
+    case 'atPost':
+      return 'reach';
+    case 'toPost':
+    case 'boarding':
+    case 'exiting':
+    case 'stepping':
+      return 'walk';
+    case 'inCabin':
+    case 'arrived':
+      return 'stand';
+  }
 }
 
 /** Point en pixels CSS, depuis le coin haut gauche de la surface de dessin. */

@@ -370,9 +370,14 @@ async function main(): Promise<void> {
   }
   canvas.setAttribute('aria-label', translator.t('a11y.canvas'));
   const e2e = isE2e(location.search);
-  // Animations du niveau : toujours en jeu normal (le branchement sur `prefers-reduced-motion`
-  // viendra avec le dessin des poses) ; en mode test, seulement avec `anim=1`.
-  const animations = !e2e || e2eAnimations(location.search);
+  // Animations du niveau : toujours en jeu normal, en mode test seulement avec `anim=1` ; dans
+  // les deux cas coupées si le joueur préfère le mouvement réduit (D32), préférence suivie en
+  // cours de partie : voir `wantedAnimations`.
+  const animationsSetting = !e2e || e2eAnimations(location.search);
+  let readReducedMotion: () => boolean = () => false;
+  const wantedAnimations = (): boolean => animationsSetting && !readReducedMotion();
+  /** Dernière valeur donnée aux niveaux : `setAnimations` n'est rappelé que si elle change. */
+  let appliedAnimations = wantedAnimations();
   let current: CurrentLevel | null = null;
   let crashNextFrame = false;
   // Démontage de l'écran courant ; appelé à chaque changement d'écran et en cas d'échec, avant la
@@ -415,6 +420,11 @@ async function main(): Promise<void> {
     },
     // Interface mise à jour après le dessin, d'après les ancres de l'image affichée (K10).
     onFrameEnd: () => {
+      const wanted = wantedAnimations();
+      if (wanted !== appliedAnimations) {
+        appliedAnimations = wanted;
+        current?.level.setAnimations(wanted);
+      }
       current?.refreshUi();
     },
     onFailure: handleFailure,
@@ -424,6 +434,8 @@ async function main(): Promise<void> {
     return;
   }
   const { session } = result;
+  readReducedMotion = () => session.reducedMotion;
+  appliedAnimations = wantedAnimations();
 
   /** Conteneur d'un écran, ajouté au document. */
   const container = (id: string): HTMLDivElement => {
@@ -486,6 +498,8 @@ async function main(): Promise<void> {
       }
     };
     try {
+      appliedAnimations = wantedAnimations();
+      const animations = appliedAnimations;
       const level =
         levelId === 'level2' ? createLevel2({ animations }) : createLevel1({ animations });
       session.attachLevel(level);

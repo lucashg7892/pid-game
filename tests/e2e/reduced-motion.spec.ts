@@ -115,3 +115,105 @@ test("l'écouteur de préférence est retiré à l'arrêt de la session, sans fu
   expect(await counts()).toEqual({ add: 1, remove: 1 });
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });
+
+/** Ouvre le niveau 1 avec les animations demandées (`anim=1`) sous une préférence donnée. */
+async function openAnimated(page: Page, motion: 'reduce' | 'no-preference'): Promise<string[]> {
+  await page.emulateMedia({ reducedMotion: motion });
+  await page.setViewportSize({ width: 1280, height: 720 });
+  const problems = watchConsole(page, ALLOWED_WEBGL);
+  await page.goto('?renderer=webgl&e2e=1&anim=1&screen=level1&lang=fr');
+  await page.waitForFunction(() => window.__huygens !== undefined);
+  await page.waitForFunction(() => document.body.dataset['drawCalls'] !== undefined);
+  await page.waitForFunction((v) => window.__huygens?.reducedMotion() === v, motion === 'reduce');
+  return problems;
+}
+
+/** Avance de `seconds` (0 : redessine, ce qui applique la préférence) et lit l'instantané. */
+async function step(
+  page: Page,
+  seconds: number,
+): Promise<{
+  phase: string;
+  animations: boolean;
+  atPost: boolean;
+  action: string;
+  outcome: string | null;
+}> {
+  return page.evaluate((s) => {
+    const hook = window.__huygens;
+    if (hook === undefined) throw new Error('window.__huygens absent');
+    hook.advance(s);
+    const n = hook.snapshot();
+    return {
+      phase: n.phase,
+      animations: n.animations,
+      atPost: n.atPost,
+      action: n.walkerAction,
+      outcome: n.outcome,
+    };
+  }, seconds);
+}
+
+test('mouvement réduit : poste immédiat, trajet sans embarquement, issue sans sortie (D32)', async ({
+  page,
+}) => {
+  const problems = await openAnimated(page, 'reduce');
+  let s = await step(page, 0);
+  expect(s.animations, 'préférence suivie dès la création du niveau').toBe(false);
+  // E depuis l'entrée : placé au poste tout de suite, sans marche.
+  await page.keyboard.press('e');
+  s = await step(page, 0);
+  expect(s.phase).toBe('tuning');
+  expect(s.atPost).toBe(true);
+  await page.evaluate(() => {
+    window.__huygens?.commands.setKp(2500);
+    window.__huygens?.commands.launch();
+  });
+  // Lancement : le trajet part aussitôt, sans phase d'embarquement.
+  s = await step(page, 0);
+  expect(s.phase).toBe('trip');
+  expect(s.action).toBe('inCabin');
+  // Victoire : issue immédiate, sans phase de sortie.
+  let seenExit = false;
+  for (let i = 0; i < 60 * 12 && s.phase === 'trip'; i += 1) {
+    s = await step(page, 1 / 60);
+    seenExit ||= s.phase === 'exit';
+  }
+  expect(seenExit).toBe(false);
+  expect(s.phase).toBe('outcome');
+  expect(s.outcome).toBe('win');
+  await expect(page.locator('#ui .ui-outcome')).toBeVisible();
+  expect(problems, CONSOLE_FAILURE).toEqual([]);
+});
+
+test('mouvement réduit changé en cours de partie : les animations suivent au lancement suivant', async ({
+  page,
+}) => {
+  const problems = await openAnimated(page, 'reduce');
+  await page.keyboard.press('e');
+  let s = await step(page, 0);
+  expect(s.atPost).toBe(true);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.waitForFunction(() => window.__huygens?.reducedMotion() === false);
+  s = await step(page, 0);
+  expect(s.animations, 'la préférence retirée rend les animations').toBe(true);
+  await page.evaluate(() => window.__huygens?.commands.launch());
+  s = await step(page, 0.5);
+  expect(s.phase).toBe('boarding');
+  // La préférence revient pendant l'embarquement : il est terminé aussitôt, le trajet part.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.waitForFunction(() => window.__huygens?.reducedMotion() === true);
+  s = await step(page, 0);
+  expect(s.animations).toBe(false);
+  expect(s.phase).toBe('trip');
+  // Retour sans préférence : le lancement suivant embarque de nouveau.
+  await page.evaluate(() => window.__huygens?.commands.restart());
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.waitForFunction(() => window.__huygens?.reducedMotion() === false);
+  s = await step(page, 0);
+  expect(s.animations).toBe(true);
+  await page.evaluate(() => window.__huygens?.commands.launch());
+  s = await step(page, 0.2);
+  expect(s.phase).toBe('boarding');
+  expect(problems, CONSOLE_FAILURE).toEqual([]);
+});

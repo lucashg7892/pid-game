@@ -208,12 +208,24 @@ describe('état affiché et ancres', () => {
   it('interpole la cabine pendant le trajet, la fige à l’issue', () => {
     const d = createDisplay();
     computeDisplay(
-      snapshot({ phase: 'trip', cabinPrevY: 1, cabinY: 2, alpha: 0.25, walkerInCabin: true }),
+      snapshot({
+        phase: 'trip',
+        cabinPrevY: 1,
+        cabinY: 2,
+        alpha: 0.25,
+        walkerAction: 'inCabin',
+        walkerInCabin: true,
+        walkerX: CABIN_CENTER_X,
+        walkerPrevX: CABIN_CENTER_X,
+        walkerPrevY: 1,
+        walkerY: 2,
+      }),
       d,
     );
     expect(d.cabinY).toBe(1.25);
     expect(d.walkerX).toBe(CABIN_CENTER_X);
     expect(d.walkerGround).toBe(1.25);
+    expect(d.pose).toBe('stand');
     computeDisplay(
       snapshot({ phase: 'outcome', cabinPrevY: 1, cabinY: 2, alpha: 0.25, outcome: 'win' }),
       d,
@@ -231,13 +243,104 @@ describe('état affiché et ancres', () => {
     expect(d.pose).toBe('walk');
   });
   it('en pause : phase et attitude de la phase qui reprendra', () => {
-    const s = snapshot({ phase: 'paused', resumePhase: 'tuning' });
+    const s = snapshot({ phase: 'paused', resumePhase: 'tuning', walkerAction: 'atPost' });
     expect(effectivePhase(s)).toBe('tuning');
     expect(choosePose('tuning', s)).toBe('reach');
     expect(effectivePhase(snapshot({ phase: 'paused', resumePhase: null }))).toBe('paused');
-    expect(choosePose('paused', s)).toBe('stand');
     expect(choosePose('outcome', snapshot({ outcome: null }))).toBe('stand');
-    expect(choosePose('trip', s)).toBe('stand');
+    expect(choosePose('trip', snapshot({ walkerAction: 'inCabin' }))).toBe('stand');
+  });
+  it('attitude d’après l’action du bonhomme', () => {
+    const pose = (walkerAction: LevelSnapshot['walkerAction'], moving = false): string =>
+      choosePose('tuning', snapshot({ walkerAction, walkerMoving: moving }));
+    expect(pose('free')).toBe('stand');
+    expect(pose('free', true)).toBe('walk');
+    expect(pose('toPost')).toBe('walk');
+    expect(pose('atPost')).toBe('reach');
+    expect(pose('boarding')).toBe('walk');
+    expect(pose('inCabin')).toBe('stand');
+    expect(pose('exiting')).toBe('walk');
+    expect(pose('stepping')).toBe('walk');
+    expect(pose('arrived')).toBe('stand');
+    // L'issue prime sur l'action : fête sur le plateau, échecs à bord.
+    const outcome = (o: LevelSnapshot['outcome']): string =>
+      choosePose('outcome', snapshot({ walkerAction: 'inCabin', outcome: o }));
+    expect(choosePose('outcome', snapshot({ walkerAction: 'arrived', outcome: 'win' }))).toBe(
+      'cheer',
+    );
+    expect(outcome('bonk')).toBe('bonk');
+    expect(outcome('step')).toBe('akimbo');
+    expect(outcome('noLift')).toBe('shrug');
+  });
+  it('dessine le bonhomme à la position du snapshot, sans dépendre de walkerInCabin', () => {
+    const d = createDisplay();
+    const base = { phase: 'exit', walkerAction: 'exiting', walkerFacing: 1, cabinY: 2.9 } as const;
+    // Marche dans la cabine : x intermédiaire entre 2 et 3,8, pieds au plancher.
+    const inside = {
+      ...base,
+      walkerPrevX: 2.9,
+      walkerX: 3.1,
+      alpha: 0.5,
+      walkerPrevY: 2.9,
+      walkerY: 2.9,
+    };
+    computeDisplay(snapshot({ ...inside, walkerInCabin: true }), d);
+    const first = { x: d.walkerX, y: d.walkerGround };
+    computeDisplay(snapshot({ ...inside, walkerInCabin: false }), d);
+    expect(d.walkerX).toBeCloseTo(3, 12);
+    expect(d.walkerX).toBe(first.x);
+    expect(d.walkerGround).toBe(first.y);
+    expect(d.walkerGround).toBe(2.9);
+    expect(d.pose).toBe('walk');
+    // Pendant le pas : pieds interpolés entre la hauteur de la cabine et celle du plateau.
+    computeDisplay(
+      snapshot({
+        ...base,
+        walkerAction: 'stepping',
+        walkerPrevX: 3.8,
+        walkerX: 3.9,
+        alpha: 0.5,
+        walkerPrevY: 2.9,
+        walkerY: 3,
+      }),
+      d,
+    );
+    expect(d.walkerX).toBeCloseTo(3.85, 12);
+    expect(d.walkerGround).toBeCloseTo(2.95, 12);
+    // Sur le plateau : à la hauteur r, pas dans la masse.
+    computeDisplay(
+      snapshot({
+        phase: 'outcome',
+        outcome: 'win',
+        walkerAction: 'arrived',
+        walkerPrevX: 4.5,
+        walkerX: 4.6,
+        alpha: 0.5,
+        walkerPrevY: 3,
+        walkerY: 3,
+      }),
+      d,
+    );
+    expect(d.walkerGround).toBe(3);
+    expect(d.pose).toBe('cheer');
+  });
+  it('la hauteur ne s’interpole pas à l’issue (cabine figée) ni hors trajet', () => {
+    const d = createDisplay();
+    computeDisplay(
+      snapshot({
+        phase: 'outcome',
+        outcome: 'bonk',
+        walkerAction: 'inCabin',
+        cabinY: 2,
+        cabinPrevY: 1,
+        walkerY: 2,
+        walkerPrevY: 1,
+        alpha: 0.5,
+      }),
+      d,
+    );
+    expect(d.walkerGround).toBe(2);
+    expect(d.cabinY).toBe(2);
   });
   it('ancres de la console, de la cabine et de la tête', () => {
     const frame = computeFrame(1280, 720);

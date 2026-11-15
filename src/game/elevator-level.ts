@@ -93,7 +93,8 @@ export interface LevelSnapshot {
   ki: number;
   /**
    * Terme intégral I accumulé (N), lu sur le contrôleur après le dernier pas ; 0 au niveau 1 et
-   * hors trajet. Prévu pour de futurs affichages (non affiché pour l'instant).
+   * avant le premier lancement. Il garde sa valeur à l'issue (affiché par la jauge de I du niveau 2
+   * et par la ligne « Terme I » du panneau de mesures) et retombe à 0 au recommencement.
    */
   iTerm: number;
   /** Consigne (m) : 0 avant le lancement, {@link LEVEL1_SETPOINT} pendant le trajet et l'issue. */

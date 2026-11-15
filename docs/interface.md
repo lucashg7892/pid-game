@@ -1,6 +1,6 @@
 # Interface du joueur (`src/ui`)
 
-À quoi sert cette page : décrire ce que le joueur voit et ce qu'il peut faire, phase par phase : textes, panneau de réglage, touches, accessibilité, disposition à l'écran, police. Elle décrit le commit `a308ada` (interface validée en T-010, corrigée par P-005, T-014, T-015, puis étendue par T-017 : écrans titre et menu, bouton « Menu », destruction de l'interface du niveau ; T-019 : étiquettes de la jauge ; T-021b : niveau 2 ; T-022 : trajet de 10 s, Kp par défaut 2000, annonce « trop court » du niveau 2 ; T-024 : jauge du terme intégral I au niveau 2). T-025 a régénéré les captures périmées par T-022 (K35 corrigé) ; celles qui montrent encore une ancienne valeur (t019, t010-02, t010-05) le disent dans leur légende. Le dessin de la scène est dans [rendu.md](rendu.md), les règles du niveau dans [jeu.md](jeu.md).
+À quoi sert cette page : décrire ce que le joueur voit et ce qu'il peut faire, phase par phase : textes, panneau de réglage, touches, accessibilité, disposition à l'écran, police. Elle décrit le commit `02119f7` (interface validée en T-010, corrigée par P-005, T-014, T-015, puis étendue par T-017 : écrans titre et menu, bouton « Menu », destruction de l'interface du niveau ; T-019 : étiquettes de la jauge ; T-021b : niveau 2 ; T-022 : trajet de 10 s, Kp par défaut 2000, annonce « trop court » du niveau 2 ; T-024 : jauge du terme intégral I au niveau 2 ; T-026 à T-033 : correctifs de la chasse aux bugs de la v0.2, voir [CHANGELOG.md](CHANGELOG.md)). T-025 a régénéré les captures périmées par T-022 (K35 corrigé) ; celles qui montrent encore une ancienne valeur (t019, t010-02, t010-05) le disent dans leur légende. Le dessin de la scène est dans [rendu.md](rendu.md), les règles du niveau dans [jeu.md](jeu.md).
 
 ## Principe
 
@@ -24,26 +24,36 @@ Depuis T-017, le jeu s'ouvre sur un **écran titre**, puis un **menu des niveaux
 | Écran | Contenu | Focus à l'arrivée |
 |---|---|---|
 | titre | titre « Huygens’s world », sous-titre (`app.tagline`), bouton « Jouer » / « Play », bouton de langue, pied de page avec la mention de copyright et le nom de la licence | « Jouer » |
-| menu | titre « Niveaux » / « Levels », liste de boutons « Niveau 1 : le vide » et « Niveau 2 : la mémoire », bouton « Retour » / « Back » | le premier niveau jouable, ou, au retour d'un niveau, celui qu'on vient de quitter |
+| menu | titre « Niveaux » / « Levels », liste de boutons « Niveau 1 : le vide » et « Niveau 2 : la mémoire », bouton « Retour » / « Back » | le premier niveau jouable, ou, **seulement quand on revient d'un niveau**, celui qu'on vient de quitter (depuis le titre, le focus va toujours sur « Niveau 1 » : A-05, T-029) |
 
 ![Écran titre en français, 1280 × 720 (capture e2e de T-017e)](img/t017-titre-fr.png)
 
 ![Menu des niveaux en français (capture e2e de T-017e ; ne montre qu'une entrée, le niveau 2 est venu avec T-021b : voir la capture du menu à deux entrées plus haut)](img/t017-menu-fr.png)
 
-**Copyright.** La ligne affichée est « Copyright (c) 2026 lucashg7892 » (`title.copyright`, identique en français et en anglais) suivie de « Licence MIT » ou « MIT License » (`title.license`). `tests/i18n/license.test.ts` (5 tests) la compare au fichier `LICENSE` : ligne unique de copyright, année et titulaire, première ligne de la licence, aucune autre clé ne porte de notice. Elle n'est affichée que sur le titre. Elle est posée directement sur le papier, sans carte, et une ligne de grille la traverse (K27).
+**Copyright.** La ligne affichée est « Copyright (c) 2026 lucashg7892 » (`title.copyright`, identique en français et en anglais) suivie de « Licence MIT » ou « MIT License » (`title.license`). `tests/i18n/license.test.ts` (5 tests) la compare au fichier `LICENSE` : ligne unique de copyright, année et titulaire, première ligne de la licence, aucune autre clé ne porte de notice. Elle n'est affichée que sur le titre. Depuis T-032 (K27 corrigé), elle est posée sur un fond de papier opaque (`.ui-screen-legal` dans `screens.css` : `background: #fbf7ec`, coins arrondis de 6 px, marge intérieure `0.3em 1em`) : la grille du canvas ne la traverse plus. Captures `t017-titre-fr` et `t017-titre-portrait` refaites par T-033.
 
-**Touches** (`screenKeyToIntent`, 17 tests dans `tests/ui/screen-keys.test.ts`) :
+**Touches** (`screenKeyToIntent`, 18 tests dans `tests/ui/screen-keys.test.ts`) :
 
 | Écran | Touche | Intention |
 |---|---|---|
-| titre | Entrée, Espace | natif (activation du bouton focalisé) |
+| titre | Entrée, Espace | natif (activation du bouton focalisé) ; avec `repeat` : `block` (A-01) |
 | titre | Échap | rien |
 | menu | ↑ / ↓ | `focusPrev` / `focusNext` entre les niveaux jouables puis « Retour », sans bouclage (`block` aux extrémités, `focusFirst` ou `focusLast` si le focus est ailleurs) |
 | menu | Échap | `back` : retour au titre (ignoré en répétition) |
 | titre, menu | Tab, Maj+Tab | natif |
-| niveau | — | `none` : ces écrans n'ont aucun rôle dans un niveau (son clavier est `keys.ts`) |
+| menu | Entrée, Espace | natif ; avec `repeat` : `block` (A-01) |
+| niveau | — | `none` : ces écrans n'ont aucun rôle dans un niveau (son clavier est `keys.ts`) ; Entrée ou Espace avec `repeat` : `none` aussi |
 
-Avec Ctrl, Alt ou ⌘ enfoncée, aucune intention. Le clavier du niveau (`bindKeyboard`) n'est monté que dans un niveau.
+Avec Ctrl, Alt ou ⌘ enfoncée, aucune intention. Le titre écoute lui aussi le clavier du document, seulement pour bloquer la répétition d'Entrée et d'Espace.
+
+**Une intention, un écran (A-01, T-027).** Une double activation ne doit pas traverser deux écrans. Deux gardes :
+
+- **clic** : les boutons de navigation (« Jouer », langue, niveaux du menu, « Retour ») passent par `Disposables.onNavigate` (`screens.ts`), qui ignore un clic dont `event.detail > 1` (deuxième clic d'un double-clic ou d'un double tape, qui tomberait sur l'écran suivant). Un clic au clavier ou synthétique (`element.click()`, lecteur d'écran) a `detail` 0 et passe ;
+- **touche maintenue** : Entrée ou Espace avec `repeat` est bloquée (`preventDefault`) par `screenKeyToIntent` sur le titre et le menu, et par `keyToIntent` sur un bouton du niveau (« Menu », « Rejouer »...) : sans cela le navigateur synthétise un clic à chaque répétition. La première frappe reste native. Échap maintenue (A-03) ne produit qu'une intention : la répétition est bloquée.
+
+Tests : e2e (j) et (k) de `screens.spec.ts` (7 tests), unitaires de `keys.test.ts` et `screen-keys.test.ts`.
+
+**Cartes très basses (A-09, T-029).** `.ui-screen` centre son contenu par `justify-content: safe center` : quand la carte est plus haute que l'écran, elle s'aligne en haut et défile, au lieu de déborder des deux côtés (e2e `mineurs-t029.spec.ts`, 800 × 200). Le clavier du niveau (`bindKeyboard`) n'est monté que dans un niveau.
 
 **Accessibilité.** Tous les contrôles sont de vrais boutons (clic, toucher, Entrée et Espace identiques), de 44 px au moins (`min-height` 48 px dans `screens.css` ; l'e2e (h) de `screens.spec.ts` vérifie au moins 44 px à 390 × 844 et 360 × 740). À l'arrivée sur un écran, une phrase est écrite dans une région `aria-live="polite"` de l'écran, après un délai de 100 ms pour qu'elle soit lue : « Écran titre » (`menu.announce.title`) ou « Menu des niveaux » (`menu.announce.menu`). Le canvas est `aria-hidden="true"` sur le titre et le menu ; `createUi` retire cet attribut à l'entrée dans un niveau et `ui.destroy()` le remet. `<html lang>` et le titre du document sont tenus par `main.ts` (abonnement au traducteur), plus par l'interface du niveau. Ces écrans n'ont aucune animation ni transition. Le bouton de langue du titre réutilise `Translator.setLocale` ; la langue choisie est conservée au menu, dans le niveau et au retour (e2e (e)). En portrait, les écrans sont des colonnes qui défilent verticalement (`max-height: 100dvh`) et n'ont pas l'invite de rotation. Un essai avec un vrai lecteur d'écran n'a pas été fait ; le tactile n'a pas été essayé sur un appareil réel (K9).
 
@@ -83,7 +93,7 @@ Pendant la saturation du moteur (Kp = 4500 N/m, 0,1 s après le lancement), la j
 
 ### Issue
 
-Un panneau donne le titre de l'issue, un message qui explique le mécanisme physique, et le bouton « Rejouer le niveau ». À la victoire, la cote chiffrée « e = 0,20 m » (erreur **mesurée**) est posée à côté de la marche, et le panneau donne la formule avec l'erreur **théorique** m·g/Kp, puis l'annonce du terme I.
+Un panneau donne le titre de l'issue, un message qui explique le mécanisme physique, et deux boutons, « Rejouer le niveau » et « Menu ». Depuis T-028 (A-02), les deux boutons vivent dans un **pied collant** (`div.ui-outcome-actions`, `position: sticky` en bas du panneau, fond de papier opaque) : si le message défile dans le panneau, les boutons restent dans la partie visible. En mode bandes, quand la bande sous la scène fait moins de `MIN_OUTCOME_ROOM` (120 px), le panneau se pose en bas, au-dessus du bandeau, sur `OUTCOME_FALLBACK_HEIGHT` (150 px) de haut au plus (titre, message qui défile, boutons collés) : « Rejouer » et « Menu » sont visibles et cliquables de 1024 × 600 à 667 × 375, aux deux niveaux, à la victoire et au choc (e2e (r) de `ui.spec.ts`, 16 tests). Au plus bas (667 × 375), ce panneau recouvre le bas de la cage : défaut K39. À la victoire, la cote chiffrée « e = 0,20 m » (erreur **mesurée**) est posée à côté de la marche, et le panneau donne la formule avec l'erreur **théorique** m·g/Kp, puis l'annonce du terme I.
 
 ![Victoire à Kp = 2500 N/m (capture e2e de T-010)](img/t010-04-victoire.png)
 
@@ -91,7 +101,7 @@ Un panneau donne le titre de l'issue, un message qui explique le mécanisme phys
 
 ### Pause
 
-« Échap » (hors phase de réglage) ou le bouton « Pause » figent le jeu ; le bandeau indique comment reprendre. En phase de réglage, « Échap » ferme le panneau de Kp au lieu de mettre en pause. Le bouton « Pause » change de libellé (« Reprendre ») sans attribut `aria-pressed`. En pause, le bouton « Menu » (clé `controls.menu`, identique en français et en anglais) est visible dans la barre du haut.
+« Échap » (hors phase de réglage) ou le bouton « Pause » figent le jeu ; le bandeau indique comment reprendre. En phase de réglage, « Échap » ferme le panneau de Kp au lieu de mettre en pause. Le bouton « Pause » change de libellé (« Reprendre ») sans attribut `aria-pressed`. Si le panneau d'issue est ouvert, le bouton « Rejouer le niveau » est désactivé tant que le jeu est en pause (B-04, T-029 : `enable(outcomeButton, !vm.paused)`) ; si le focus était sur lui, il passe au bouton « Pause ». La reprise le réactive. En pause, le bouton « Menu » (clé `controls.menu`, identique en français et en anglais) est visible dans la barre du haut.
 
 ### Bouton « Menu » (T-017e)
 
@@ -185,13 +195,14 @@ En français, l'espace avant « : » est une espace insécable (U+00A0), comme p
 
 ## Touches
 
-Traduction touche → intention par la fonction pure `keyToIntent` (`src/ui/keys.ts`), exécutée par `bindKeyboard` (`input.ts`). Vérifiée par `tests/ui/keys.test.ts` (34 tests, dont 27 touches × 20 combinaisons de phase et de focus) et par les scénarios e2e au clavier réel.
+Traduction touche → intention par la fonction pure `keyToIntent` (`src/ui/keys.ts`), exécutée par `bindKeyboard` (`input.ts`). Vérifiée par `tests/ui/keys.test.ts` (37 tests, dont 27 touches × 20 combinaisons de phase et de focus) et par les scénarios e2e au clavier réel.
 
 Règles générales :
 
 - la **marche** se lit sur la position physique de la touche (`code`) : Q/D sur un clavier AZERTY, A/D sur un clavier QWERTY ; `+` et `−` se lisent sur le caractère produit (`key`) ;
 - avec Ctrl, Alt ou ⌘ enfoncée, aucune touche n'agit : les raccourcis du navigateur restent intacts ;
-- une touche du jeu n'est jamais répétée par l'appui long pour E, Entrée, Espace et R ;
+- une touche du jeu n'est jamais répétée par l'appui long pour E, Entrée, Espace et R ; Échap maintenue ne produit qu'une intention (A-03) ;
+- **aide ouverte** (B-01, T-026) : `keyToIntent` réutilise `commandsBlocked(helpOpen)` de `help.ts` : aucune commande du jeu ne passe (ni E, R, Entrée, Espace, marche, Kp), les touches de défilement restent bloquées, seuls Échap (qui ferme l'aide), Tab et le comportement natif des boutons de l'aide (Entrée, Espace) passent. Avant T-026, le clavier commandait encore le niveau derrière l'aide (la garde K24 ne couvrait que la souris) ;
 - toute touche du jeu, et les touches qui feraient défiler la page, sont bloquées (`preventDefault`).
 
 ### Table des touches
@@ -238,7 +249,7 @@ Les touches de Kp n'agissent qu'en approche et en réglage ; ailleurs, le niveau
 
 | Focus | Comportement |
 |---|---|
-| champ numérique de Kp | tout est natif (saisie libre), sauf Échap |
+| champ numérique de Kp (ou de Ki) | tout est natif (saisie libre), sauf Échap : il annule la saisie (le champ retrouve la valeur courante, B-03, T-029) puis, comme ailleurs, ferme le réglage |
 | bouton, lien, résumé de légende | Entrée et Espace activent le contrôle (natif) ; E garde son rôle de jeu |
 | curseur de Kp | les flèches règlent la valeur (natif) ; Q/A et D font toujours marcher |
 
@@ -257,7 +268,8 @@ Le bouton « ? » ouvre une fenêtre d'aide (`role="dialog"`, `aria-modal="true"
 
 - **pause** : ouvrir l'aide pendant un trajet met le jeu en pause ; la fermer reprend le jeu seulement si c'est l'aide qui avait mis en pause (`helpPauseDecision`). Une pause demandée par le joueur avant l'ouverture n'est pas levée par la fermeture. Hors trajet, l'aide ne change pas la phase ;
 - **focus** : à l'ouverture, le focus va sur « Fermer l’aide » ; Tab et Maj+Tab restent dans l'aide (`trapFocusIndex`) ; à la fermeture, le focus revient à l'élément qui l'avait à l'ouverture, ou, à défaut (élément disparu, désactivé ou masqué), au bouton « ? » ;
-- Échap ou « Fermer l’aide » la referme ;
+- Échap ou « Fermer l’aide » la referme ; tant qu'elle est ouverte, le clavier ne commande plus le jeu (B-01, T-026, voir « Touches ») ;
+- le texte de l'aide d'interaction dit « E, Entrée ou Espace : utiliser la console, puis lancer » (`controls.help.interact`) et, au tactile, « Action pour utiliser la console et lancer » (`controls.help.touch`, `controls.help.touchKi`), en anglais de même (B-08, T-029) ;
 - la couche de l'aide est au-dessus des mesures du trajet (`z-index: 2` sur `.ui-help`).
 
 Corrigés par T-017abc : **K23** (le papier de l'aide est opaque, les mesures du trajet ne transparaissent plus ; e2e (p)) et **K24** (tant que l'aide est ouverte, les commandes du niveau sont suspendues : « Pause » / « Reprendre », « Menu », le réglage, le champ numérique, le clic sur la console et le bouton tactile « Action » n'agissent pas ; seule la fermeture de l'aide agit, qui reprend le jeu par `helpPauseDecision` si l'aide l'avait mis en pause ; règle pure `commandsBlocked(helpOpen)` de `src/ui/help.ts` ; e2e (o)).
@@ -305,7 +317,7 @@ Deux modes :
 | Mode | Quand | Placement |
 |---|---|---|
 | `sides` (paysage) | au moins 240 px libres de chaque côté de la cage | réglage, bulle et issue à gauche de la cage (à gauche du bonhomme et de la console, sinon au-dessus d'eux) ; mesures et aide à droite |
-| `bands` (portrait) | côtés trop étroits | bulle et mesures dans la bande au-dessus de la scène ; réglage et issue dans la bande au-dessous |
+| `bands` (portrait) | côtés trop étroits | bulle et mesures dans la bande au-dessus de la scène ; réglage et issue dans la bande au-dessous ; si la bande sous la scène fait moins de `MIN_OUTCOME_ROOM` (120 px), l'issue se pose en bas, au-dessus du bandeau, sur `OUTCOME_FALLBACK_HEIGHT` (150 px) au plus (T-028) |
 
 Le bandeau d'aide est en bas de l'écran, sous la scène s'il y a au moins 56 px, sinon en bas à gauche de la cage.
 
@@ -360,6 +372,8 @@ Constantes de disposition exportées par `layout.ts` (pixels CSS, sauf mention) 
 | `DIMENSION_NUDGE` | 6 | descente de la cote chiffrée en portrait au niveau 2 (T-024 ; idem) |
 | `MIN_SIDE` | 240 | largeur libre minimale de chaque côté de la cage pour la disposition « côtés » |
 | `MIN_BANNER_BAND` | 56 | hauteur minimale sous la scène pour y poser le bandeau |
+| `MIN_OUTCOME_ROOM` | 120 | hauteur minimale de la bande sous la scène pour y poser l'issue en mode bandes ; en dessous, repli au-dessus du bandeau (T-028) |
+| `OUTCOME_FALLBACK_HEIGHT` | 150 | hauteur de l'issue en repli : titre, message qui défile, boutons collés (T-028) |
 | `MIN_PANEL_BESIDE` | 280 | largeur minimale d'un panneau posé à gauche du bonhomme et de la console (sinon il est posé au-dessus) |
 | `WALKER_HALF_WIDTH` | 0,3 m | demi-largeur de la boîte protégée du bonhomme |
 | `CONSOLE_HALF_BOX` | 0,35 m | demi-largeur de la boîte protégée de la console |

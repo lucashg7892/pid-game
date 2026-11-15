@@ -3,6 +3,7 @@ dist/
 coverage/
 playwright-report/
 test-results/
+.vitest/
 package-lock.json
 # Rédigés et gardés par d'autres rôles (doc, orchestration) : hors du périmètre de formatage du code.
 docs/

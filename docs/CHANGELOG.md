@@ -4,10 +4,21 @@
 
 ## Correspondance tâche → commit
 
-Sortie de `git log --oneline 88ae23c` (18 commits) pour les lignes jusqu'à `88ae23c`. Les quatre lignes de `13e8b7e` à `a165a14` viennent de `git log --oneline 88ae23c..13e8b7e` (branche `migration`) ; les douze lignes de `119519b` à `a001622` viennent de `git log --oneline a001622..119519b`, plus `a001622` lui-même ; les cinq lignes du haut (de `a5b4bec` à `a308ada`) viennent de `git log --oneline a5b4bec..a308ada`, plus `a5b4bec` lui-même (commit de D-016). Les commits de documentation et de protocole qui s'intercalent entre `88ae23c` et `13e8b7e` (T-013, P-001 à P-004) n'y figurent pas.
+Sortie de `git log --oneline 88ae23c` (18 commits) pour les lignes jusqu'à `88ae23c`. Les quatre lignes de `13e8b7e` à `a165a14` viennent de `git log --oneline 88ae23c..13e8b7e` (branche `migration`) ; les douze lignes de `119519b` à `a001622` viennent de `git log --oneline a001622..119519b`, plus `a001622` lui-même ; les cinq lignes de `a5b4bec` à `a308ada` viennent de `git log --oneline a5b4bec..a308ada`, plus `a5b4bec` lui-même (commit de D-016) ; les onze lignes du haut (de `f2680d1` à `02119f7`) viennent de `git log --oneline f2680d1..02119f7`, plus `f2680d1` lui-même (commit de D-017). Le commit de D-018 n'y figure pas : il est fait après la rédaction de cette page. Les commits de documentation et de protocole qui s'intercalent entre `88ae23c` et `13e8b7e` (T-013, P-001 à P-004) n'y figurent pas.
 
 | Commit | Contenu |
 |---|---|
+| `02119f7` | T-033 (N1) : captures de l'écran titre refaites après K27 (`t017-titre-fr`, `t017-titre-portrait`) |
+| `3b658eb` | T-032 (N2) : K27, mention de copyright sur fond papier opaque |
+| `d0927e2` | T-031 (N2) : K10 l'interface suit les ancres de l'image affichée (`onFrameEnd`), A-07 ancres du niveau entrant, tests |
+| `f90e01b` | T-030 (N2) : K22, `prefers-reduced-motion` suivi dynamiquement, écouteur retiré à l'arrêt, tests |
+| `93cb47e` | P-011 (N1) : défauts mineurs de la chasse aux bugs consignés (K39 à K46), commentaire de `iTerm` corrigé (B-09) |
+| `cb45961` | T-029 (N2) : six mineurs de la chasse aux bugs (A-05, A-09, B-03, B-04, B-06, B-08), tests de régression |
+| `28b7e2c` | T-028 (N2) : A-02, boutons de l'issue toujours visibles en paysage bas, tests de régression |
+| `fa65836` | T-027 (N2) : A-01 double activation des boutons de navigation, A-03 Échap maintenue, tests de régression |
+| `ea76b0b` | T-026 (N2) : B-01, aide ouverte : plus aucune commande de jeu au clavier, tests de régression |
+| `7594048` | V-v0.2 (A et B) : rapports de la chasse aux bugs v0.2 (3 majeurs, 16 mineurs, aucun bloquant) |
+| `f2680d1` | D-017 (N1) : documentation de clôture de la v0.2 (oracle du PI, jauge de I, captures, version 0.2.0) |
 | `a308ada` | P-010 (N1) : version 0.2.0 (`package.json` et racine du lockfile) |
 | `0459420` | T-025 (N1) : captures périmées régénérées (K35) |
 | `1da298f` | T-024 (N2) : jauge du terme intégral au niveau 2 (K30), étiquettes FR/EN, légende, e2e et captures |
@@ -55,15 +66,62 @@ Les neuf premiers commits ont été créés après coup, à la suite, à partir 
 
 ## Versions
 
-- **v0.2.0 — version courante, état du commit `a308ada` (2026-11-14)**. `package.json` et la racine de `package-lock.json` valent `0.2.0` depuis P-010 (`a308ada`). **Aucun rapport de validation finale n'existe pour la v0.2** : il n'y a pas de verdict global. Quatre tâches N3 ont chacune été validées indépendamment par un validateur (T-020, T-021a, T-022, T-023) ; les autres tâches de la version sont de niveau N1 ou N2, vérifiées par l'orchestrateur. Contenu, par rapport à la v0.1 (état `88ae23c`) :
+- **v0.2.0 — version courante, état du commit `02119f7` (2026-11-14)**. `package.json` et la racine de `package-lock.json` valent `0.2.0` depuis P-010 (`a308ada`). **Aucun rapport de validation finale n'existe pour la v0.2** : il n'y a pas de verdict global ; la chasse aux bugs qui a suivi (deux rapports de validateurs, commit examiné `f2680d1`) est une revue adverse, pas une certification. Quatre tâches N3 ont chacune été validées indépendamment par un validateur (T-020, T-021a, T-022, T-023) ; les autres tâches de la version sont de niveau N1 ou N2, vérifiées par l'orchestrateur. Contenu, par rapport à la v0.1 (état `88ae23c`) :
   - **Écran titre et menu des niveaux** (T-017 : machine d'écrans `src/app`, écrans DOM, bouton « Menu », mention de copyright contre `LICENSE`).
   - **Niveau 1 retouché** (T-020, T-022) : fenêtre de réussite Kp ∈ [1000 ; 5000] N/m, poutre à 3,3626 m, tolérance de marche 0,5 m, trajet de 10 s (1200 pas), Kp par défaut 2000 (un lancement sans réglage gagne au pas 262), bulle d'ouverture et vocabulaire « plateau d'arrivée », étiquettes permanentes de la jauge de force (T-019).
   - **Niveau 2 « La mémoire »** (T-021a, T-021b, T-022) : contrôleur PI du noyau (Ki = 0 identique au P bit à bit, pas d'anti-windup), Kp fixé à 2500 N/m, Ki réglable de 0 à 8000 N/(m·s) par pas de 100 (défaut 2000, qui heurte la poutre), tolérance d'arrivée de 0,10 m ; issues : victoire, choc, trop court, trop lent.
   - **Oracle exact du PI** (T-023) : `validation/matlab/t018_*.m` et `tests/sim/pi-exact.test.ts` ; 0 désaccord noyau / exact sur 113 valeurs de Ki.
   - **Jauge du terme intégral I** au niveau 2 (T-024).
-  - **Défauts corrigés depuis la v0.1** (`orchestration/DEFAUTS-CONNUS.md`) : K1, K2, K3 (P-005), K6 (T-020 puis T-022), K16, K17 (T-014), K18, K23, K24 (T-017), K19, K21 (T-015), K20 (T-016), K28 (T-023), K30 (T-024), K32 (T-022), K35 (T-025) ; K22 en partie (version 0.2.0, `prefers-reduced-motion` reste lu au démarrage). K25 (portrait 390 px, mesures rognées) n'est pas corrigé.
-  - **Défauts restants** : K4, K5, K7 à K15, K22 (partie `prefers-reduced-motion`), K25, K26, K27, K29, K31, K33, K34, K36, K37, K38 ; voir [defauts-connus.md](defauts-connus.md).
+  - **Chasse aux bugs** (rapports [A](validation/V-v0.2-A-cycle-de-vie.md) et [B](validation/V-v0.2-B-etat-textes-logique.md), correctifs T-026 à T-033) : voir l'entrée D-018.
+  - **Défauts corrigés depuis la v0.1** (`orchestration/DEFAUTS-CONNUS.md`) : K1, K2, K3 (P-005), K6 (T-020 puis T-022), K16, K17 (T-014), K18, K23, K24 (T-017), K19, K21 (T-015), K20 (T-016), K28 (T-023), K30 (T-024), K32 (T-022), K35 (T-025, puis T-033), K22 (version 0.2.0 ; `prefers-reduced-motion` suivi par T-030), K10 (T-031), K27 (T-032). K25 (portrait 390 px, mesures rognées) n'est pas corrigé.
+  - **Défauts restants** : K4, K5, K7 à K9, K11 à K15, K25, K26, K29, K31, K33, K34, K36 à K46 ; voir [defauts-connus.md](defauts-connus.md).
 - **v0.1 — validée avec réserves le 2026-11-13** (rapport [validation/T-012-v0.1.md](validation/T-012-v0.1.md), bilan [bilan-v0.1.md](bilan-v0.1.md)). Le champ `version` de `package.json` valait `0.0.0` au commit de la validation (K22) ; il valait `0.1.0` depuis P-005 (`a165a14`), il vaut `0.2.0` depuis P-010 (`a308ada`).
+
+## D-018 — Chasse aux bugs de la v0.2 : documentation des commits `7594048` à `02119f7` (2026-11-14)
+
+Documentation de dix commits, de `7594048` (rapports de la chasse aux bugs) à `02119f7` (T-033), à la suite de D-017 (`f2680d1`), sur l'état figé `02119f7` (branche `migration`, arbre propre). La version reste 0.2.0. Aucun code, aucune configuration, aucune PNG de `docs/img/`, ni `docs/validation/` ni `orchestration/` modifiés ; le rédacteur n'a exécuté ni l'e2e (il réécrit les captures) ni MATLAB. Sources : les deux rapports, `orchestration/DEFAUTS-CONNUS.md` et `orchestration/REGISTRE.md` (lus), `git log`, le code et les tests du commit.
+
+**La chasse aux bugs.** Deux validateurs indépendants (Opus, lecture seule) ont examiné le commit `f2680d1` : [partie A](validation/V-v0.2-A-cycle-de-vie.md) (cycle de vie, ressources, écouteurs, redimensionnement, enchaînements) et [partie B](validation/V-v0.2-B-etat-textes-logique.md) (état des niveaux, logique du niveau 2, entrées, textes, accessibilité, noyau). Verdict des deux : « validé avec réserves ». Constat : 19 défauts (A-01 à A-10 et B-01 à B-09), dont 3 majeurs (A-01, A-02, B-01) et 16 mineurs, aucun bloquant ; aucune fuite d'écouteur, de minuterie, de `ResizeObserver` ni d'objet GPU sur 30 à 300 cycles ; noyau de jeu et issues du niveau 2 conformes à la référence. L'étape « K28 » du lot avait été faite avant (T-023, `badab42`, 0 désaccord, noyau juste) : aucune refonte.
+
+Corrigé, chacun avec un test de régression :
+
+- **T-026** (`ea76b0b`, N2) : B-01 (majeur). Aide ouverte, le clavier commandait encore le jeu derrière l'aide. `keyToIntent` réutilise `commandsBlocked` : aucune commande de jeu, Échap ferme l'aide. Tests : `keys.test.ts` (34 → 37 avec T-027), e2e (r) K24 de `ui.spec.ts`.
+- **T-027** (`fa65836`, N2) : A-01 (majeur) et A-03. Une double activation des boutons de navigation sautait un écran : garde `event.detail > 1` sur le clic (`Disposables.onNavigate`), `repeat` bloqué pour Entrée et Espace (`screenKeyToIntent`, `keyToIntent`) ; Échap maintenue ne produit qu'une intention. Tests : `screen-keys.test.ts` (17 → 18), `keys.test.ts`, e2e (j) et (k) de `screens.spec.ts` (7 tests).
+- **T-028** (`28b7e2c`, N2) : A-02 (majeur). Les boutons de l'issue sont dans un pied collant `div.ui-outcome-actions` ; en mode bandes, quand la bande sous la scène fait moins de `MIN_OUTCOME_ROOM` = 120 px, l'issue se pose en bas sur `OUTCOME_FALLBACK_HEIGHT` = 150 px. Visibles et cliquables de 1024×600 à 667×375 (e2e (r) de `ui.spec.ts`, 16 tests ; `layout.test.ts` 37 → 38). Au plus bas, le panneau recouvre le bas de la cage : K39.
+- **T-029** (`cb45961`, N2) : six mineurs. A-05 (le focus du menu va sur « Niveau 1 » depuis le titre), A-09 (`justify-content: safe center`, carte très basse atteignable), B-03 (Échap annule la saisie du champ numérique), B-04 (bouton « Rejouer le niveau » désactivé en pause), B-06 (bulle anglaise du niveau 1 alignée sur la française), B-08 (aide : « puis lancer »). Tests : `mineurs-t029.spec.ts` (6), `catalogs.test.ts` (25 → 27). Aucune clé ajoutée.
+- **P-011** (`93cb47e`, N1) : B-09 (commentaire de `iTerm` corrigé : il garde sa valeur à l'issue et retombe à 0 au recommencement) ; K39 à K46 consignés.
+- **T-030** (`f90e01b`, N2) : K22. `createReducedMotionWatcher` et `watchReducedMotion` (`src/render/bootstrap.ts`) suivent `prefers-reduced-motion` par l'événement `change` ; `RenderSession.reducedMotion` est un accesseur ; écouteur retiré à l'arrêt ; `prefersReducedMotion()` supprimée. Tests : `reduced-motion.test.ts` (4), `reduced-motion.spec.ts` (2), crochet `window.__huygens.reducedMotion()`.
+- **T-031** (`d0927e2`, N2) : K10 et A-07. Option `onFrameEnd` de la session de rendu : `main.ts` met l'interface à jour après le dessin, d'après les ancres de l'image affichée ; les ancres du niveau entrant sont calculées à l'attache (`paintLevel`) et `resetAnchors` les remet à zéro à la détache. Tests : `anchors-reset.test.ts` (1), `k10-a07.spec.ts` (2).
+- **T-032** (`3b658eb`, N2) : K27. Mention de copyright sur fond de papier opaque (`.ui-screen-legal`).
+- **T-033** (`02119f7`, N1) : captures `t017-titre-fr` et `t017-titre-portrait` refaites après K27 (K35, suite).
+
+**Non corrigé, consigné** : K39 (issue sur le bas de la cage à 667×375), K40 (A-04, machine d'écrans : commande invalide pendant une notification), K41 (A-06, annonces dans l'ancienne langue après bascule), K42 (A-08, étiquettes de la jauge sur les boutons « ? » et langue en paysage bas), K43 (A-10, `stats()`), K44 (B-02, virgule du champ numérique), K45 (B-05, annonce d'issue fausse), K46 (B-07, 13 clés inutilisées). Du cahier des charges, K30 à K38 : K31 et K33 à K38 inchangés (K30, K32 et K35 sont corrigés plus haut).
+
+**Ce qui n'est pas prouvé** :
+
+- **K10 est corrigé par construction.** Le test e2e de K10 (`k10-a07.spec.ts`) est une garde de cohérence : il passe aussi sans la correction, parce que le décalage de 2 px par image n'existe qu'en temps réel et que le mode `?e2e=1` (`advance`) n'y est pas sensible. A-07, en revanche, a un test qui échoue sans la correction.
+- **B-05 (K45) n'est reproduit qu'en unitaire**, pas en navigateur.
+- **WebGPU réel** (K8), **lecteur d'écran**, **tactile sur un appareil réel** (K9), **Firefox et Safari** : non essayés (Chromium, rendu logiciel SwiftShader, WebGL2 imposé).
+- **Pas de rapport de validation global de la v0.2** : la chasse aux bugs est une revue adverse de `f2680d1`, pas une certification ; les correctifs T-026 à T-033 ont été vérifiés par l'orchestrateur (N1 et N2), sans nouveau validateur indépendant. Le registre note « `check` et e2e complet verts » pour T-032 ; le rédacteur n'a pas relancé l'e2e.
+- Les rapports A et B portent sur `f2680d1` et ne sont pas modifiés : leurs chiffres (649 tests, 74 e2e) sont ceux de ce commit.
+
+Chiffres relevés au commit `02119f7` :
+
+| Mesure | Valeur | Avant (`a308ada`) |
+|---|---|---|
+| `npm.cmd test` | 49 fichiers, 661 tests verts | 47 fichiers, 649 tests |
+| `npx.cmd playwright test --list` | 108 tests dans 10 fichiers (non exécutés par le rédacteur) | 74 tests dans 7 fichiers |
+| `npm.cmd run lint:arch` | 67 modules, 179 dépendances, 0 violation | 67 modules, 178 dépendances |
+| clés de texte par langue (script) | 163 (FR et EN) | 163 |
+| `npm.cmd run test:cov` | `src/sim` 100 % (192/192 instructions, 102/102 branches, 38/38 fonctions, 178/178 lignes) | idem |
+| `npm.cmd run build` | JavaScript 911,31 kB (254,02 kB gzip), CSS 7,70 kB (2,50 kB gzip), 71 modules transformés | 909,76 kB (253,52 kB gzip), CSS 7,51 kB (2,45 kB gzip) |
+
+Détail des 12 tests unitaires de plus : `reduced-motion.test.ts` +4, `anchors-reset.test.ts` +1, `keys.test.ts` +3, `screen-keys.test.ts` +1, `layout.test.ts` +1, `catalogs.test.ts` +2. Détail des 34 tests e2e de plus : `ui.spec.ts` +17, `screens.spec.ts` +7, `mineurs-t029.spec.ts` 6, `k10-a07.spec.ts` 2, `reduced-motion.spec.ts` 2.
+
+- **Pages mises à jour** : `interface.md` (aide modale au clavier, double activation, pied des boutons d'issue, focus du menu, Échap dans le champ, bouton d'issue en pause, copyright, aide « puis lancer »), `rendu.md` (`onFrameEnd`, ancres à l'attache, `resetAnchors`, mouvement réduit), `architecture.md` (flux d'une image, 179 dépendances), `jeu.md` (`iTerm`), `i18n-accessibilite.md`, `tests.md`, `developpement.md`, `tutoriel-lancer-en-local.md` (compteurs), `defauts-connus.md` (K10, K22, K27, K35 corrigés ; K39 à K46 ajoutés ; table des constats de la chasse aux bugs), `README.md` (index, liens vers les deux rapports) et ce journal.
+- **ADR** : aucune nouvelle ; aucun choix structurant n'a été tranché par ces tâches.
+- **Valeurs historiques conservées** (datées) : les nombres de tests (649, 602, 586, 439), de tests e2e (74, 70, 69), de clés (159, 158), les tailles de build d'avant et le texte de `bilan-v0.1.md` restent là où ils sont donnés comme mesures d'un commit précédent.
+- **Écart relevé dans `orchestration/DEFAUTS-CONNUS.md`** (lu seulement) : au commit `02119f7`, sa ligne K22 dit encore que `prefers-reduced-motion` est lu au démarrage seulement, alors que T-030 l'a corrigé ; sa ligne K35 ne mentionne pas T-033. `defauts-connus.md` suit le code.
 
 ## D-017 — Clôture de la v0.2 : documentation des tâches T-023 à P-010 (2026-11-14)
 

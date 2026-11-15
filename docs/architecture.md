@@ -1,6 +1,6 @@
 # Architecture
 
-À quoi sert cette page : présenter les modules du code, qui a le droit d'importer qui, le déroulement d'une image et les garde-fous automatiques. État au commit `a308ada` : tous les modules sont validés, le jeu s'ouvre sur un écran titre puis un menu, et deux niveaux sont jouables dans un navigateur (le niveau 2 « La mémoire » est venu avec T-021b, sa jauge du terme intégral avec T-024).
+À quoi sert cette page : présenter les modules du code, qui a le droit d'importer qui, le déroulement d'une image et les garde-fous automatiques. État au commit `02119f7` : tous les modules sont validés, le jeu s'ouvre sur un écran titre puis un menu, et deux niveaux sont jouables dans un navigateur (le niveau 2 « La mémoire » est venu avec T-021b, sa jauge du terme intégral avec T-024).
 
 ## Modules
 
@@ -39,7 +39,7 @@ public/      favicon.svg  fonts/ (Patrick Hand, OFL.txt)
 2. Démarre le rendu **une seule fois** (`startRendering`, papier seul) avec le choix lu dans `?renderer=` et un rappel `onFailure`. Si le démarrage échoue, affiche la page de repli traduite et s'arrête, sans passer par le titre. Si le rendu échoue plus tard (perte du contexte GPU, exception dans une image) ou si le montage d'un écran lève une exception, `handleFailure` démonte l'écran courant (`unmountCurrent`) et affiche une page de repli d'échec (voir [rendu.md](rendu.md#échecs-en-cours-de-route-t-014)).
 3. Crée la machine d'application (`createAppMachine(LEVELS)`, `src/app`) et monte l'écran de son état : à chaque changement, il démonte l'écran précédent puis monte le suivant.
    - **titre** : `createTitleScreen` (bouton « Jouer » → `machine.play()`) ; canvas `aria-hidden` ;
-   - **menu** : `createMenuScreen` (un niveau → `machine.openLevel(id)`, « Retour » ou Échap → `machine.back()`) ; le focus revient sur le niveau qu'on vient de quitter ;
+   - **menu** : `createMenuScreen` (un niveau → `machine.openLevel(id)`, « Retour » ou Échap → `machine.back()`) ; le focus revient sur le niveau qu'on vient de quitter, mais seulement quand on vient d'un niveau (A-05 : la machine prévient l'abonné de l'écran précédent ; depuis le titre, le focus va sur « Niveau 1 ») ;
    - **niveau** : crée un niveau **neuf** (`createLevel1()` ou `createLevel2()`), l'attache au rendu (`session.attachLevel`), crée l'interface (`createUi`, avec l'action « Menu » → `machine.leaveLevel()`), branche le clavier (`bindKeyboard`) et la géométrie de l'écran. Au démontage : retrait dans l'ordre inverse (clavier, `ResizeObserver`, écouteur `resize`, `ui.destroy()`, conteneur `#ui`, `session.detachLevel()`), chaque retrait étant indépendant des autres.
 4. Géométrie de l'écran pour l'interface (`UiGeometry`) : calculée à partir du cadrage du rendu, recalculée sur `resize` **et** par un `ResizeObserver` sur le canvas (K18, corrigé par T-017e), avec les ancres de la session (`session.anchors()`, dont `gaugeMax` et `gaugeWeight` et, depuis T-024, `iGauge` et `iGaugeVisible` pour la jauge du terme intégral du niveau 2 ; `main.ts` lit `iGaugeVisible` par un accesseur) : l'interface reçoit des nombres, sans importer le rendu.
 5. Écrit dans `document.body.dataset` le backend (`backend`), et, après la première image, `drawCalls` et `triangles`.
@@ -67,20 +67,21 @@ public/      favicon.svg  fonts/ (Patrick Hand, OFL.txt)
 ```mermaid
 flowchart TD
   K["clavier, souris, tactile : bindKeyboard et écouteurs de createUi"] -- "à tout moment" --> L["commandes du niveau : moveRight, setKp, launch..."]
-  RAF["renderer.setAnimationLoop : nouvelle image, durée dt"] --> UI["onFrame : ui.update()"]
-  UI --> UP["onFrame : level.update(dt)"]
+  RAF["renderer.setAnimationLoop : nouvelle image, durée dt"] --> UP["onFrame : level.update(dt)"]
   UP --> P["session : view.paint(snapshot, signals) et computeAnchors"]
   P --> D["stage.render() : papier, lots de traits, passe de sortie"]
-  L -. "lu à l'image suivante" .-> UI
+  D --> UI["onFrameEnd : ui.update() avec les ancres de l'image affichée"]
+  L -. "lu à l'image suivante" .-> UP
 ```
 
 Ordre réel (`src/main.ts`, `src/render/session.ts`) :
 
 1. Les commandes du joueur arrivent par des écouteurs d'événements, entre deux images. Chaque commande est appliquée tout de suite au niveau, puis l'interface est mise à jour.
-2. À chaque image, la boucle de three appelle `onFrame(dt)` : `main.ts` met d'abord à jour l'interface (`ui.update()`, avec les ancres de l'image précédente : une image de retard, invisible pour des étiquettes), puis fait avancer le niveau (`level.update(dt)`, horloge à pas fixe du noyau).
+2. À chaque image, la boucle de three appelle `onFrame(dt)` : `main.ts` fait avancer le niveau (`level.update(dt)`, horloge à pas fixe du noyau) et renvoie la durée de l'image.
 3. La session repeint les lots de traits d'après l'instantané (interpolé par `alpha`), recalcule les ancres et dessine.
+4. La session appelle enfin `onFrameEnd` (option de `startRendering`, T-031) : `main.ts` y met à jour l'interface (`ui.update()`), qui se place d'après les ancres de l'image qui vient d'être dessinée.
 
-L'interface est donc mise à jour **avant** le niveau dans une image : les textes reflètent l'état de la fin de l'image précédente (K10, toujours ouvert). Sur le titre et le menu, il n'y a pas de niveau : `onFrame` ne fait rien et la session ne dessine que le papier.
+Depuis T-031, l'interface est donc mise à jour **après** le dessin : les textes et les étiquettes reflètent l'image affichée, plus l'image précédente (K10, corrigé ; avant, `ui.update()` passait avant `level.update` et les ancres avaient une image de retard). Sur le titre et le menu, il n'y a pas de niveau : `onFrame` ne fait rien et la session ne dessine que le papier. À l'attache d'un niveau, la session calcule tout de suite les ancres du niveau qui entre (et `detach` les remet à zéro par `resetAnchors`) : la première image de l'interface ne lit plus celles du niveau précédent (A-07). Voir [rendu.md](rendu.md#cycle-de-vie-de-la-session-t-017).
 
 ## Qui peut importer qui
 
@@ -161,10 +162,10 @@ x 2 dependency violations (2 errors, 0 warnings). 6 modules, 4 dependencies crui
 
 (Chemin vers `node_modules` raccourci : la copie pointait vers le `node_modules` du projet.)
 
-Sur le dépôt réel, au commit `a308ada` (même résultat à `08908b6` et à `119519b` : T-023 à T-025 n'ont ajouté aucun fichier de `src/` ; `npm.cmd run lint:arch`, arbre propre, relevé par le rédacteur) :
+Sur le dépôt réel, au commit `02119f7` (mêmes 67 modules à `a308ada`, `08908b6` et `119519b` ; 178 dépendances à `a308ada` : T-026 à T-033 n'ont ajouté aucun fichier de `src/`, et la seule nouvelle importation entre fichiers de `src/` est celle de `help.ts` par `keys.ts` ; `npm.cmd run lint:arch`, arbre propre, relevé par le rédacteur) :
 
 ```text
-✔ no dependency violations found (67 modules, 178 dependencies cruised)
+✔ no dependency violations found (67 modules, 179 dependencies cruised)
 ```
 
 Les 67 modules : 65 fichiers de `src/` (`src/render` 19, `src/sim` 10, `src/i18n` 9 dont 2 JSON, `src/ui` 14 dont `ui.css` et `screens.css`, `src/game` 9, `src/app` 3, `src/main.ts`) et 2 fichiers de three (`three/build/three.webgpu.js` et `three/build/three.tsl.js`), importés par `src/render`. Évolution de la même commande : 21 modules à `c00e678`, 28 à `7bcd9ce`, 35 à la fin de T-008 (log T-008), 55 à `566a8a3`, 57 à `13e8b7e` (T-014 et T-015 ont ajouté `src/render/failure.ts` et `src/ui/help.ts`), 67 à `119519b` (T-017 : `src/app` 3 fichiers, `src/ui/screens.ts`, `screens-model.ts`, `screen-keys.ts`, `screens.css` ; T-021a : `src/sim/controllers/pi.ts` ; T-021b : `src/game/elevator-level.ts` et `level2.ts`). La sortie du test de violation ci-dessus (6 modules) date de la copie du socle T-002.

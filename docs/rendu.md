@@ -1,6 +1,6 @@
 # Rendu au crayon (`src/render`)
 
-À quoi sert cette page : expliquer comment le jeu dessine la scène : démarrage du moteur graphique, cadrage, papier millimétré, traits de crayon, bonhomme, courbe et jauge, budget de dessin. Elle décrit le commit `a308ada` (rendu validé en T-008 et T-009 ; échecs en cours de route ajoutés par T-014 ; cadrage fixé et ancres de la jauge par T-019 et T-020 ; session de rendu réutilisable entre les écrans par T-017 ; trajet de 10 s et courbe sur 1201 points par T-022 ; jauge du terme intégral au niveau 2 par T-024). Les textes posés par-dessus la scène sont dans [interface.md](interface.md).
+À quoi sert cette page : expliquer comment le jeu dessine la scène : démarrage du moteur graphique, cadrage, papier millimétré, traits de crayon, bonhomme, courbe et jauge, budget de dessin. Elle décrit le commit `02119f7` (rendu validé en T-008 et T-009 ; échecs en cours de route ajoutés par T-014 ; cadrage fixé et ancres de la jauge par T-019 et T-020 ; session de rendu réutilisable entre les écrans par T-017 ; trajet de 10 s et courbe sur 1201 points par T-022 ; jauge du terme intégral au niveau 2 par T-024 ; ancres de l'image affichée, ancres du niveau entrant et suivi de « mouvement réduit » par T-030 et T-031, issus de la chasse aux bugs de la v0.2). Les textes posés par-dessus la scène sont dans [interface.md](interface.md).
 
 ![Le niveau 1 en cours de trajet, 1280 × 720 (capture e2e de T-010)](img/t010-03-trajet.png)
 
@@ -8,11 +8,15 @@
 
 `src/render` est le seul module qui importe three.js (`three/webgpu` et `three/tsl`, règle `three-only-in-render`). Il lit l'instantané du niveau (`level.snapshot`) et l'enregistreur de signaux (`level.signals`) à chaque image ; il ne les modifie jamais et n'en garde aucune référence.
 
-Le point de composition (`src/main.ts`) démarre le rendu une seule fois : `startRendering(canvas, choice, { onFrame, onFailure })`, sans niveau (papier seul). Elle renvoie une session (`RenderSession`) ou un échec, sans jamais lever d'exception. Les échecs survenus après le démarrage passent par `onFailure` (voir « Échecs en cours de route »). L'option `level` existe encore (niveau dessiné dès le départ), mais `main.ts` ne l'utilise plus depuis T-017.
+Le point de composition (`src/main.ts`) démarre le rendu une seule fois : `startRendering(canvas, choice, { onFrame, onFrameEnd, onFailure })`, sans niveau (papier seul). Elle renvoie une session (`RenderSession`) ou un échec, sans jamais lever d'exception. Les échecs survenus après le démarrage passent par `onFailure` (voir « Échecs en cours de route »). L'option `level` existe encore (niveau dessiné dès le départ), mais `main.ts` ne l'utilise plus depuis T-017.
 
 ### Cycle de vie de la session (T-017)
 
 La session vit pour toute l'application. Sur l'écran titre et sur le menu, elle ne dessine que le papier ; à l'entrée dans un niveau, `main.ts` appelle `session.attachLevel(level)`, qui crée la vue du niveau (`createLevelView`) et la dessine à chaque image ; au retour au menu, `session.detachLevel()` libère la vue (`view.dispose()`) et la session revient au papier seul. Un niveau déjà attaché est détaché d'abord ; les deux appels sont sans effet après `stop()`. Raison du choix (une session unique plutôt qu'un arrêt et un redémarrage du rendu à chaque écran) : [ADR-015](decisions/ADR-015-etat-application-machine-ecrans.md). `session.stop()` détache aussi le niveau avant de libérer la scène et le renderer.
+
+**Ancres à l'attache et à la détache (A-07, T-031).** Le calcul « repeindre le niveau puis recalculer les ancres » est un seul bloc de `session.ts` (`paintLevel`), appelé à chaque image par `draw` et, depuis T-031, dès `attachLevel` quand la surface a déjà une taille : l'interface du niveau qui entre lit donc ses propres ancres, et non celles du niveau précédent, avant la première image. `detachLevel` (et `stop`) appelle `resetAnchors(anchors)` (`level-display.ts`) : tous les points repassent à (0, 0) et `errorDimensionVisible` et `iGaugeVisible` à faux. `resetAnchors` n'est pas réexporté par `src/render/index.ts`. Test : `tests/render/anchors-reset.test.ts` (1 test) ; l'e2e `tests/e2e/k10-a07.spec.ts` vérifie que, à l'entrée de chaque niveau, la bulle ne passe pas par la position du précédent.
+
+**Mouvement réduit suivi en cours de partie (K22, T-030).** La session ne lit plus `prefers-reduced-motion` une seule fois au démarrage : `watchReducedMotion()` (`bootstrap.ts`) lit la requête média `(prefers-reduced-motion: reduce)` puis met la valeur à jour par l'événement `change` (aucune relecture par image). `RenderSession.reducedMotion` est un accesseur qui renvoie la valeur courante, passée à chaque `view.paint`. L'écouteur est retiré par `stop()` (`motion.dispose()`). La fonction pure `createReducedMotionWatcher(query)` accepte une requête minimale (`MediaQueryLike`, ou `null` sans `matchMedia` : valeur fixe `false`) ; `ReducedMotionWatcher` expose `reduced` et `dispose()` (sans effet au deuxième appel). `prefersReducedMotion()`, l'ancienne fonction de lecture unique, n'existe plus. Le crochet `?e2e=1` expose `window.__huygens.reducedMotion()`. Tests : `tests/render/reduced-motion.test.ts` (4 tests) et `tests/e2e/reduced-motion.spec.ts` (2 tests : le tremblé suit un changement de préférence en cours de partie ; l'écouteur est retiré à l'arrêt, sans fuite sur des cycles attach / detach).
 
 Le test e2e du cycle de vie (`ui.spec.ts`, (q)) enchaîne attach, detach, attach sans erreur ni fuite d'écouteur ; les `drawCalls` en papier seul n'ont pas été relevés par le rédacteur.
 
@@ -35,7 +39,7 @@ Sur les 19 fichiers du module (inchangés en nombre depuis `13e8b7e`), 13 n'impo
 | `level-painter.ts` | non | `LevelPainter` : remplit les 5 lots de traits à chaque image |
 | `failure.ts` | non | `createFailureGuard` : un seul signalement d'échec, plus aucun appel gardé ensuite |
 | `session.ts` | non (passe par les fichiers three) | `startRendering` : assemble tout, boucle d'images, branche `renderer.onDeviceLost` et le garde-fou ; `attachLevel` et `detachLevel` (T-017) |
-| `bootstrap.ts` | oui | `bootRenderer`, boucle `setAnimationLoop`, suivi de taille, mouvement réduit |
+| `bootstrap.ts` | oui | `bootRenderer`, boucle `setAnimationLoop`, suivi de taille, suivi du mouvement réduit |
 | `stage.ts` | oui | scène, caméra orthographique, papier |
 | `paper.ts` | oui | matériau TSL du papier millimétré |
 | `pencil-material.ts` | oui | matériau TSL du trait de crayon |
@@ -74,7 +78,7 @@ Vérifié par `tests/render/failure.test.ts` et `tests/e2e/failure.spec.ts` (per
 
 ## Boucle d'images
 
-`createFrameLoop` s'appuie sur `renderer.setAnimationLoop`. À chaque image, il calcule le temps écoulé depuis l'image précédente (0 à la première) et appelle le rappel `onFrame` de `main.ts`. Celui-ci met à jour l'interface, puis fait avancer le niveau (`level.update`). La session repeint ensuite le niveau et dessine. Ordre complet : [architecture.md](architecture.md#flux-dune-image).
+`createFrameLoop` s'appuie sur `renderer.setAnimationLoop`. À chaque image, il calcule le temps écoulé depuis l'image précédente (0 à la première) et appelle le rappel `onFrame` de `main.ts`, qui fait avancer le niveau (`level.update`) et renvoie la durée de l'image. La session repeint ensuite le niveau, calcule les ancres et dessine, puis appelle le rappel facultatif `onFrameEnd` (T-031) : `main.ts` y met à jour l'interface d'après les ancres de l'image qui vient d'être dessinée (K10). Ordre complet : [architecture.md](architecture.md#flux-dune-image).
 
 Le temps n'est pas plafonné ici : l'horloge à pas fixe du noyau s'en charge (0,25 s et 8 pas au plus par image, voir [simulation.md](simulation.md#horloge-à-pas-fixe)).
 
@@ -141,7 +145,7 @@ Tout le niveau (décor, cabine, bonhomme, courbe, jauge) est fait de traits. Cha
 - **Pas de MSAA.** Le bord est adouci au shader : la coordonnée transversale vaut −1 et +1 sur les bords du ruban, `fwidth` donne une rampe d'un pixel. Coût mémoire nul et même rendu sur les deux backends.
 - **Correction d'opacité.** WebGPURenderer mélange les couleurs en espace linéaire ; un gris à 85 % y paraît bien plus pâle qu'au crayon. L'opacité voulue (mélange sRGB, comme sur une feuille) est convertie : `a' = (P^γ − (P + (C − P)·a)^γ) / (P^γ − C^γ)`, avec P et C les teintes moyennes du papier et de la mine et γ = 2,2.
 
-**« Boiling ».** La graine du tremblé change 8 fois par seconde (64 graines en boucle) : le dessin frémit comme une animation image par image. Avec `prefers-reduced-motion: reduce`, la graine reste à 0 : le dessin est immobile.
+**« Boiling ».** La graine du tremblé change 8 fois par seconde (64 graines en boucle) : le dessin frémit comme une animation image par image. Avec `prefers-reduced-motion: reduce`, la graine reste à 0 : le dessin est immobile. La préférence est suivie en cours de partie (voir « Cycle de vie de la session »).
 
 ## Lots et budget de dessin
 
@@ -251,7 +255,7 @@ T-024 (K30) ajoute au niveau 2 une seconde jauge, à droite de la jauge de force
 
 `computeDisplay` applique le contrat de [jeu.md](jeu.md#contrats-pour-le-rendu-et-linterface) : cabine à `lerp(cabinPrevY, cabinY, alpha)` pendant le trajet, figée à l'issue ; bonhomme à `lerp(walkerPrevX, walkerX, alpha)` sur le quai.
 
-`computeAnchors` calcule, à chaque image, la position en pixels CSS des éléments que l'interface annote : dessus du pupitre de la console, centre du plancher de la cabine, milieu de la cote d'erreur, haut de la tête du bonhomme, haut de la jauge, et, depuis T-019, le bord gauche de l'échelle de la jauge au niveau du haut (`gaugeMax`, étiquette « 5000 N max ») et du repère du poids (`gaugeWeight`, étiquette « poids »), à `GAUGE_LABEL_X` = `GAUGE_MAX_X` + 0,2 m. Depuis T-024, `iGauge` (milieu du bord haut de la jauge I, étiquette « Terme intégral I » puis « I : … N ») et `iGaugeVisible` (vrai au niveau 2) complètent les ancres ; au niveau 2, `gaugeMax` et `gaugeWeight` se placent à `GAUGE_I_LABEL_X` = `GAUGE_I_MAX_X` + 0,2 m. `main.ts` copie `iGauge` et lit `iGaugeVisible` par un accesseur, car la valeur change d'une image à l'autre. Ces ancres sont un objet réutilisé, réécrit à chaque image (`session.anchors()`). `main.ts` les transmet à `src/ui` sous forme de données, car `src/ui` n'a pas le droit d'importer `src/render`.
+`computeAnchors` calcule, à chaque image, la position en pixels CSS des éléments que l'interface annote : dessus du pupitre de la console, centre du plancher de la cabine, milieu de la cote d'erreur, haut de la tête du bonhomme, haut de la jauge, et, depuis T-019, le bord gauche de l'échelle de la jauge au niveau du haut (`gaugeMax`, étiquette « 5000 N max ») et du repère du poids (`gaugeWeight`, étiquette « poids »), à `GAUGE_LABEL_X` = `GAUGE_MAX_X` + 0,2 m. Depuis T-024, `iGauge` (milieu du bord haut de la jauge I, étiquette « Terme intégral I » puis « I : … N ») et `iGaugeVisible` (vrai au niveau 2) complètent les ancres ; au niveau 2, `gaugeMax` et `gaugeWeight` se placent à `GAUGE_I_LABEL_X` = `GAUGE_I_MAX_X` + 0,2 m. `main.ts` copie `iGauge` et lit `iGaugeVisible` par un accesseur, car la valeur change d'une image à l'autre. Ces ancres sont un objet réutilisé, réécrit à chaque image (`session.anchors()`) et remis à zéro par `resetAnchors` quand le niveau est détaché. `main.ts` les transmet à `src/ui` sous forme de données, car `src/ui` n'a pas le droit d'importer `src/render`.
 
 ## Mesures
 
@@ -268,13 +272,13 @@ Vite affiche l'avertissement « Some chunks are larger than 500 kB after minific
 
 ## Exports de `src/render/index.ts`
 
-Liste complète au commit `119519b`, comptée par script (86 noms : 58 exports nommés plus les 28 de `paper.ts` ; `PLAY_ZONE_TOP` a remplacé `PLAY_ZONE_ABOVE_BEAM`, le total n'a pas changé). Les fichiers internes (`level-painter.ts`, `stroke-batch.ts`, `noise.ts`, `patterns.ts`, `pencil-style.ts`, `pencil-material.ts`, `level-view.ts`, `walker-pose.ts`, `gauge.ts`) ne sont pas réexportés : seuls les tests les importent directement.
+Liste complète au commit `119519b` (la ligne `bootstrap.ts` est mise à jour au commit `02119f7` : `prefersReducedMotion` est remplacée par `createReducedMotionWatcher` et `watchReducedMotion`, plus deux types), comptée par script (86 noms : 58 exports nommés plus les 28 de `paper.ts` ; `PLAY_ZONE_TOP` a remplacé `PLAY_ZONE_ABOVE_BEAM`, le total n'a pas changé). Les fichiers internes (`level-painter.ts`, `stroke-batch.ts`, `noise.ts`, `patterns.ts`, `pencil-style.ts`, `pencil-material.ts`, `level-view.ts`, `walker-pose.ts`, `gauge.ts`) ne sont pas réexportés : seuls les tests les importent directement.
 
 | Fichier | Valeurs | Types |
 |---|---|---|
 | `session.ts` | `startRendering` (la session expose `attachLevel`, `detachLevel`, `anchors`, `stats`, `trace`, `renderNow`, `stop`) | `LevelSource`, `RenderSession`, `RenderStats`, `StartOptions`, `StartResult` |
 | `failure.ts` | `createFailureGuard` | `FailureGuard`, `RenderFailure`, `RenderFailureKind` |
-| `bootstrap.ts` | `bootRenderer`, `createFrameLoop`, `detectBackend`, `disposeRenderer`, `hasGraphicsApi`, `observeCanvasSize`, `prefersReducedMotion` | `Backend`, `BootFailureReason`, `BootResult`, `FrameLoop` |
+| `bootstrap.ts` | `bootRenderer`, `createFrameLoop`, `detectBackend`, `disposeRenderer`, `hasGraphicsApi`, `observeCanvasSize`, `createReducedMotionWatcher`, `watchReducedMotion` | `Backend`, `BootFailureReason`, `BootResult`, `FrameLoop`, `MediaQueryLike`, `ReducedMotionWatcher` |
 | `options.ts` | `parseRendererChoice`, `capPixelRatio`, `MAX_PIXEL_RATIO` | `RendererChoice` |
 | `camera.ts` | `computeFrame`, `applyFrame`, `worldXToPixel`, `worldYToPixel`, `PLAY_ZONE`, `PLAY_ZONE_MARGIN_X` (0,5 m), `PLAY_ZONE_BELOW_GROUND` (1,5 m), `PLAY_ZONE_TOP` (5,5 m) | `Frame`, `WorldRect` |
 | `stage.ts` | `createPaperStage`, `CAMERA_Z` (10 m), `CAMERA_NEAR` (0,1 m), `CAMERA_FAR` (100 m) | `PaperStage` |
@@ -286,4 +290,4 @@ Valeurs des constantes du papier : tableau de la section « Papier millimétré 
 
 ## Tests
 
-Tests Vitest de `tests/render/` (128) et tests e2e de `tests/e2e/render.spec.ts`, `level.spec.ts`, `level2.spec.ts`, `failure.spec.ts`, `saturation.spec.ts` et `ui.spec.ts` : voir [tests.md](tests.md). Justification des choix : [ADR-010](decisions/ADR-010-rendu-crayon.md).
+Tests Vitest de `tests/render/` (133) et tests e2e de `tests/e2e/render.spec.ts`, `level.spec.ts`, `level2.spec.ts`, `failure.spec.ts`, `saturation.spec.ts`, `ui.spec.ts`, `k10-a07.spec.ts` et `reduced-motion.spec.ts` : voir [tests.md](tests.md). Justification des choix : [ADR-010](decisions/ADR-010-rendu-crayon.md).

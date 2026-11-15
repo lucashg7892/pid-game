@@ -1,6 +1,6 @@
 # Logique des niveaux (`src/game`)
 
-À quoi sert cette page : expliquer comment les niveaux de l'ascenseur décident de ce qui se passe : phases, commandes du joueur, règles de victoire et d'échec, données transmises au rendu et à l'interface. Le niveau 1 « Le vide » (contrôleur P, Kp réglé) a été validé en T-007 (commit `6259ccc`) ; T-020 a fixé ses valeurs de jeu et T-021b a extrait sa machine à états dans un noyau commun, qui sert aussi au niveau 2 « La mémoire » (contrôleur PI, Kp fixé, Ki réglé). Cette page décrit l'état du commit `a308ada` (T-022 : trajet de 10 s, Kp par défaut 2000, tolérance du niveau 2 à 0,10 m ; `src/game` n'a pas changé depuis `08908b6`, T-023 à T-025 n'y ont pas touché). Ce que le joueur voit et les touches sont dans [interface.md](interface.md) ; le dessin dans [rendu.md](rendu.md). La simulation sous-jacente est dans [simulation.md](simulation.md), la physique dans [physique/ascenseur.md](physique/ascenseur.md).
+À quoi sert cette page : expliquer comment les niveaux de l'ascenseur décident de ce qui se passe : phases, commandes du joueur, règles de victoire et d'échec, données transmises au rendu et à l'interface. Le niveau 1 « Le vide » (contrôleur P, Kp réglé) a été validé en T-007 (commit `6259ccc`) ; T-020 a fixé ses valeurs de jeu et T-021b a extrait sa machine à états dans un noyau commun, qui sert aussi au niveau 2 « La mémoire » (contrôleur PI, Kp fixé, Ki réglé). Cette page décrit l'état du commit `02119f7` (T-022 : trajet de 10 s, Kp par défaut 2000, tolérance du niveau 2 à 0,10 m ; `src/game` n'a pas changé depuis `08908b6`, T-023 à T-025 n'y ont pas touché). Ce que le joueur voit et les touches sont dans [interface.md](interface.md) ; le dessin dans [rendu.md](rendu.md). La simulation sous-jacente est dans [simulation.md](simulation.md), la physique dans [physique/ascenseur.md](physique/ascenseur.md).
 
 ## Rôle de `src/game`
 
@@ -221,7 +221,7 @@ Lecture :
 | `alpha` | number | — | fraction de pas en attente dans l'horloge, dans [0, 1) |
 | `kp` | number | N/m | gain proportionnel courant (réglé au niveau 1, fixé à 2500 au niveau 2) |
 | `ki` | number | N/(m·s) | gain intégral courant : 0 au niveau 1, réglé au niveau 2 |
-| `iTerm` | number | N | terme intégral I lu sur le contrôleur après le dernier pas ; 0 au niveau 1 et hors trajet. Affiché depuis T-024 par la jauge du terme intégral du niveau 2 (voir [rendu.md](rendu.md#jauge-du-terme-intégral-niveau-2) et [interface.md](interface.md)) |
+| `iTerm` | number | N | terme intégral I lu sur le contrôleur après le dernier pas ; 0 au niveau 1 et avant le premier lancement. Il garde sa valeur à l'issue (la jauge de I et la ligne « Terme I » la montrent encore) et retombe à 0 au recommencement (`restart`) ; commentaire du code corrigé par la chasse aux bugs (B-09, P-011). Affiché depuis T-024 par la jauge du terme intégral du niveau 2 (voir [rendu.md](rendu.md#jauge-du-terme-intégral-niveau-2) et [interface.md](interface.md)) |
 | `r` | number | m | consigne : 0 avant le lancement, 3 pendant le trajet et l'issue |
 | `e` | number | m | erreur r − `cabinY` |
 | `uSat` | number | N | force appliquée au dernier pas, après saturation ; 0 hors trajet |

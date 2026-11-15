@@ -20,6 +20,7 @@ import {
 import { createEventQueue, type GameEvent } from './events';
 import { quantizeGain } from './kp';
 import type { OutcomeJudge, TripOutcome } from './outcome';
+import { createTripLog, type TripLog } from './trip-log';
 import { createWalker, isAtConsole, type Facing } from './walker';
 
 /**
@@ -203,7 +204,8 @@ export interface LevelSnapshot {
    * stepAcceleration = (uSat − m·g − c·stepVelocity)/m (contact au sol compris). Tous à 0 (et
    * `saturated` faux) avant le premier lancement, pendant l'embarquement et après `restart` :
    * cabine posée, moteur coupé. À l'issue (et pendant la sortie), ils gardent les valeurs du
-   * dernier pas pour que l'issue puisse les afficher.
+   * dernier pas pour que l'issue puisse les afficher. Ceux de tous les pas du trajet sont
+   * conservés dans {@link Level.tripLog}.
    *
    * Hauteur de la cabine y (m) à cet instant (la mesure du contrôleur).
    */
@@ -290,7 +292,10 @@ export interface ElevatorLevelConfig {
    * dont la valeur diffère de la précédente.
    */
   readonly createLoop: (value: number) => TripLoop;
-  /** Arbitre des issues (un par niveau, remis à zéro à chaque trajet). */
+  /**
+   * Arbitre des issues (un par niveau, remis à zéro à chaque trajet). Il doit rendre une issue au
+   * plus tard au pas `TRIP_MAX_STEPS` : le journal du trajet a cette capacité.
+   */
   readonly createJudge: () => OutcomeJudge;
   /**
    * Animations de la marche vers le poste, de l'embarquement et de la sortie (défaut `true`).
@@ -312,6 +317,15 @@ export interface Level {
    * pas, convention du noyau) ; vidé au lancement et à `restart`.
    */
   readonly signals: SignalRecorder;
+  /**
+   * Journal des signaux de chaque pas du trajet courant (y, v, a, e, uCmd, uSat, p, i,
+   * saturated), pour les courbes du pupitre et le curseur de l'issue : vues en lecture seule sur
+   * des tableaux préalloués, enregistrement j égal bit à bit aux champs `step*` de l'instantané
+   * après le pas j (état AVANT le pas, t = j·dt). Vidé au lancement et à `restart`, conservé
+   * pendant la sortie et à l'issue. Objet unique pour toute la vie du niveau ; détails, unités et
+   * reconstitution de la cabine dans {@link TripLog}.
+   */
+  readonly tripLog: TripLog;
   /**
    * Avance le niveau d'une durée d'image (s) : horloge à pas fixe du noyau (durée bornée à
    * 0,25 s, 8 pas au plus), puis, pour chaque pas : marche du bonhomme (`approach`), marche vers
@@ -350,8 +364,8 @@ export interface Level {
   launch(): CommandResult;
   /**
    * Recommencer (phases `boarding`, `trip`, `exit` et `outcome`) : cabine au sol, boucle,
-   * enregistreur et horloge réinitialisés, réglage conservé, essai suivant, retour au réglage,
-   * bonhomme au poste (spec §6, point 6).
+   * enregistreur, journal du trajet et horloge réinitialisés, réglage conservé, essai suivant,
+   * retour au réglage, bonhomme au poste (spec §6, point 6).
    */
   restart(): CommandResult;
   /**
@@ -392,6 +406,7 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
   const clock = createFixedStepClock();
   const dt = clock.dt;
   const recorder = createSignalRecorder(TRIP_MAX_STEPS);
+  const tripLog = createTripLog(TRIP_MAX_STEPS, dt);
   const judge = config.createJudge();
   const events = createEventQueue();
   const walker = createWalker();
@@ -553,6 +568,7 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
     loop.reset();
     judge.reset();
     recorder.clear();
+    tripLog.clear();
     clock.reset();
     cabinY = 0;
     cabinPrevY = 0;
@@ -676,6 +692,17 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
     uCmd = sample.uCmd;
     pTerm = controller === undefined ? sample.uCmd : controller.proportionalTerm;
     iTermUsed = iBefore;
+    tripLog.record(
+      stepY,
+      stepVelocity,
+      stepAcceleration,
+      stepError,
+      uCmd,
+      uSat,
+      pTerm,
+      iTermUsed,
+      saturated,
+    );
     k = sample.k + 1;
     const x = loop.x;
     cabinY = x[ELEVATOR_POSITION] as number;
@@ -779,6 +806,7 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
     tuning,
     snapshot,
     signals: recorder,
+    tripLog: tripLog.log,
     update(frameSeconds: number): Readonly<LevelSnapshot> {
       if (phase !== 'paused') {
         const steps = clock.advance(frameSeconds);

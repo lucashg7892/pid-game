@@ -48,5 +48,6 @@ export {
   type TuningSpec,
   type WalkerAction,
 } from './elevator-level';
+export type { TripLog, TripLogColumn } from './trip-log';
 export { createLevel1, type Level1, type Level1Options } from './level';
 export { createLevel2, type Level2, type Level2Options } from './level2';

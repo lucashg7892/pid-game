@@ -17,6 +17,37 @@ describe('CA-8 : pas d’allocation par image, aucune référence conservée', (
     expect(level.snapshot.outcome).toBe('win');
   });
 
+  it('journal du trajet préalloué : mêmes tableaux sur 1000 images, toutes phases, restart', () => {
+    const level = createLevel1();
+    const log = level.tripLog;
+    const columns = [log.y, log.v, log.a, log.e, log.uCmd, log.uSat, log.p, log.i, log.saturated];
+    const same = (): void => {
+      expect(level.tripLog).toBe(log);
+      [log.y, log.v, log.a, log.e, log.uCmd, log.uSat, log.p, log.i, log.saturated].forEach(
+        (c, n) => {
+          expect(c).toBe(columns[n]);
+        },
+      );
+    };
+    level.moveRight();
+    for (let i = 0; i < 300; i++) level.update(1 / 60);
+    reachConsole(level);
+    level.setKp(2500);
+    level.launch();
+    for (let i = 0; i < 700; i++) {
+      level.update(1 / 60);
+      same();
+    }
+    expect(level.snapshot.phase).toBe('outcome');
+    expect(log.count).toBe(level.snapshot.outcomeK);
+    level.restart();
+    level.setKp(8000);
+    level.launch();
+    for (let i = 0; i < 300; i++) level.update(1 / 60);
+    same();
+    expect(log.count).toBe(level.snapshot.outcomeK);
+  });
+
   it("muter l'échantillon et l'état du noyau après coup ne change pas l'instantané", () => {
     let lastSample: LoopSample | null = null;
     let inner: SteppableClosedLoop | null = null;

@@ -14,7 +14,7 @@ const CLOSED = { helpOpen: false };
 
 /** Niveau 2 en réglage (panneau ouvert) avec le Ki donné. */
 function tuning2(ki = 500): Level {
-  const level = createLevel2();
+  const level = createLevel2({ animations: false });
   level.moveRight();
   for (let i = 0; i < 10_000 && !level.snapshot.atConsole; i += 1) level.update(1 / 60);
   level.stop();
@@ -59,14 +59,14 @@ describe('modèle de vue du niveau 2', () => {
     });
 
     it(`${locale} : bulle d’ouverture du niveau 2, qui annonce le terme I`, () => {
-      const level = createLevel2();
+      const level = createLevel2({ animations: false });
       const vm = createViewModelBuilder(tr(locale), 'level2').build(level.snapshot, CLOSED);
       expect(vm.bubble).toBe(cat['level2.goal']);
       expect(vm.bubble).toContain('I');
     });
 
     it(`${locale} : le niveau 1 garde ses textes et n’affiche pas de Kp fixé`, () => {
-      const level = createLevel1();
+      const level = createLevel1({ animations: false });
       const vm = createViewModelBuilder(tr(locale)).build(level.snapshot, CLOSED);
       expect(vm.fixedKp).toBe('');
       expect(vm.bubble).toBe(cat['level1.goal']);
@@ -107,7 +107,7 @@ describe('modèle de vue du niveau 2', () => {
       );
       expect(vs.outcomeMessage).toContain(`10${NB}s`);
       expect(vs.outcomeMessage).toContain(locale === 'fr' ? `0,1${NB}m` : `0.1${NB}m`);
-      const slowLevel = createLevel2({ initialKi: 130 });
+      const slowLevel = createLevel2({ animations: false, initialKi: 130 });
       slowLevel.moveRight();
       for (let i = 0; i < 10_000 && !slowLevel.snapshot.atConsole; i += 1) slowLevel.update(1 / 60);
       slowLevel.interact();
@@ -179,7 +179,7 @@ describe('modèle de vue du niveau 2', () => {
       expect(builder.build(copy(level.snapshot, { iTerm: Number.NaN }), CLOSED).integral).toBe(
         cat['hud.igauge.value'].replace('{i}', '0'),
       );
-      const one = createLevel1();
+      const one = createLevel1({ animations: false });
       one.moveRight();
       expect(createViewModelBuilder(tr(locale)).build(one.snapshot, CLOSED).integral).toBe('');
     });
@@ -238,9 +238,9 @@ describe('bandeaux du niveau 2', () => {
     expect(hintText(hintLine('trip', tr('en'), 'level2'))).toBe(
       'Ki is locked · R: restart · Esc: pause',
     );
-    expect(hintText(hintLine('walk', tr('fr'), 'level2'))).toBe(
-      hintText(hintLine('walk', tr('fr'))),
-    );
+    for (const id of ['use', 'skip'] as const) {
+      expect(hintText(hintLine(id, tr('fr'), 'level2'))).toBe(hintText(hintLine(id, tr('fr'))));
+    }
     expect(hintText(hintLine('tune', tr('fr')))).toContain('régler Kp');
   });
 });
@@ -301,7 +301,7 @@ describe('annonces du niveau 2', () => {
   });
 
   it('niveau 1 : annonces inchangées', () => {
-    const s = createLevel1().snapshot;
+    const s = createLevel1({ animations: false }).snapshot;
     const t = tr('fr');
     expect(announcementFor(ev('tuningOpened'), s, t)).toBe(CATALOGS.fr['hud.status.ready']);
     expect(announcementFor(ev('firstSaturation'), s, t)).toBe(CATALOGS.fr['level1.saturation']);

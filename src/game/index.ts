@@ -15,7 +15,14 @@ export {
   type OutcomeJudge,
   type TripOutcome,
 } from './outcome';
-export { createWalker, isAtConsole, type Facing, type WalkIntent, type Walker } from './walker';
+export {
+  ARRIVAL_EPSILON,
+  createWalker,
+  isAtConsole,
+  type Facing,
+  type WalkIntent,
+  type Walker,
+} from './walker';
 export {
   EVENT_QUEUE_CAPACITY,
   createEventQueue,
@@ -25,6 +32,8 @@ export {
 } from './events';
 export {
   createElevatorLevel,
+  isRunningPhase,
+  isSkippablePhase,
   type CommandResult,
   type ElevatorLevelConfig,
   type Level,
@@ -34,6 +43,7 @@ export {
   type TripLoop,
   type TunedParam,
   type TuningSpec,
+  type WalkerAction,
 } from './elevator-level';
 export { createLevel1, type Level1, type Level1Options } from './level';
 export { createLevel2, type Level2, type Level2Options } from './level2';

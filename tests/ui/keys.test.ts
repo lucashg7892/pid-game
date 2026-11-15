@@ -15,7 +15,15 @@ import {
   type KeyIntent,
 } from '../../src/ui/keys';
 
-const PHASES: readonly LevelPhase[] = ['approach', 'tuning', 'trip', 'outcome', 'paused'];
+const PHASES: readonly LevelPhase[] = [
+  'approach',
+  'tuning',
+  'boarding',
+  'trip',
+  'exit',
+  'outcome',
+  'paused',
+];
 const FOCUSES: readonly FocusTarget[] = ['none', 'range', 'number', 'button'];
 
 /** Touche : `code` et `key` d'un clavier QWERTY (sauf mention). */
@@ -79,7 +87,9 @@ function intent(
 const USE_BY_PHASE: Readonly<Record<LevelPhase, KeyIntent>> = {
   approach: 'interact',
   tuning: 'launch',
+  boarding: 'skip',
   trip: 'block',
+  exit: 'skip',
   outcome: 'block',
   paused: 'block',
 };
@@ -215,6 +225,7 @@ describe('keyToIntent : règles transverses', () => {
       'walkRight',
       'interact',
       'launch',
+      'skip',
       'kpUp',
       'kpDown',
       'kpUpBig',

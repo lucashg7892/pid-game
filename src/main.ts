@@ -11,7 +11,9 @@
  * déterministe du temps et les compteurs de rendu. Dans ce mode, le temps réel ne fait plus
  * avancer le niveau (ni le « boiling ») : seul `advance` le fait, par images fixes de
  * {@link E2E_FRAME_SECONDS}, puis met l'interface à jour. `&screen=title|menu|level1|level2` (défaut
- * `level1`) choisit l'écran de départ ; ignoré sans `e2e=1`.
+ * `level1`) choisit l'écran de départ ; ignoré sans `e2e=1`. Dans ce mode, les animations du
+ * niveau (marche vers le poste, embarquement, sortie, D31-D32) sont désactivées par défaut, pour
+ * que les e2e écrits avant elles restent valables ; `&anim=1` les active.
  */
 import {
   ARRIVAL_LEDGE_HEIGHT,
@@ -77,6 +79,10 @@ export interface HuygensCommands {
   restart(): CommandResult;
   pause(): CommandResult;
   resume(): CommandResult;
+  /** Passe l'animation en cours (marche vers le poste, embarquement, sortie). */
+  skipAnimation(): CommandResult;
+  /** Active ou désactive les animations du niveau courant (`'accepted'`, `'ignored'` hors niveau). */
+  setAnimations(enabled: boolean): CommandResult;
 }
 
 /** Machine d'application exposée au crochet de test. */
@@ -202,6 +208,11 @@ function isE2e(search: string): boolean {
   return new URLSearchParams(search).get('e2e') === '1';
 }
 
+/** Animations du niveau en mode test : désactivées sauf `anim=1`. */
+function e2eAnimations(search: string): boolean {
+  return new URLSearchParams(search).get('anim') === '1';
+}
+
 /** Écran de départ du mode test (`screen=title|menu|level1|level2`, défaut `level1`). */
 function e2eStartScreen(search: string): 'title' | 'menu' | 'level1' | 'level2' {
   const value = new URLSearchParams(search).get('screen');
@@ -301,6 +312,12 @@ function installTestHook(
       restart: () => command((l) => l.restart()),
       pause: () => command((l) => l.pause()),
       resume: () => command((l) => l.resume()),
+      skipAnimation: () => command((l) => l.skipAnimation()),
+      setAnimations: (enabled: boolean) =>
+        command((l) => {
+          l.setAnimations(enabled);
+          return 'accepted';
+        }),
     },
     snapshot(): LevelSnapshot {
       const c = current();
@@ -353,6 +370,9 @@ async function main(): Promise<void> {
   }
   canvas.setAttribute('aria-label', translator.t('a11y.canvas'));
   const e2e = isE2e(location.search);
+  // Animations du niveau : toujours en jeu normal (le branchement sur `prefers-reduced-motion`
+  // viendra avec le dessin des poses) ; en mode test, seulement avec `anim=1`.
+  const animations = !e2e || e2eAnimations(location.search);
   let current: CurrentLevel | null = null;
   let crashNextFrame = false;
   // Démontage de l'écran courant ; appelé à chaque changement d'écran et en cas d'échec, avant la
@@ -466,7 +486,8 @@ async function main(): Promise<void> {
       }
     };
     try {
-      const level = levelId === 'level2' ? createLevel2() : createLevel1();
+      const level =
+        levelId === 'level2' ? createLevel2({ animations }) : createLevel1({ animations });
       session.attachLevel(level);
       cleanups.push(() => {
         session.detachLevel();

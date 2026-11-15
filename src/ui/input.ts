@@ -4,10 +4,10 @@
  * l'intention sur le niveau ou l'interface.
  *
  * Marche : tant qu'une touche de marche est enfoncée (←/→, ou `KeyA`/`KeyD` par position) ;
- * relâchement = arrêt. Perte de focus (`blur`, onglet masqué) : arrêt de la marche et, pendant un
- * trajet, mise en pause.
+ * relâchement = arrêt. Perte de focus (`blur`, onglet masqué) : arrêt de la marche et, pendant
+ * l'embarquement, un trajet ou la sortie, mise en pause.
  */
-import type { Level } from '../game';
+import { isRunningPhase, type Level } from '../game';
 import { keyToIntent, kpDeltaOf, walkSideOf, type FocusTarget } from './keys';
 import type { Ui } from './overlay';
 
@@ -89,6 +89,9 @@ export function bindKeyboard(level: Level, ui: Ui, target: Window): () => void {
       case 'launch':
         level.launch();
         break;
+      case 'skip':
+        level.skipAnimation();
+        break;
       case 'kpUp':
       case 'kpDown':
       case 'kpUpBig':
@@ -135,7 +138,7 @@ export function bindKeyboard(level: Level, ui: Ui, target: Window): () => void {
     left = false;
     right = false;
     walk();
-    if (level.snapshot.phase === 'trip') {
+    if (isRunningPhase(level.snapshot.phase)) {
       level.pause();
     }
     ui.update();

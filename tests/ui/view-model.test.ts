@@ -20,18 +20,18 @@ const CLOSED = { helpOpen: false };
 /** Bandeaux attendus, texte brut (éléments séparés par « · »). */
 const HINTS: Readonly<Record<'fr' | 'en', Readonly<Record<HintId, string>>>> = {
   fr: {
-    walk: `→ / D${NB}: avancer vers la console`,
-    use: `E${NB}: utiliser la console`,
+    use: `E${NB}: régler l’ascenseur`,
     tune: `+ / −${NB}: régler Kp · Page préc. / Page suiv.${NB}: pas de 1000 · E ou Entrée${NB}: lancer`,
+    skip: `E ou Entrée${NB}: passer · R${NB}: recommencer · Échap${NB}: mettre en pause`,
     trip: `Kp est verrouillé · R${NB}: recommencer · Échap${NB}: mettre en pause`,
     outcome: `R${NB}: réessayer`,
     paused: `Jeu en pause. · Échap${NB}: reprendre`,
     help: `Échap${NB}: fermer l’aide`,
   },
   en: {
-    walk: '→ / D: walk to the console',
-    use: 'E: use the console',
+    use: 'E: set up the lift',
     tune: '+ / −: set Kp · Page Up / Page Down: steps of 1000 · E or Enter: launch',
+    skip: 'E or Enter: skip · R: restart · Esc: pause',
     trip: 'Kp is locked · R: restart · Esc: pause',
     outcome: 'R: try again',
     paused: 'Game paused. · Esc: resume',
@@ -64,9 +64,9 @@ describe('bandeau d’aide : chaque phase, FR et EN', () => {
     ]);
   });
 
-  it('chooseHint suit la phase, la console et l’aide', () => {
-    const level = createLevel1();
-    expect(chooseHint(level.snapshot, false)).toBe('walk');
+  it('chooseHint suit la phase et l’aide ; en approche, E de n’importe où (D31)', () => {
+    const level = createLevel1({ animations: false });
+    expect(chooseHint(level.snapshot, false)).toBe('use');
     expect(chooseHint(level.snapshot, true)).toBe('help');
     const there = atConsole();
     expect(chooseHint(there.snapshot, false)).toBe('use');
@@ -94,11 +94,11 @@ describe('étiquettes de la jauge', () => {
 });
 
 describe('modèle de vue par phase', () => {
-  it('approche, loin de la console : bulle d’objectif, bandeau de marche, Kp visible', () => {
-    const level = createLevel1();
+  it('approche, loin de la console : bulle d’objectif, bandeau « E : régler », Kp visible', () => {
+    const level = createLevel1({ animations: false });
     const fr = build(level, 'fr');
-    expect(fr.hintId).toBe('walk');
-    expect(hintText(fr.hint)).toBe(HINTS.fr.walk);
+    expect(fr.hintId).toBe('use');
+    expect(hintText(fr.hint)).toBe(HINTS.fr.use);
     expect(fr.bubble).toBe(CATALOGS.fr['level1.goal']);
     expect(fr.kpTag).toBe(`Kp = 2000${NB}N/m`);
     expect(fr.panelOpen).toBe(false);
@@ -198,9 +198,55 @@ describe('modèle de vue par phase', () => {
     expect(vm.panelLocked).toBe(true);
   });
 
+  it('D31-D32, avec animations : réglage ouvert tout de suite, embarquement verrouillé, issue après la sortie', () => {
+    const level = createLevel1();
+    level.setKp(2500);
+    level.interact();
+    // Panneau ouvert dès E, loin de la console, pendant la marche vers le poste.
+    let vm = build(level, 'fr');
+    expect(level.snapshot.walkerAction).toBe('toPost');
+    expect(vm.panelOpen).toBe(true);
+    expect(vm.panelLocked).toBe(false);
+    expect(vm.hintId).toBe('tune');
+    expect(vm.bubble).toBe('');
+    level.launch();
+    vm = build(level, 'fr');
+    expect(vm.phase).toBe('boarding');
+    expect(vm.panelOpen).toBe(true);
+    expect(vm.panelLocked).toBe(true);
+    expect(vm.readoutVisible).toBe(false);
+    expect(vm.outcomeVisible).toBe(false);
+    expect(hintText(vm.hint)).toBe(HINTS.fr.skip);
+    expect(hintText(build(level, 'en').hint)).toBe(HINTS.en.skip);
+    level.pause();
+    expect(build(level, 'fr').phase).toBe('boarding');
+    expect(build(level, 'fr').hintId).toBe('paused');
+    level.resume();
+    for (let i = 0; i < 10_000 && level.snapshot.phase !== 'exit'; i += 1) level.update(1 / 60);
+    vm = build(level, 'fr');
+    expect(vm.phase).toBe('exit');
+    expect(level.snapshot.outcome).toBe('win');
+    // Issue jugée mais pas encore affichée : mesures et légende du trajet restent, pas de panneau.
+    expect(vm.outcomeVisible).toBe(false);
+    expect(vm.outcome).toBeNull();
+    expect(vm.outcomeTitle).toBe('');
+    expect(vm.panelOpen).toBe(false);
+    expect(vm.readoutVisible).toBe(true);
+    expect(vm.legendOpenByDefault).toBe(true);
+    expect(vm.hintId).toBe('skip');
+    for (let i = 0; i < 10_000 && level.snapshot.phase === 'exit'; i += 1) level.update(1 / 60);
+    vm = build(level, 'fr');
+    expect(vm.phase).toBe('outcome');
+    expect(vm.outcomeVisible).toBe(true);
+    expect(vm.outcome).toBe('win');
+    expect(vm.outcomeTitle).toBe(CATALOGS.fr['level1.winTitle']);
+  });
+
   it('aide ouverte : bandeau « Échap : fermer l’aide »', () => {
-    expect(hintText(build(createLevel1(), 'fr', true).hint)).toBe(HINTS.fr.help);
-    expect(build(createLevel1(), 'en', true).helpOpen).toBe(true);
+    expect(hintText(build(createLevel1({ animations: false }), 'fr', true).hint)).toBe(
+      HINTS.fr.help,
+    );
+    expect(build(createLevel1({ animations: false }), 'en', true).helpOpen).toBe(true);
   });
 });
 
@@ -283,7 +329,7 @@ describe('issues : titres, messages pédagogiques complets, cote et formule', ()
 describe('Kp toujours présent, langue et mémoïsation', () => {
   it('l’étiquette Kp est présente dans toutes les phases, en FR et en EN', () => {
     const levels = [
-      createLevel1(),
+      createLevel1({ animations: false }),
       atConsole(),
       tuning(3000),
       finished(2500),
@@ -332,7 +378,7 @@ describe('Kp toujours présent, langue et mémoïsation', () => {
     for (const locale of ['fr', 'en'] as const) {
       const texts = staticTexts(tr(locale));
       expect(texts.title).toBe('Huygens’s world');
-      expect(texts.helpLines).toHaveLength(7);
+      expect(texts.helpLines).toHaveLength(8);
       expect(texts.legendLines).toHaveLength(4);
       for (const value of Object.values(texts)) {
         if (typeof value === 'string') expect(value.length).toBeGreaterThan(0);

@@ -18,6 +18,11 @@ export interface Level1Options {
    * par `setKp`/`adjustKp` repasse sur la grille.
    */
   readonly initialKp?: number;
+  /**
+   * Animations de la marche vers le poste, de l'embarquement et de la sortie (défaut `true`) ;
+   * voir `ElevatorLevelConfig.animations`.
+   */
+  readonly animations?: boolean;
 }
 
 /** Niveau 1 « Le vide » : le niveau commun, avec le réglage de Kp sous ses noms historiques. */
@@ -57,6 +62,7 @@ export function createLevel1(options: Level1Options = {}): Level1 {
     kpOf: (value) => value,
     kiOf: () => 0,
     createLoop: options.createLoop ?? defaultLoop,
+    ...(options.animations === undefined ? {} : { animations: options.animations }),
     createJudge: () => createOutcomeJudge(),
   });
   return {

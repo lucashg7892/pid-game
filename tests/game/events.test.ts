@@ -17,7 +17,7 @@ function drain(level: Level1): GameEvent[] {
 
 describe('CA-6 : événements', () => {
   it('Kp = 2500 : chaque événement une seule fois, première saturation unique (23 pas saturés)', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     level.setKp(2500);
     reachConsole(level);
     expect(drain(level)).toEqual([{ type: 'tuningOpened', k: 0, outcome: null, attempt: 1 }]);
@@ -61,7 +61,7 @@ describe('CA-6 : événements', () => {
   });
 
   it('Kp = 800 : aucun événement de saturation', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     level.setKp(800);
     reachConsole(level);
     drain(level);
@@ -74,7 +74,7 @@ describe('CA-6 : événements', () => {
   });
 
   it('tuningClosed à la fermeture du panneau', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     reachConsole(level);
     level.interact();
     expect(drain(level).map((e) => e.type)).toEqual(['tuningOpened', 'tuningClosed']);

@@ -9,30 +9,73 @@ import {
 import {
   CABIN_CENTER_X,
   CABIN_WEIGHT,
-  CONSOLE_X,
+  CONSOLE_POST_X,
+  EXIT_END_X,
+  EXIT_STEP_MAX_X,
+  EXIT_STEP_MIN_X,
   LEVEL1_SETPOINT,
   TRIP_MAX_STEPS,
 } from './constants';
 import { createEventQueue, type GameEvent } from './events';
 import { quantizeGain } from './kp';
 import type { OutcomeJudge, TripOutcome } from './outcome';
-import { createWalker, type Facing } from './walker';
+import { createWalker, isAtConsole, type Facing } from './walker';
 
 /**
- * Phase du niveau (machine à états, spec T-001 §6) :
- * - `approach` : le bonhomme marche vers la console ;
- * - `tuning` : panneau de réglage ouvert à la console ;
+ * Phase du niveau (machine à états, spec T-001 §6, décisions D31 et D32) :
+ * - `approach` : le bonhomme marche librement sur le quai de départ ;
+ * - `tuning` : panneau de réglage ouvert ; le bonhomme rejoint le poste du pupitre en marchant,
+ *   ou y est déjà ;
+ * - `boarding` : embarquement, après le lancement : le bonhomme marche jusqu'au centre de la
+ *   cabine ; réglage verrouillé, physique arrêtée, consigne encore à 0, k = 0 ;
  * - `trip` : simulation active, réglage verrouillé ;
- * - `outcome` : trajet terminé, issue connue, réglage verrouillé jusqu'à `restart` ;
+ * - `exit` : sortie, après une victoire : l'issue est jugée (figée au pas de victoire) mais pas
+ *   encore affichée ; la cabine est figée, le bonhomme sort sur le plateau d'arrivée ;
+ * - `outcome` : trajet terminé, issue affichée, réglage verrouillé jusqu'à `restart` ;
  * - `paused` : tout est figé ; la phase à reprendre est dans `resumePhase`.
  */
-export type LevelPhase = 'approach' | 'tuning' | 'trip' | 'outcome' | 'paused';
+export type LevelPhase =
+  'approach' | 'tuning' | 'boarding' | 'trip' | 'exit' | 'outcome' | 'paused';
+
+/**
+ * Ce que fait le bonhomme (pour le choix de sa pose au rendu) :
+ * - `free` : libre sur le quai de départ (phase `approach`) ; `walkerMoving` dit s'il marche ;
+ * - `toPost` : marche vers le poste du pupitre, panneau de réglage ouvert ;
+ * - `atPost` : au poste, tourné vers le pupitre, main sur le levier ;
+ * - `boarding` : marche du quai jusqu'au centre de la cabine (embarquement) ;
+ * - `inCabin` : à bord, au centre de la cabine (trajet, issue d'échec, victoire sans animations) ;
+ * - `exiting` : marche de sortie, sur le plancher de la cabine avant le pas ou sur le plateau
+ *   après (`exitStepProgress` à 0 ou à 1) ;
+ * - `stepping` : franchit le pas entre la cabine et le plateau (`exitStepProgress` dans ]0 ; 1[) ;
+ * - `arrived` : arrivé sur le plateau, sortie terminée (issue de victoire affichée).
+ */
+export type WalkerAction =
+  'free' | 'toPost' | 'atPost' | 'boarding' | 'inCabin' | 'exiting' | 'stepping' | 'arrived';
+
+/**
+ * Vrai pour les phases où le jeu avance sans le joueur (embarquement, trajet, sortie) : l'interface
+ * les met en pause quand la fenêtre perd le focus ou que l'aide s'ouvre.
+ * @param phase phase du niveau.
+ */
+export function isRunningPhase(phase: LevelPhase): boolean {
+  return phase === 'boarding' || phase === 'trip' || phase === 'exit';
+}
+
+/**
+ * Vrai pour les phases d'animation que la touche « passer » abrège (embarquement, sortie). La
+ * marche vers le poste se passe aussi par {@link Level.skipAnimation}, mais en phase `tuning` la
+ * même touche lance le trajet.
+ * @param phase phase du niveau.
+ */
+export function isSkippablePhase(phase: LevelPhase): boolean {
+  return phase === 'boarding' || phase === 'exit';
+}
 
 /**
  * Résultat d'une commande :
  * - `accepted` : la commande a pris effet ;
  * - `ignored` : sans objet dans la phase courante (rien n'a changé) ;
- * - `locked` : réglage verrouillé (trajet en cours, issue affichée ou pause) ;
+ * - `locked` : réglage verrouillé (embarquement, trajet, sortie, issue affichée ou pause) ;
  * - `invalid` : valeur non finie refusée.
  */
 export type CommandResult = 'accepted' | 'ignored' | 'locked' | 'invalid';
@@ -67,18 +110,53 @@ export interface LevelSnapshot {
   phase: LevelPhase;
   /** Phase qui reprendra à `resume` ; `null` hors pause. */
   resumePhase: LevelPhase | null;
-  /** Abscisse du bonhomme (m). */
+  /** Abscisse des pieds du bonhomme (m). */
   walkerX: number;
   /** Abscisse du bonhomme au pas précédent (m) : afficher lerp(walkerPrevX, walkerX, alpha). */
   walkerPrevX: number;
-  /** Orientation du bonhomme (−1 gauche, +1 droite). */
+  /**
+   * Hauteur des pieds du bonhomme (m) : 0 sur le quai de départ et pendant l'embarquement
+   * (cabine au sol) ; `cabinY` à bord ; pendant le pas de sortie, de la hauteur finale de la
+   * cabine à r ; r sur le plateau d'arrivée.
+   */
+  walkerY: number;
+  /** Hauteur des pieds au pas précédent (m) : afficher lerp(walkerPrevY, walkerY, alpha). */
+  walkerPrevY: number;
+  /** Orientation du bonhomme (−1 gauche, +1 droite) ; +1 au poste, à bord et en sortie. */
   walkerFacing: Facing;
-  /** Vrai si le bonhomme a une intention de marche (animation de marche). */
+  /**
+   * Vrai si le bonhomme marche : intention du joueur en approche, ou marche automatique vers le
+   * poste, la cabine ou le plateau.
+   */
   walkerMoving: boolean;
-  /** Vrai si le bonhomme est à bord de la cabine (trajet ou issue). */
+  /** Ce que fait le bonhomme, voir {@link WalkerAction}. */
+  walkerAction: WalkerAction;
+  /**
+   * Progression du pas de sortie, dans [0 ; 1] : 0 avant le bord du plancher de la cabine
+   * ({@link EXIT_STEP_MIN_X}), 1 sur le plateau ({@link EXIT_STEP_MAX_X} et au-delà), linéaire en
+   * x entre les deux ; 0 hors sortie. walkerY = (1 − p)·yFinal + p·r.
+   */
+  exitStepProgress: number;
+  /**
+   * Pas fixes écoulés depuis le début de l'animation en cours (marche vers le poste,
+   * embarquement, sortie) ; 0 hors animation (remis à 0 au pas qui la termine).
+   */
+  animationStep: number;
+  /** Vrai si les animations sont actives (option de fabrique, `setAnimations`). */
+  animations: boolean;
+  /**
+   * Vrai si le bonhomme est à bord, porté par le plancher de la cabine : de la fin de
+   * l'embarquement jusqu'au début du pas de sortie (trajet, issue d'échec, début de la sortie).
+   */
   walkerInCabin: boolean;
-  /** Vrai si le bonhomme est dans la zone d'interaction de la console. */
+  /**
+   * Vrai si le bonhomme est sur le quai de départ (phases `approach` et `tuning`) et dans la zone
+   * de la console (|x − CONSOLE_X| ≤ CONSOLE_REACH) : l'interface y montre l'invite de la
+   * console. Le réglage s'ouvre de n'importe où sur le quai (D31).
+   */
   atConsole: boolean;
+  /** Vrai si le bonhomme est au poste du pupitre ({@link CONSOLE_POST_X}), panneau ouvert. */
+  atPost: boolean;
   /** Hauteur du plancher de la cabine y (m), après le dernier pas. */
   cabinY: number;
   /** Hauteur de la cabine au pas précédent (m) : afficher lerp(cabinPrevY, cabinY, alpha). */
@@ -97,7 +175,10 @@ export interface LevelSnapshot {
    * et par la ligne « Terme I » du panneau de mesures) et retombe à 0 au recommencement.
    */
   iTerm: number;
-  /** Consigne (m) : 0 avant le lancement, {@link LEVEL1_SETPOINT} pendant le trajet et l'issue. */
+  /**
+   * Consigne (m) : 0 avant le départ du trajet (embarquement compris), {@link LEVEL1_SETPOINT}
+   * pendant le trajet, la sortie et l'issue.
+   */
   r: number;
   /** Erreur e = r − cabinY (m). */
   e: number;
@@ -105,11 +186,14 @@ export interface LevelSnapshot {
   uSat: number;
   /** Vrai si la force du dernier pas a été écrêtée par la saturation. */
   saturated: boolean;
-  /** Nombre de pas exécutés depuis le lancement (sans unité) ; 0 hors trajet. */
+  /** Nombre de pas exécutés depuis le départ du trajet (sans unité) ; 0 hors trajet. */
   k: number;
   /** Temps de simulation du trajet t = k·dt (s). */
   t: number;
-  /** Issue du trajet, ou `null` tant qu'il n'est pas terminé. */
+  /**
+   * Issue du trajet, ou `null` tant qu'il n'est pas terminé. Renseignée dès le pas de l'issue,
+   * donc dès le début de la sortie (`exit`) pour une victoire animée : l'afficher en `outcome`.
+   */
   outcome: TripOutcome | null;
   /** Pas k auquel l'issue a été décidée, ou `null`. */
   outcomeK: number | null;
@@ -152,6 +236,13 @@ export interface ElevatorLevelConfig {
   readonly createLoop: (value: number) => TripLoop;
   /** Arbitre des issues (un par niveau, remis à zéro à chaque trajet). */
   readonly createJudge: () => OutcomeJudge;
+  /**
+   * Animations de la marche vers le poste, de l'embarquement et de la sortie (défaut `true`).
+   * Sans animations : bonhomme placé au poste aussitôt, trajet parti dès le lancement, issue de
+   * victoire affichée au pas de victoire, bonhomme resté dans la cabine. La logique ne lit pas
+   * `prefers-reduced-motion` : c'est à l'appelant de passer cette option.
+   */
+  readonly animations?: boolean;
 }
 
 /** Niveau de l'ascenseur : machine à états pure, déterministe, pilotée par le temps d'image. */
@@ -167,8 +258,9 @@ export interface Level {
   readonly signals: SignalRecorder;
   /**
    * Avance le niveau d'une durée d'image (s) : horloge à pas fixe du noyau (durée bornée à
-   * 0,25 s, 8 pas au plus), puis, pour chaque pas, marche du bonhomme (`approach`) ou pas de
-   * simulation et arbitrage de l'issue (`trip`). En pause : aucun pas, horloge figée.
+   * 0,25 s, 8 pas au plus), puis, pour chaque pas : marche du bonhomme (`approach`), marche vers
+   * le poste (`tuning`), embarquement (`boarding`), pas de simulation et arbitrage de l'issue
+   * (`trip`) ou sortie (`exit`). En pause : aucun pas, horloge figée.
    * @returns l'instantané mis à jour (même objet à chaque appel).
    */
   update(frameSeconds: number): Readonly<LevelSnapshot>;
@@ -179,26 +271,46 @@ export interface Level {
   /** Intention : s'arrêter (phase `approach` seulement). */
   stop(): CommandResult;
   /**
-   * Interagir : à la console en `approach`, ouvre le réglage (bonhomme placé devant la
-   * console) ; en `tuning`, referme le panneau. Sinon sans effet.
+   * Interagir : en `approach`, de n'importe où sur le quai, ouvre le réglage tout de suite ; le
+   * bonhomme rejoint le poste du pupitre en marchant (placé au poste sans animations). En
+   * `tuning`, referme le panneau : le bonhomme s'arrête où il est et redevient libre. Sinon sans
+   * effet.
    */
   interact(): CommandResult;
   /**
    * Fixe la grandeur réglée (Kp au niveau 1, Ki au niveau 2), arrondie au pas de la grille et
-   * bornée à [min ; max]. Accepté en `approach` et `tuning` ; `locked` en `trip`, `outcome` et
-   * `paused` ; `invalid` si la valeur n'est pas finie. Une valeur hors bornes est ramenée à la
-   * borne (acceptée).
+   * bornée à [min ; max]. Accepté en `approach` et `tuning` (aussi pendant la marche vers le
+   * poste) ; `locked` en `boarding`, `trip`, `exit`, `outcome` et `paused` ; `invalid` si la
+   * valeur n'est pas finie. Une valeur hors bornes est ramenée à la borne (acceptée).
    */
   setTuning(value: number): CommandResult;
   /** Ajoute `delta` à la grandeur réglée, mêmes règles que {@link Level.setTuning}. */
   adjustTuning(delta: number): CommandResult;
-  /** Lance le trajet (phase `tuning` seulement) : consigne 0 → r à k = 0, boucle active. */
+  /**
+   * Lance (phase `tuning` seulement) : embarquement, puis, le bonhomme au centre de la cabine,
+   * départ du trajet : consigne 0 → r à k = 0, boucle active. Sans animations, le trajet part
+   * aussitôt.
+   */
   launch(): CommandResult;
   /**
-   * Recommencer (phases `trip` et `outcome`) : cabine au sol, boucle, enregistreur et
-   * horloge réinitialisés, réglage conservé, essai suivant, retour au réglage (spec §6, point 6).
+   * Recommencer (phases `boarding`, `trip`, `exit` et `outcome`) : cabine au sol, boucle,
+   * enregistreur et horloge réinitialisés, réglage conservé, essai suivant, retour au réglage,
+   * bonhomme au poste (spec §6, point 6).
    */
   restart(): CommandResult;
+  /**
+   * Passe l'animation en cours : marche vers le poste (bonhomme placé au poste), embarquement
+   * (bonhomme placé dans la cabine, le trajet part), sortie (bonhomme placé sur le plateau, issue
+   * affichée). `ignored` ailleurs, et en pause.
+   */
+  skipAnimation(): CommandResult;
+  /**
+   * Active ou désactive les animations, à tout moment. Les désactiver termine aussitôt
+   * l'animation en cours, comme {@link Level.skipAnimation} (aussi en pause : la phase à reprendre
+   * suit).
+   * @param enabled vrai pour animer.
+   */
+  setAnimations(enabled: boolean): void;
   /** Met en pause (toute phase sauf `paused`). */
   pause(): CommandResult;
   /** Reprend la phase d'avant la pause, sans saut de temps. */
@@ -215,7 +327,8 @@ export interface Level {
  * Crée la machine du niveau en phase `approach` : bonhomme à l'entrée, cabine au sol, réglage
  * initial, essai n° 1. Aucune allocation dans `update` (hors création de boucle au lancement,
  * quand le réglage a changé) ; aucune référence conservée vers l'échantillon du noyau ni son
- * état : les nombres sont copiés.
+ * état : les nombres sont copiés. Les animations avancent par pas fixes de l'horloge de
+ * simulation, jamais sur le temps réel.
  * @param config voir {@link ElevatorLevelConfig}.
  */
 export function createElevatorLevel(config: ElevatorLevelConfig): Level {
@@ -230,6 +343,7 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
   let tuned = config.initial;
   let loop = config.createLoop(tuned);
   let loopTuned = tuned;
+  let animations = config.animations ?? true;
 
   let phase: LevelPhase = 'approach';
   let resumePhase: LevelPhase | null = null;
@@ -247,6 +361,12 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
   let saturatedSteps = 0;
   let iTerm = 0;
   let attempt = 1;
+  let action: WalkerAction = 'free';
+  let walkerY = 0;
+  let walkerPrevY = 0;
+  let exitFromY = 0;
+  let stepProgress = 0;
+  let animationStep = 0;
 
   /** Erreur statique théorique m·g/Kp (m) du Kp courant ; `Infinity` si Kp = 0. */
   const theoretical = (): number => {
@@ -260,10 +380,17 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
     resumePhase,
     walkerX: walker.x,
     walkerPrevX: walker.prevX,
+    walkerY,
+    walkerPrevY,
     walkerFacing: walker.facing,
     walkerMoving: false,
+    walkerAction: action,
+    exitStepProgress: stepProgress,
+    animationStep,
+    animations,
     walkerInCabin: false,
     atConsole: walker.atConsole,
+    atPost: false,
     cabinY,
     cabinPrevY,
     cabinVelocity,
@@ -286,17 +413,42 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
     attempt,
   };
 
+  /** Vrai si le bonhomme marche, d'après son action. */
+  function isMoving(): boolean {
+    switch (action) {
+      case 'free':
+        return walker.intent !== 'none';
+      case 'toPost':
+      case 'boarding':
+      case 'exiting':
+      case 'stepping':
+        return true;
+      case 'atPost':
+      case 'inCabin':
+      case 'arrived':
+        return false;
+    }
+  }
+
   /** Recopie l'état interne dans l'instantané (nombres uniquement, aucune allocation). */
   function writeSnapshot(): void {
     const r = tripActive ? LEVEL1_SETPOINT : 0;
+    const onLedge = action === 'free' || action === 'toPost' || action === 'atPost';
     snapshot.phase = phase;
     snapshot.resumePhase = resumePhase;
-    snapshot.walkerX = tripActive ? CABIN_CENTER_X : walker.x;
-    snapshot.walkerPrevX = tripActive ? CABIN_CENTER_X : walker.prevX;
+    snapshot.walkerX = walker.x;
+    snapshot.walkerPrevX = walker.prevX;
+    snapshot.walkerY = walkerY;
+    snapshot.walkerPrevY = walkerPrevY;
     snapshot.walkerFacing = walker.facing;
-    snapshot.walkerMoving = walker.intent !== 'none';
-    snapshot.walkerInCabin = tripActive;
-    snapshot.atConsole = !tripActive && walker.atConsole;
+    snapshot.walkerMoving = isMoving();
+    snapshot.walkerAction = action;
+    snapshot.exitStepProgress = stepProgress;
+    snapshot.animationStep = animationStep;
+    snapshot.animations = animations;
+    snapshot.walkerInCabin = action === 'inCabin' || (action === 'exiting' && stepProgress === 0);
+    snapshot.atConsole = onLedge && isAtConsole(walker.x);
+    snapshot.atPost = action === 'atPost';
     snapshot.cabinY = cabinY;
     snapshot.cabinPrevY = cabinPrevY;
     snapshot.cabinVelocity = cabinVelocity;
@@ -337,6 +489,88 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
     saturationSeen = false;
     saturatedSteps = 0;
     iTerm = 0;
+    stepProgress = 0;
+    animationStep = 0;
+  }
+
+  /** Change la phase courante, ou la phase à reprendre si le niveau est en pause. */
+  function enterPhase(next: LevelPhase): void {
+    if (phase === 'paused') resumePhase = next;
+    else phase = next;
+  }
+
+  /** Phase effective : en pause, celle qui reprendra. */
+  function effectivePhase(): LevelPhase {
+    return phase === 'paused' && resumePhase !== null ? resumePhase : phase;
+  }
+
+  /** Pose les pieds du bonhomme à la hauteur `y` (m), sans interpolation. */
+  function placeY(y: number): void {
+    walkerY = y;
+    walkerPrevY = y;
+  }
+
+  /** Bonhomme placé au poste, sans marche. */
+  function placeAtPost(): void {
+    walker.place(CONSOLE_POST_X, 1);
+    placeY(0);
+    action = 'atPost';
+    animationStep = 0;
+  }
+
+  /** Départ du trajet (k = 0) : bonhomme au centre de la cabine, consigne r, boucle active. */
+  function startTrip(): void {
+    tripActive = true;
+    action = 'inCabin';
+    animationStep = 0;
+    enterPhase('trip');
+  }
+
+  /** Fin de la sortie : bonhomme sur le plateau, issue de victoire affichée et annoncée. */
+  function finishExit(): void {
+    stepProgress = 1;
+    walkerY = LEVEL1_SETPOINT;
+    action = 'arrived';
+    animationStep = 0;
+    enterPhase('outcome');
+    // k est figé au pas de l'issue pendant la sortie.
+    events.push('outcome', k, outcome, attempt);
+  }
+
+  /**
+   * Hauteur des pieds pendant la sortie, d'après l'abscisse : yFinal avant le pas, r après,
+   * (1 − p)·yFinal + p·r pendant (p = 0 donne yFinal et p = 1 donne r exactement).
+   */
+  function updateExitHeight(): void {
+    const x = walker.x;
+    const p =
+      x <= EXIT_STEP_MIN_X
+        ? 0
+        : x >= EXIT_STEP_MAX_X
+          ? 1
+          : (x - EXIT_STEP_MIN_X) / (EXIT_STEP_MAX_X - EXIT_STEP_MIN_X);
+    stepProgress = p;
+    walkerY = (1 - p) * exitFromY + p * LEVEL1_SETPOINT;
+    action = p > 0 && p < 1 ? 'stepping' : 'exiting';
+  }
+
+  /** Termine aussitôt l'animation de la phase effective ; vrai s'il y en avait une. */
+  function finishAnimation(): boolean {
+    const current = effectivePhase();
+    if (current === 'tuning' && action === 'toPost') {
+      placeAtPost();
+    } else if (current === 'boarding') {
+      walker.place(CABIN_CENTER_X, 1);
+      placeY(cabinY);
+      startTrip();
+    } else if (current === 'exit') {
+      walker.place(EXIT_END_X, 1);
+      finishExit();
+      walkerPrevY = walkerY;
+    } else {
+      return false;
+    }
+    return true;
   }
 
   /** Un pas de simulation du trajet ; les nombres sont copiés depuis l'échantillon. */
@@ -351,6 +585,8 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
     cabinY = x[ELEVATOR_POSITION] as number;
     cabinVelocity = x[ELEVATOR_VELOCITY] as number;
     iTerm = loop.controller?.integral ?? 0;
+    walkerPrevY = cabinPrevY;
+    walkerY = cabinY;
     if (saturated) {
       saturatedSteps += 1;
       if (!saturationSeen) {
@@ -360,23 +596,64 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
     }
     const verdict = judge.evaluate(k, cabinY, cabinVelocity, kpOf(tuned));
     if (verdict !== null) {
-      phase = 'outcome';
       outcome = verdict;
       outcomeK = k;
       finalError = LEVEL1_SETPOINT - cabinY;
-      events.push('outcome', k, verdict, attempt);
+      if (verdict === 'win' && animations) {
+        // L'issue est jugée à ce pas ; elle ne s'affiche qu'à la fin de la sortie.
+        phase = 'exit';
+        action = 'exiting';
+        exitFromY = cabinY;
+        stepProgress = 0;
+        animationStep = 0;
+      } else {
+        phase = 'outcome';
+        events.push('outcome', k, verdict, attempt);
+      }
     }
   }
 
   /** Un pas fixe de jeu, selon la phase. */
   function stepOnce(): void {
-    if (phase === 'approach') {
-      walker.step(dt);
-      return;
+    walkerPrevY = walkerY;
+    switch (phase) {
+      case 'approach':
+        walker.step(dt);
+        return;
+      case 'tuning':
+        cabinPrevY = cabinY;
+        if (action === 'toPost') {
+          animationStep += 1;
+          if (walker.stepToward(CONSOLE_POST_X, dt)) {
+            // Arrivé au poste : tourné vers le pupitre (prevX gardé pour l'interpolation).
+            walker.face(1);
+            action = 'atPost';
+            animationStep = 0;
+          }
+        } else {
+          walker.hold();
+        }
+        return;
+      case 'boarding':
+        animationStep += 1;
+        if (walker.stepToward(CABIN_CENTER_X, dt)) startTrip();
+        return;
+      case 'trip':
+        walker.hold();
+        stepTrip();
+        return;
+      case 'exit':
+        cabinPrevY = cabinY;
+        animationStep += 1;
+        if (walker.stepToward(EXIT_END_X, dt)) finishExit();
+        else updateExitHeight();
+        return;
+      default:
+        // `outcome` (la pause ne fait aucun pas) : tout reste figé.
+        walker.hold();
+        cabinPrevY = cabinY;
+        return;
     }
-    walker.hold();
-    if (phase === 'trip') stepTrip();
-    else cabinPrevY = cabinY;
   }
 
   /** Accepte une intention de marche en phase `approach`. */
@@ -418,13 +695,22 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
     moveRight: () => walk('right'),
     stop: () => walk('none'),
     interact(): CommandResult {
-      if (phase === 'approach' && walker.atConsole) {
+      if (phase === 'approach') {
         phase = 'tuning';
-        walker.place(CONSOLE_X, 1);
         clock.reset();
+        if (animations && walker.x !== CONSOLE_POST_X) {
+          walker.setIntent('none');
+          action = 'toPost';
+          animationStep = 0;
+        } else {
+          placeAtPost();
+        }
         events.push('tuningOpened', 0, null, attempt);
       } else if (phase === 'tuning') {
         phase = 'approach';
+        action = 'free';
+        animationStep = 0;
+        walker.hold();
         events.push('tuningClosed', 0, null, attempt);
       } else {
         return 'ignored';
@@ -442,22 +728,42 @@ export function createElevatorLevel(config: ElevatorLevelConfig): Level {
         loopTuned = tuned;
       }
       clearTrip();
-      tripActive = true;
-      phase = 'trip';
       events.push('launch', 0, null, attempt);
+      if (animations) {
+        phase = 'boarding';
+        action = 'boarding';
+        walker.hold();
+        placeY(0);
+      } else {
+        walker.place(CABIN_CENTER_X, 1);
+        placeY(cabinY);
+        startTrip();
+      }
       writeSnapshot();
       return 'accepted';
     },
     restart(): CommandResult {
-      if (phase !== 'trip' && phase !== 'outcome') return 'ignored';
+      if (phase !== 'boarding' && phase !== 'trip' && phase !== 'exit' && phase !== 'outcome') {
+        return 'ignored';
+      }
       clearTrip();
       tripActive = false;
       attempt += 1;
       phase = 'tuning';
-      walker.place(CONSOLE_X, 1);
+      placeAtPost();
       events.push('reset', 0, null, attempt);
       writeSnapshot();
       return 'accepted';
+    },
+    skipAnimation(): CommandResult {
+      if (phase === 'paused' || !finishAnimation()) return 'ignored';
+      writeSnapshot();
+      return 'accepted';
+    },
+    setAnimations(enabled: boolean): void {
+      animations = enabled;
+      if (!enabled) finishAnimation();
+      writeSnapshot();
     },
     pause(): CommandResult {
       if (phase === 'paused') return 'ignored';

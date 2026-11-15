@@ -15,7 +15,7 @@
  * - toute touche du jeu, et les touches qui feraient défiler la page, sont bloquées
  *   (`preventDefault`).
  */
-import type { LevelPhase } from '../game';
+import { isSkippablePhase, type LevelPhase } from '../game';
 import { commandsBlocked } from './help';
 
 /** Ce qui a le focus au moment de la frappe. */
@@ -64,6 +64,7 @@ export type KeyIntent =
   | 'walkRight'
   | 'interact'
   | 'launch'
+  | 'skip'
   | 'kpUp'
   | 'kpDown'
   | 'kpUpBig'
@@ -137,7 +138,11 @@ function kpIntentOf(code: string, key: string): KeyIntent {
   return 'none';
 }
 
-/** Intention de « E / Entrée / Espace » selon la phase. */
+/**
+ * Intention de « E / Entrée / Espace » selon la phase : ouvrir le réglage, lancer, puis passer
+ * l'embarquement ou la sortie. Une répétition automatique ne fait rien : la touche de lancement
+ * maintenue ne passe pas l'embarquement.
+ */
 function useIntentOf(phase: LevelPhase, repeat: boolean): KeyIntent {
   if (repeat) {
     return 'block';
@@ -147,6 +152,9 @@ function useIntentOf(phase: LevelPhase, repeat: boolean): KeyIntent {
   }
   if (phase === 'tuning') {
     return 'launch';
+  }
+  if (isSkippablePhase(phase)) {
+    return 'skip';
   }
   return 'block';
 }

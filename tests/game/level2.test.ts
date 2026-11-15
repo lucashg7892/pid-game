@@ -37,7 +37,7 @@ import { bitwiseEqual, copyTrace, finishTrip, mulberry32, reachConsole } from '.
 
 /** Crée un niveau 2, règle Ki, va à la console et joue un trajet complet. */
 function runKi(ki: number, frame: () => number = () => 1 / 30, options: Level2Options = {}) {
-  const level = createLevel2(options);
+  const level = createLevel2({ animations: false, ...options });
   reachConsole(level, frame);
   expect(level.setKi(ki)).toBe('accepted');
   return { ...finishTrip(level, frame), level };
@@ -45,7 +45,7 @@ function runKi(ki: number, frame: () => number = () => 1 / 30, options: Level2Op
 
 /** Niveau 2 au Ki initial donné, même hors grille (pas de 10), joué jusqu'à l'issue. */
 function runKiExact(ki: number) {
-  const level = createLevel2({ initialKi: ki });
+  const level = createLevel2({ animations: false, initialKi: ki });
   reachConsole(level);
   return { ...finishTrip(level), level };
 }
@@ -90,16 +90,21 @@ describe('constantes du niveau 2', () => {
 
 describe('réglage de Ki', () => {
   it('description du réglage : Ki, [0 ; 8000], pas de 100 ; Kp reste fixé', () => {
-    const level = createLevel2();
+    const level = createLevel2({ animations: false });
     expect(level.tuning).toEqual({ param: 'ki', min: 0, max: 8000, step: 100 });
     expect(level.snapshot.levelId).toBe('level2');
     expect(level.snapshot.kp).toBe(2500);
     expect(level.snapshot.ki).toBe(KI_DEFAULT);
-    expect(createLevel1().tuning).toEqual({ param: 'kp', min: 0, max: 8000, step: 100 });
+    expect(createLevel1({ animations: false }).tuning).toEqual({
+      param: 'kp',
+      min: 0,
+      max: 8000,
+      step: 100,
+    });
   });
 
   it('setKi : arrondi au pas, borné, valeur non finie refusée', () => {
-    const level = createLevel2();
+    const level = createLevel2({ animations: false });
     expect(level.setKi(149)).toBe('accepted');
     expect(level.snapshot.ki).toBe(100);
     level.setKi(150);
@@ -117,7 +122,7 @@ describe('réglage de Ki', () => {
   });
 
   it('adjustKi : ajoute le pas, plafonne aux bornes, écart non fini refusé', () => {
-    const level = createLevel2({ initialKi: 7900 });
+    const level = createLevel2({ animations: false, initialKi: 7900 });
     expect(level.adjustKi(100)).toBe('accepted');
     expect(level.snapshot.ki).toBe(8000);
     level.adjustKi(1000);
@@ -130,7 +135,7 @@ describe('réglage de Ki', () => {
   });
 
   it('Kp ne change jamais, quel que soit Ki', () => {
-    const level = createLevel2();
+    const level = createLevel2({ animations: false });
     for (const ki of [0, 400, 8000]) {
       level.setKi(ki);
       expect(level.snapshot.kp).toBe(LEVEL2_KP);
@@ -138,14 +143,14 @@ describe('réglage de Ki', () => {
   });
 
   it('initialKi hors bornes ou non fini : RangeError ; hors grille : accepté tel quel', () => {
-    expect(() => createLevel2({ initialKi: -1 })).toThrow(RangeError);
-    expect(() => createLevel2({ initialKi: 8001 })).toThrow(RangeError);
-    expect(() => createLevel2({ initialKi: NaN })).toThrow(RangeError);
-    expect(createLevel2({ initialKi: 150 }).snapshot.ki).toBe(150);
+    expect(() => createLevel2({ animations: false, initialKi: -1 })).toThrow(RangeError);
+    expect(() => createLevel2({ animations: false, initialKi: 8001 })).toThrow(RangeError);
+    expect(() => createLevel2({ animations: false, initialKi: NaN })).toThrow(RangeError);
+    expect(createLevel2({ animations: false, initialKi: 150 }).snapshot.ki).toBe(150);
   });
 
   it('verrou : Ki refusé pendant le trajet, à l’issue et en pause', () => {
-    const level = createLevel2();
+    const level = createLevel2({ animations: false });
     reachConsole(level);
     level.setKi(300);
     level.launch();
@@ -165,7 +170,7 @@ describe('réglage de Ki', () => {
   });
 
   it('réglable en approche (avant la console)', () => {
-    const level = createLevel2();
+    const level = createLevel2({ animations: false });
     expect(level.setKi(600)).toBe('accepted');
     expect(level.snapshot.ki).toBe(600);
   });
@@ -221,7 +226,7 @@ describe('issues du vrai niveau 2 (boucle PI du noyau)', () => {
 
   it('Ki par défaut (2000) hors de la fenêtre gagnante : sans réglage, choc contre la poutre', () => {
     expect(KI_DEFAULT).toBe(2000);
-    const level = createLevel2();
+    const level = createLevel2({ animations: false });
     reachConsole(level);
     const r = finishTrip(level);
     expect(r.outcome).toBe('bonk');
@@ -371,7 +376,7 @@ describe('arbitres d’issue', () => {
 
 describe('instantané, intégrale et remise à zéro', () => {
   it('niveau 1 : ki = 0, iTerm = 0, levelId = level1', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     reachConsole(level);
     level.setKp(2500);
     level.launch();
@@ -382,7 +387,7 @@ describe('instantané, intégrale et remise à zéro', () => {
   });
 
   it('iTerm : 0 avant le lancement, croît pendant la saturation, égal à Ki·dt·Σe', () => {
-    const level = createLevel2();
+    const level = createLevel2({ animations: false });
     reachConsole(level);
     level.setKi(1000);
     level.launch();
@@ -427,7 +432,7 @@ describe('instantané, intégrale et remise à zéro', () => {
   });
 
   it('un second trajet au même Ki redonne exactement le même résultat (intégrale remise à zéro)', () => {
-    const level = createLevel2();
+    const level = createLevel2({ animations: false });
     reachConsole(level);
     level.setKi(600);
     const first = finishTrip(level);
@@ -444,6 +449,7 @@ describe('instantané, intégrale et remise à zéro', () => {
   it('reconstruit la boucle quand Ki change, pas quand il ne change pas', () => {
     const made: number[] = [];
     const level = createLevel2({
+      animations: false,
       createLoop: (ki) => {
         made.push(ki);
         return createElevatorPiLoop({ kp: LEVEL2_KP, ki });
@@ -463,7 +469,7 @@ describe('instantané, intégrale et remise à zéro', () => {
   });
 
   it('l’instantané est un objet unique réécrit, et ne retient pas l’état du noyau', () => {
-    const level = createLevel2();
+    const level = createLevel2({ animations: false });
     const ref: Readonly<LevelSnapshot> = level.snapshot;
     reachConsole(level);
     level.setKi(1000);
@@ -516,7 +522,7 @@ describe('indépendance au découpage en images', () => {
 
   it('la trace du niveau 2 à Ki = 0 est celle du niveau 1 à Kp = 2500 (P identique)', () => {
     const two = runKi(0);
-    const one = createLevel1();
+    const one = createLevel1({ animations: false });
     reachConsole(one);
     one.setKp(LEVEL2_KP);
     const r1 = finishTrip(one);
@@ -533,7 +539,7 @@ describe('indépendance au découpage en images', () => {
 
 describe('type : un Level2 est un Level', () => {
   it('expose setKi/adjustKi et les commandes communes, pas setKp', () => {
-    const level: Level2 = createLevel2();
+    const level: Level2 = createLevel2({ animations: false });
     expect(typeof level.setKi).toBe('function');
     expect(typeof level.setTuning).toBe('function');
     expect('setKp' in level).toBe(false);

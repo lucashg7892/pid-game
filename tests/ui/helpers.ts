@@ -11,9 +11,13 @@ export function advance(level: Level, seconds: number): void {
   for (let i = 0; i < frames; i += 1) level.update(FRAME);
 }
 
-/** Niveau en approche, bonhomme à la console (panneau fermé). */
-export function atConsole(): Level1 {
-  const level = createLevel1();
+/**
+ * Niveau en approche, bonhomme à la console (panneau fermé). Sans animations (comportement
+ * d'avant D31-D32 : réglage au poste aussitôt, trajet dès le lancement, issue au pas de victoire),
+ * sauf `animations` vrai.
+ */
+export function atConsole(animations = false): Level1 {
+  const level = createLevel1({ animations });
   level.moveRight();
   for (let i = 0; i < 10_000 && !level.snapshot.atConsole; i += 1) level.update(FRAME);
   level.stop();
@@ -21,9 +25,9 @@ export function atConsole(): Level1 {
   return level;
 }
 
-/** Niveau en réglage (panneau ouvert) avec le Kp donné. */
-export function tuning(kp = 1000): Level1 {
-  const level = atConsole();
+/** Niveau en réglage (panneau ouvert) avec le Kp donné ; voir {@link atConsole}. */
+export function tuning(kp = 1000, animations = false): Level1 {
+  const level = atConsole(animations);
   if (level.interact() !== 'accepted') throw new Error('interaction refusée');
   if (level.setKp(kp) !== 'accepted') throw new Error('Kp refusé');
   return level;

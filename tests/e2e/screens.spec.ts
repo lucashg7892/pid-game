@@ -281,7 +281,7 @@ test('(e) la langue choisie au titre est conservée au menu, dans le niveau et a
   await expect(page.getByRole('main', { name: T.en('menu.title') })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await page.getByRole('button', { name: T.en('level1.title'), exact: true }).click();
-  await expect(page.locator('#ui .ui-banner')).toContainText('walk to the console');
+  await expect(page.locator('#ui .ui-banner')).toContainText(T.en('hud.hint.use'));
   await expect(page.locator('#scene')).toHaveAttribute('aria-label', T.en('a11y.canvas'));
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   // Bascule dans le niveau, puis retour au menu : la langue suit.

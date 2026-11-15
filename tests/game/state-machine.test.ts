@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CABIN_CENTER_X,
+  CONSOLE_POST_X,
   CONSOLE_REACH,
   CONSOLE_X,
   KP_DEFAULT,
@@ -22,7 +23,7 @@ function copy(s: Readonly<LevelSnapshot>): LevelSnapshot {
 
 describe('état initial et approche', () => {
   it('démarre en approche : bonhomme à l’entrée, cabine au sol, Kp par défaut, essai 1', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     const s = level.snapshot;
     expect(s.phase).toBe('approach');
     expect(s.walkerX).toBe(WALKER_SPAWN_X);
@@ -35,7 +36,7 @@ describe('état initial et approche', () => {
   });
 
   it('marche bornée au décor, orientation et arrêt', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     expect(level.moveLeft()).toBe('accepted');
     for (let i = 0; i < 120; i++) level.update(1 / 60);
     expect(level.snapshot.walkerX).toBe(WALKER_MIN_X);
@@ -51,20 +52,33 @@ describe('état initial et approche', () => {
     expect(level.snapshot.walkerPrevX).toBe(level.snapshot.walkerX);
   });
 
-  it('CA-5 : interact hors de la zone de la console sans effet', () => {
-    const level = createLevel1();
+  it('D31 (remplace « interact hors de la zone sans effet ») : E loin de la console ouvre le réglage, sans animations bonhomme placé au poste', () => {
+    const level = createLevel1({ animations: false });
+    expect(level.snapshot.atConsole).toBe(false);
+    expect(level.interact()).toBe('accepted');
+    const s = level.snapshot;
+    expect(s.phase).toBe('tuning');
+    expect(s.walkerX).toBe(CONSOLE_POST_X);
+    expect(s.walkerPrevX).toBe(CONSOLE_POST_X);
+    expect(s.walkerFacing).toBe(1);
+    expect(s.atPost).toBe(true);
+    expect(s.walkerAction).toBe('atPost');
+    const events: string[] = [];
+    level.drainEvents((e) => events.push(e.type));
+    expect(events).toEqual(['tuningOpened']);
+    // Hors approche et réglage, interact reste sans effet.
+    level.launch();
     const before = copy(level.snapshot);
     expect(level.interact()).toBe('ignored');
     expect(level.snapshot).toEqual(before);
-    expect(level.drainEvents(() => undefined)).toBe(0);
   });
 
   it('zone de la console : entrée, interaction, fermeture du panneau', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     reachConsole(level);
     const s = level.snapshot;
     expect(s.phase).toBe('tuning');
-    expect(s.walkerX).toBe(CONSOLE_X);
+    expect(s.walkerX).toBe(CONSOLE_POST_X);
     expect(Math.abs(s.walkerX - CONSOLE_X)).toBeLessThanOrEqual(CONSOLE_REACH);
     // En réglage : pas de marche.
     expect(level.moveLeft()).toBe('ignored');
@@ -77,12 +91,14 @@ describe('état initial et approche', () => {
 
 describe('CA-5 : réglage de Kp', () => {
   it('initialKp : hors grille accepté tel quel (150), hors bornes ou non fini refusé', () => {
-    const level = createLevel1({ initialKp: 150 });
+    const level = createLevel1({ animations: false, initialKp: 150 });
     expect(level.snapshot.kp).toBe(150);
     expect(level.snapshot.theoreticalError).toBe((50 * 9.81) / 150);
-    expect(createLevel1({ initialKp: 0 }).snapshot.theoreticalError).toBe(Infinity);
+    expect(createLevel1({ animations: false, initialKp: 0 }).snapshot.theoreticalError).toBe(
+      Infinity,
+    );
     for (const bad of [NaN, Infinity, -1, 8001]) {
-      expect(() => createLevel1({ initialKp: bad })).toThrow(RangeError);
+      expect(() => createLevel1({ animations: false, initialKp: bad })).toThrow(RangeError);
     }
     // Le curseur repasse sur la grille : 150 + 0 → 200 (arrondi au plus proche, demi vers +∞).
     expect(level.adjustKp(0)).toBe('accepted');
@@ -94,7 +110,7 @@ describe('CA-5 : réglage de Kp', () => {
   });
 
   it('bornes, pas de 100, arrondi, NaN et Infinity refusés', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     expect(level.setKp(2549)).toBe('accepted');
     expect(level.snapshot.kp).toBe(2500);
     expect(level.setKp(2550)).toBe('accepted');
@@ -121,7 +137,7 @@ describe('CA-5 : réglage de Kp', () => {
   });
 
   it('Kp verrouillé pendant le trajet, à l’issue et en pause (D9), sans exception', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     level.setKp(2500);
     reachConsole(level);
     expect(level.launch()).toBe('accepted');
@@ -149,7 +165,7 @@ describe('CA-5 : réglage de Kp', () => {
   });
 
   it('launch hors de la phase de réglage sans effet', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     expect(level.launch()).toBe('ignored');
     expect(level.snapshot.phase).toBe('approach');
     reachConsole(level);
@@ -161,7 +177,7 @@ describe('CA-5 : réglage de Kp', () => {
   });
 
   it('commandes sans objet : restart hors trajet, resume hors pause, double pause', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     expect(level.restart()).toBe('ignored');
     expect(level.resume()).toBe('ignored');
     expect(level.pause()).toBe('accepted');
@@ -176,7 +192,7 @@ describe('CA-5 : réglage de Kp', () => {
 
 describe('CA-5 : pause', () => {
   it('aucun pas de simulation en pause, reprise sans saut de temps', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     level.setKp(2500);
     reachConsole(level);
     level.launch();
@@ -199,7 +215,7 @@ describe('CA-5 : pause', () => {
     expect(level.snapshot.k).toBe(21);
 
     // Même trajet sans pause : mêmes valeurs au pas 21.
-    const ref = createLevel1();
+    const ref = createLevel1({ animations: false });
     ref.setKp(2500);
     reachConsole(ref);
     ref.launch();
@@ -211,7 +227,7 @@ describe('CA-5 : pause', () => {
   });
 
   it('pause pendant l’approche : le bonhomme ne bouge pas', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     level.moveRight();
     level.update(0.1);
     const x = level.snapshot.walkerX;
@@ -226,7 +242,7 @@ describe('CA-5 : pause', () => {
 
 describe('trajet et CA-4 : restart', () => {
   it('pendant le trajet : bonhomme à bord, consigne r, erreur e = r − y', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     level.setKp(2500);
     reachConsole(level);
     level.launch();
@@ -249,7 +265,7 @@ describe('trajet et CA-4 : restart', () => {
   });
 
   it('restart restaure l’état initial du réglage et un second trajet est identique bit à bit', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     level.setKp(2500);
     reachConsole(level);
     const initial = copy(level.snapshot);
@@ -271,6 +287,7 @@ describe('trajet et CA-4 : restart', () => {
   it('restart en cours de trajet et Kp changé entre deux trajets', () => {
     let built = 0;
     const level = createLevel1({
+      animations: false,
       createLoop: (kp) => {
         built += 1;
         return createLevel1Loop(kp);
@@ -301,7 +318,7 @@ describe('trajet et CA-4 : restart', () => {
   });
 
   it('après l’issue, des images supplémentaires ne changent rien', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     level.setKp(7000);
     reachConsole(level);
     finishTrip(level);

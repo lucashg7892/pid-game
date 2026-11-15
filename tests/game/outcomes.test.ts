@@ -126,7 +126,7 @@ describe('fenêtre complète du niveau 1 (T-020) : ne doit pas dériver en silen
     expect(KP_DEFAULT % KP_STEP).toBe(0);
     expect(KP_DEFAULT).toBeGreaterThanOrEqual(1000);
     expect(KP_DEFAULT).toBeLessThanOrEqual(5000);
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     expect(level.snapshot.kp).toBe(KP_DEFAULT);
     reachConsole(level);
     const r = finishTrip(level);

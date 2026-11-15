@@ -60,8 +60,18 @@ describe('jauge du terme intégral : peintre', () => {
     const l1 = new LevelPainter();
     l2.setPixelSize(PIXEL);
     l1.setPixelSize(PIXEL);
-    l2.paint(createLevel2().snapshot, createLevel2().signals, 0, false);
-    l1.paint(createLevel1().snapshot, createLevel1().signals, 0, false);
+    l2.paint(
+      createLevel2({ animations: false }).snapshot,
+      createLevel2({ animations: false }).signals,
+      0,
+      false,
+    );
+    l1.paint(
+      createLevel1({ animations: false }).snapshot,
+      createLevel1({ animations: false }).signals,
+      0,
+      false,
+    );
     expect(verticesInIGauge(l2, 'decor')).toBeGreaterThan(200);
     expect(verticesInIGauge(l1, 'decor')).toBe(0);
     expect(l2.decor.vertexCount).toBeGreaterThan(l1.decor.vertexCount);
@@ -71,7 +81,7 @@ describe('jauge du terme intégral : peintre', () => {
   it('remplissage hachuré qui suit |I|, au graphite, jamais en rouge ; valeur finale gardée', () => {
     const painter = new LevelPainter();
     painter.setPixelSize(PIXEL);
-    const level = createLevel2();
+    const level = createLevel2({ animations: false });
     ready(level, 800);
     painter.paint(level.snapshot, level.signals, 0, false);
     expect(verticesInIGauge(painter, 'actors')).toBe(0);
@@ -103,7 +113,7 @@ describe('jauge du terme intégral : peintre', () => {
   it('niveau 1 : aucun trait dans la bande de la jauge I pendant le trajet', () => {
     const painter = new LevelPainter();
     painter.setPixelSize(PIXEL);
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     ready(level, 2500);
     level.launch();
     for (let i = 0; i < 100; i += 1) {
@@ -131,7 +141,7 @@ describe('jauge du terme intégral : ancres', () => {
   }
 
   it('niveau 2 : jauge I visible, étiquettes d’échelle à droite de la jauge I', () => {
-    const a = anchorsFor(createLevel2().snapshot);
+    const a = anchorsFor(createLevel2({ animations: false }).snapshot);
     expect(a.iGaugeVisible).toBe(true);
     expect(a.iGauge.x).toBeCloseTo(
       worldXToPixel(frame, 1280, (GAUGE_I_MIN_X + GAUGE_I_MAX_X) / 2),
@@ -145,7 +155,7 @@ describe('jauge du terme intégral : ancres', () => {
   });
 
   it('niveau 1 : pas de jauge I, étiquettes d’échelle à leur place', () => {
-    const a = anchorsFor(createLevel1().snapshot);
+    const a = anchorsFor(createLevel1({ animations: false }).snapshot);
     expect(a.iGaugeVisible).toBe(false);
     expect(a.gaugeMax.x).toBeCloseTo(worldXToPixel(frame, 1280, GAUGE_LABEL_X), 9);
   });

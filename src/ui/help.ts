@@ -2,7 +2,7 @@
  * Règles pures de l'aide des commandes (K19, K21) : pause automatique pendant un trajet et piège
  * de focus. Testable sous Node : ni DOM, ni état.
  */
-import type { LevelPhase } from '../game';
+import { isRunningPhase, type LevelPhase } from '../game';
 
 /** Décision prise à l'ouverture ou à la fermeture de l'aide. */
 export interface HelpPauseDecision {
@@ -14,7 +14,8 @@ export interface HelpPauseDecision {
 
 /**
  * Décide de la pause à l'ouverture (`opening`) ou à la fermeture de l'aide.
- * L'ouverture met en pause seulement pendant un trajet ; la fermeture reprend seulement si c'est
+ * L'ouverture met en pause seulement quand le jeu avance seul (embarquement, trajet, sortie) ; la
+ * fermeture reprend seulement si c'est
  * l'aide qui avait mis en pause et que le jeu est toujours en pause.
  * @param opening vrai à l'ouverture, faux à la fermeture.
  * @param phase phase courante du niveau.
@@ -26,7 +27,7 @@ export function helpPauseDecision(
   pausedByHelp: boolean,
 ): HelpPauseDecision {
   if (opening) {
-    return phase === 'trip'
+    return isRunningPhase(phase)
       ? { action: 'pause', pausedByHelp: true }
       : { action: 'none', pausedByHelp: false };
   }

@@ -106,10 +106,13 @@ async function capture(page: Page, name: string): Promise<void> {
   await page.screenshot({ path: `docs/img/${name}` });
 }
 
-/** Marche au clavier réel jusqu'à la console (bandeau « E : utiliser la console »). */
-async function walkToConsole(page: Page, banner: Locator, useText: string): Promise<void> {
+/**
+ * Marche au clavier réel jusqu'à la console : la bulle y devient l'invite de la console (D31 :
+ * le bandeau « E : régler l'ascenseur » est le même partout sur le quai).
+ */
+async function walkToConsole(page: Page, bubble: Locator, promptText: string): Promise<void> {
   await page.keyboard.down('ArrowRight');
-  await expect(banner).toContainText(useText, { timeout: 15_000 });
+  await expect(bubble).toHaveText(promptText, { timeout: 15_000 });
   await page.keyboard.up('ArrowRight');
 }
 
@@ -235,9 +238,9 @@ test('(a) FR, clavier réel : aide, marche, panneau Kp, + ×5, Entrée, victoire
 }) => {
   const problems = await open(page, '?renderer=webgl&lang=fr');
   const banner = page.locator('#ui .ui-banner');
-  await expect(banner).toContainText(`avancer vers la console`);
-  await expect(banner.locator('kbd', { hasText: 'D' })).toBeVisible();
-  await expect(banner.locator('kbd', { hasText: '→' })).toBeVisible();
+  // D31 : E ouvre le réglage de n'importe où sur le quai.
+  await expect(banner).toContainText(FR('hud.hint.use'));
+  await expect(banner.locator('kbd', { hasText: 'E' })).toBeVisible();
   await expect(page.locator('#ui .ui-bubble')).toHaveText(FR('level1.goal'));
   // Étiquettes permanentes de la jauge dès l'approche ; « Force : … N » n'apparaît qu'au trajet.
   await expect(page.locator('#ui .ui-gauge-title')).toHaveText('Force du moteur');
@@ -248,9 +251,8 @@ test('(a) FR, clavier réel : aide, marche, panneau Kp, + ×5, Entrée, victoire
   await expect(page.locator('#ui .ui-title')).toHaveText('Huygens’s world');
   await capture(page, 't010-01-aide.png');
 
-  await walkToConsole(page, banner, 'utiliser la console');
+  await walkToConsole(page, page.locator('#ui .ui-bubble'), FR('level1.console.prompt'));
   await expect(banner.locator('kbd', { hasText: 'E' })).toBeVisible();
-  await expect(page.locator('#ui .ui-bubble')).toHaveText(FR('level1.console.prompt'));
 
   await page.keyboard.press('e');
   const slider = page.getByRole('slider', { name: FR('level1.kp.label') });
@@ -268,7 +270,9 @@ test('(a) FR, clavier réel : aide, marche, panneau Kp, + ×5, Entrée, victoire
   await page.keyboard.press('Enter');
   await expect(slider).toBeDisabled();
   await expect(page.getByText(FR('level1.kp.locked'))).toBeVisible();
-  await expect(banner).toContainText('Kp est verrouillé');
+  // D32 : embarquement (réglage verrouillé, « passer »), puis le trajet.
+  await expect(banner).toContainText(FR('hud.hint.skip'));
+  await expect(banner).toContainText('Kp est verrouillé', { timeout: 10_000 });
   await expect(page.locator('#ui .ui-readout')).toBeVisible();
   await capture(page, 't010-03-trajet.png');
 
@@ -276,7 +280,8 @@ test('(a) FR, clavier réel : aide, marche, panneau Kp, + ×5, Entrée, victoire
   await expect(live).toContainText(
     `Réussi\u202F! La cabine s’est stabilisée 0,20${NB}m sous le plateau d’arrivée.`,
     {
-      timeout: 10_000,
+      // Embarquement (2,4 s), trajet (2,4 s) puis sortie (1,7 s) en temps réel.
+      timeout: 15_000,
     },
   );
   const outcome = page.locator('#ui .ui-outcome');
@@ -307,8 +312,8 @@ test('(b) EN, clavier réel : Kp = 7000 (Page préc. ×4, + ×10), choc contre l
 }) => {
   const problems = await open(page, '?renderer=webgl&lang=en');
   const banner = page.locator('#ui .ui-banner');
-  await expect(banner).toContainText('walk to the console');
-  await walkToConsole(page, banner, 'use the console');
+  await expect(banner).toContainText(EN('hud.hint.use'));
+  await walkToConsole(page, page.locator('#ui .ui-bubble'), EN('level1.console.prompt'));
   await page.keyboard.press('e');
   const slider = page.getByRole('slider', { name: EN('level1.kp.label') });
   await expect(slider).toBeFocused();
@@ -483,16 +488,18 @@ test('(e) aucune touche du jeu ne fait défiler la page ; toutes sont intercept�
       seen.push([e.code, e.defaultPrevented]);
     });
   });
+  // Espace ouvre le réglage de n'importe où (D31) et donne le focus au curseur, où Début et Fin
+  // sont natives : elle passe donc après elles (approche, puis réglage, trajet, réglage).
   const keys = [
     'ArrowLeft',
     'ArrowRight',
     'ArrowUp',
     'ArrowDown',
-    'Space',
     'PageUp',
     'PageDown',
     'Home',
     'End',
+    'Space',
     'KeyE',
     'Enter',
     'KeyR',

@@ -80,6 +80,7 @@ Depuis D19 (ADR-014), les règles courantes sont dans `CLAUDE.md` : rôles dans 
 | T-032 | orchestrateur | K27 : mention de copyright de l'écran titre sur fond papier opaque (`screens.css`) | FAIT (N2, `check` et e2e complet verts) | — |
 | T-033 | orchestrateur | K35 (suite) : captures `t017-titre-fr` et `t017-titre-portrait` refaites après K27 ; les autres captures comparées pixel par pixel à leur version commitée : seuls le tremblé du crayon et le fond opaque du pied des boutons d'issue (T-028) diffèrent, non commités | FAIT (N1) | — |
 | T-036 | réalisateur | Bouton « Niveau suivant » sur l'écran de réussite (D33) : `nextLevelId`, commande `nextLevel()` de la machine d'écrans, focus, garde A-01, textes FR/EN, 16 e2e | VALIDÉ (N2) | — |
+| T-037 | réalisateur + validateur | Machine à états : poste au pupitre (E de partout, `CONSOLE_POST_X`), phases `boarding` et `exit` (K4), `skipAnimation`, `animations` / `setAnimations` ; trajet identique bit à bit avec et sans animations (197 réglages) ; rendu des poses et `prefers-reduced-motion` à faire (T-038) | VALIDÉ (réserves R1 à R6 traitées ensuite, N3) | logs/T-037.md |
 | T-000 | réalisateur | Pilote : git init, .gitignore, .gitattributes | VALIDÉ | logs/T-000.md |
 | T-001 | concepteur | Spec de la tranche verticale | VALIDÉ | logs/T-001.md |
 | T-002 | réalisateur | Socle outillé (npm, TS, Vite, lint, tests) | VALIDÉ (réserves) | logs/T-002.md |

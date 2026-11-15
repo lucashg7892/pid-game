@@ -73,7 +73,8 @@ export function runTrip(
 ): TripResult & { level: Level1 } {
   // Kp sur la grille du curseur : chemin de l'UI (setKp). Hors grille (150) : initialKp.
   const onGrid = quantizeKp(kp) === kp;
-  const level = createLevel1(onGrid ? options : { ...options, initialKp: kp });
+  const base = { animations: false, ...options };
+  const level = createLevel1(onGrid ? base : { ...base, initialKp: kp });
   if (onGrid && level.setKp(kp) !== 'accepted') throw new Error(`Kp ${String(kp)} refusé`);
   if (level.snapshot.kp !== kp) throw new Error(`Kp ${String(kp)} non appliqué`);
   reachConsole(level, frame);

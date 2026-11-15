@@ -22,6 +22,11 @@ export interface Level2Options {
    * `setKi`/`adjustKi` y repasse.
    */
   readonly initialKi?: number;
+  /**
+   * Animations de la marche vers le poste, de l'embarquement et de la sortie (défaut `true`) ;
+   * voir `ElevatorLevelConfig.animations`.
+   */
+  readonly animations?: boolean;
 }
 
 /** Niveau 2 « La mémoire » : le niveau commun, Kp fixé à {@link LEVEL2_KP}, Ki réglable. */
@@ -58,6 +63,7 @@ export function createLevel2(options: Level2Options = {}): Level2 {
     kpOf: () => LEVEL2_KP,
     kiOf: (value) => value,
     createLoop: options.createLoop ?? defaultLoop,
+    ...(options.animations === undefined ? {} : { animations: options.animations }),
     createJudge: () => createOutcomeJudge2(),
   });
   return {

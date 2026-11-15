@@ -11,15 +11,15 @@ import { CATALOGS, parseTemplate, type PlainKey, type Translator } from '../i18n
 
 /**
  * Bandeau à afficher :
- * - `walk` : en approche, loin de la console ;
- * - `use` : en approche, à la console ;
+ * - `use` : en approche, n'importe où sur le quai (E ouvre le réglage, D31) ;
  * - `tune` : réglage ouvert ;
+ * - `skip` : embarquement ou sortie (animation que la touche de lancement passe) ;
  * - `trip` : trajet en cours ;
- * - `outcome` : issue décidée ;
+ * - `outcome` : issue affichée ;
  * - `paused` : jeu en pause ;
  * - `help` : aide des commandes ouverte.
  */
-export type HintId = 'walk' | 'use' | 'tune' | 'trip' | 'outcome' | 'paused' | 'help';
+export type HintId = 'use' | 'tune' | 'skip' | 'trip' | 'outcome' | 'paused' | 'help';
 
 /** Morceau d'un élément du bandeau. */
 export interface HintSegment {
@@ -37,8 +37,6 @@ export type HintLine = readonly HintItem[];
 
 /** Symboles de touches identiques dans toutes les langues (dessins de touches, pas du texte). */
 export const KEY_SYMBOLS = Object.freeze({
-  right: '→',
-  walkRight: 'D',
   use: 'E',
   restart: 'R',
   plus: '+',
@@ -61,9 +59,12 @@ export function chooseHint(s: Readonly<LevelSnapshot>, helpOpen: boolean): HintI
     case 'paused':
       return 'paused';
     case 'approach':
-      return s.atConsole ? 'use' : 'walk';
+      return 'use';
     case 'tuning':
       return 'tune';
+    case 'boarding':
+    case 'exit':
+      return 'skip';
     case 'trip':
       return 'trip';
     case 'outcome':
@@ -125,8 +126,6 @@ export function hintLine(id: HintId, tr: Translator, levelId: LevelId = 'level1'
   const escape = tr.t('controls.key.escape');
   const ki = levelId === 'level2';
   switch (id) {
-    case 'walk':
-      return [item(tr, [KEY_SYMBOLS.right, KEY_SYMBOLS.walkRight], 'hud.hint.walk')];
     case 'use':
       return [item(tr, [KEY_SYMBOLS.use], 'hud.hint.use')];
     case 'tune':
@@ -134,6 +133,12 @@ export function hintLine(id: HintId, tr: Translator, levelId: LevelId = 'level1'
         item(tr, [KEY_SYMBOLS.plus, KEY_SYMBOLS.minus], ki ? 'hud.hint.tuneKi' : 'hud.hint.tune'),
         item(tr, [tr.t('controls.key.pageUp'), tr.t('controls.key.pageDown')], 'hud.hint.tuneBig'),
         item(tr, [KEY_SYMBOLS.use, tr.t('controls.key.enter')], 'hud.hint.launch', 'or'),
+      ];
+    case 'skip':
+      return [
+        item(tr, [KEY_SYMBOLS.use, tr.t('controls.key.enter')], 'hud.hint.skip', 'or'),
+        item(tr, [KEY_SYMBOLS.restart], 'hud.hint.restart'),
+        item(tr, [escape], 'hud.hint.pause'),
       ];
     case 'trip':
       return [

@@ -6,14 +6,24 @@ import { describe, expect, it } from 'vitest';
 import type { LevelPhase } from '../../src/game';
 import { commandsBlocked, helpPauseDecision, trapFocusIndex } from '../../src/ui/help';
 
-const PHASES: readonly LevelPhase[] = ['approach', 'tuning', 'trip', 'outcome', 'paused'];
+const PHASES: readonly LevelPhase[] = [
+  'approach',
+  'tuning',
+  'boarding',
+  'trip',
+  'exit',
+  'outcome',
+  'paused',
+];
+/** Phases où le jeu avance seul : l'aide les met en pause (embarquement, trajet, sortie). */
+const RUNNING: readonly LevelPhase[] = ['boarding', 'trip', 'exit'];
 
 describe('helpPauseDecision', () => {
-  it("à l'ouverture, met en pause pendant un trajet seulement", () => {
+  it("à l'ouverture, met en pause pendant l'embarquement, un trajet ou la sortie seulement", () => {
     for (const phase of PHASES) {
       const d = helpPauseDecision(true, phase, false);
-      expect(d.action, phase).toBe(phase === 'trip' ? 'pause' : 'none');
-      expect(d.pausedByHelp, phase).toBe(phase === 'trip');
+      expect(d.action, phase).toBe(RUNNING.includes(phase) ? 'pause' : 'none');
+      expect(d.pausedByHelp, phase).toBe(RUNNING.includes(phase));
     }
   });
 

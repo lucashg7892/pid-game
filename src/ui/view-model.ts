@@ -135,9 +135,9 @@ export interface ViewModel {
   fixedKp: string;
   /** Bulle : objectif ou invite à la console ; vide si aucune. */
   bubble: string;
-  /** Panneau Kp visible (réglage et trajet). */
+  /** Panneau Kp visible (réglage, embarquement et trajet). */
   panelOpen: boolean;
-  /** Panneau Kp verrouillé (trajet, pause). */
+  /** Panneau Kp verrouillé (embarquement, trajet, pause). */
   panelLocked: boolean;
   /** Valeur réglée (Kp au niveau 1, Ki au niveau 2), pour le curseur et le champ. */
   kp: number;
@@ -145,7 +145,7 @@ export interface ViewModel {
   kpValue: string;
   /** Valeur dite par les lecteurs d'écran (« 2500 newtons par mètre »). */
   kpValueText: string;
-  /** Mesures du trajet visibles (trajet et issue). */
+  /** Mesures du trajet visibles (trajet, sortie et issue). */
   readoutVisible: boolean;
   /** « Temps : 1,2 s ». */
   time: string;
@@ -164,7 +164,7 @@ export interface ViewModel {
    * repliée ensuite (le choix explicite du joueur l'emporte, côté DOM).
    */
   legendOpenByDefault: boolean;
-  /** Issue visible. */
+  /** Issue visible : en phase `outcome` seulement (après la sortie, pour une victoire animée). */
   outcomeVisible: boolean;
   /** Issue courante (null hors issue). */
   outcome: TripOutcome | null;
@@ -220,6 +220,7 @@ export function staticTexts(tr: Translator, levelId: LevelId = 'level1'): Static
     helpLines: [
       tr.t('controls.help.move'),
       tr.t('controls.help.interact'),
+      tr.t('controls.help.skip'),
       tr.t(ki ? 'controls.help.ki' : 'controls.help.kp'),
       tr.t('controls.help.restart'),
       tr.t(ki ? 'controls.help.pauseKi' : 'controls.help.pause'),
@@ -411,7 +412,7 @@ export function createViewModelBuilder(
     phase: 'approach',
     paused: false,
     helpOpen: false,
-    hintId: 'walk',
+    hintId: 'use',
     hint: [],
     kpTag: '',
     fixedKp: '',
@@ -496,11 +497,12 @@ export function createViewModelBuilder(
             : '';
     }
 
-    model.panelOpen = phase === 'tuning' || phase === 'trip';
+    model.panelOpen = phase === 'tuning' || phase === 'boarding' || phase === 'trip';
     model.panelLocked = phase !== 'tuning' || model.paused;
 
-    model.readoutVisible = phase === 'trip' || phase === 'outcome';
-    model.legendOpenByDefault = phase === 'trip' && s.attempt === 1;
+    // La sortie montre encore le trajet (mesures, légende) ; l'issue n'apparaît qu'en `outcome`.
+    model.readoutVisible = phase === 'trip' || phase === 'exit' || phase === 'outcome';
+    model.legendOpenByDefault = (phase === 'trip' || phase === 'exit') && s.attempt === 1;
     if (model.readoutVisible) {
       const t = quantize(s.t, 10);
       if (t !== timeKey) {

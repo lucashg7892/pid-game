@@ -33,8 +33,23 @@ export interface Walker {
    * @param dt durée du pas (s).
    */
   step(dt: number): void;
+  /**
+   * Marche automatique d'un pas vers `target` (m), à {@link WALKER_SPEED}, SANS les bornes du quai
+   * (embarquement, sortie) : prevX ← x, orientation tournée vers la cible, puis x avance de
+   * vitesse·dt ; s'il reste au plus un pas (à {@link ARRIVAL_EPSILON} près), x ← target exactement.
+   * L'intention manuelle est remise à `none`.
+   * @param target abscisse visée (m).
+   * @param dt durée du pas (s).
+   * @returns vrai si le bonhomme est sur la cible à la fin du pas.
+   */
+  stepToward(target: number, dt: number): boolean;
   /** Fige le bonhomme : prevX ← x (pas d'interpolation parasite quand il ne marche pas). */
   hold(): void;
+  /**
+   * Tourne le bonhomme sans le déplacer (x et prevX inchangés).
+   * @param facing orientation.
+   */
+  face(facing: Facing): void;
   /**
    * Place le bonhomme sans interpolation (x = prevX = abscisse), intention remise à `none`.
    * @param x abscisse (m).
@@ -42,6 +57,12 @@ export interface Walker {
    */
   place(x: number, facing: Facing): void;
 }
+
+/**
+ * Tolérance d'arrivée de la marche automatique (m) : absorbe l'arrondi des additions répétées de
+ * vitesse·dt (1,5 × 1/120 = 0,0125 m n'est pas exact en binaire), très en dessous d'un pas.
+ */
+export const ARRIVAL_EPSILON = 1e-9;
 
 /**
  * Vrai si l'abscisse `x` (m) est dans la zone d'interaction de la console :
@@ -87,8 +108,24 @@ export function createWalker(): Walker {
       const dx = intent === 'right' ? WALKER_SPEED * dt : -WALKER_SPEED * dt;
       x = Math.min(Math.max(x + dx, WALKER_MIN_X), WALKER_MAX_X);
     },
+    stepToward(target: number, dt: number): boolean {
+      prevX = x;
+      intent = 'none';
+      const remaining = target - x;
+      const reach = WALKER_SPEED * dt;
+      if (remaining !== 0) facing = remaining > 0 ? 1 : -1;
+      if (Math.abs(remaining) <= reach + ARRIVAL_EPSILON) {
+        x = target;
+        return true;
+      }
+      x += remaining > 0 ? reach : -reach;
+      return false;
+    },
     hold(): void {
       prevX = x;
+    },
+    face(face: Facing): void {
+      facing = face;
     },
     place(at: number, face: Facing): void {
       x = at;

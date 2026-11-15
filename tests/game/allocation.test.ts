@@ -5,7 +5,7 @@ import { reachConsole } from './helpers';
 
 describe('CA-8 : pas d’allocation par image, aucune référence conservée', () => {
   it('instantané réutilisé : même objet sur 1000 images, toutes phases', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     const ref = level.snapshot;
     level.moveRight();
     for (let i = 0; i < 300; i++) expect(level.update(1 / 60)).toBe(ref);
@@ -21,6 +21,7 @@ describe('CA-8 : pas d’allocation par image, aucune référence conservée', (
     let lastSample: LoopSample | null = null;
     let inner: SteppableClosedLoop | null = null;
     const level = createLevel1({
+      animations: false,
       createLoop: (kp) => {
         const loop = createElevatorLoop({ kp });
         inner = loop;

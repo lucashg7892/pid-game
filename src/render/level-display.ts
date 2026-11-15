@@ -65,7 +65,7 @@ export interface LevelDisplay {
   facing: Facing;
   /** Attitude. */
   pose: WalkerPoseKind;
-  /** Vrai si la courbe et l'erreur sont à dessiner (trajet ou issue). */
+  /** Vrai si la courbe et l'erreur sont à dessiner (trajet, sortie ou issue). */
   tripVisible: boolean;
 }
 
@@ -98,7 +98,7 @@ export function effectivePhase(s: Readonly<LevelSnapshot>): LevelPhase {
 export function computeDisplay(s: Readonly<LevelSnapshot>, out: LevelDisplay): void {
   const phase = effectivePhase(s);
   out.phase = phase;
-  out.tripVisible = phase === 'trip' || phase === 'outcome';
+  out.tripVisible = phase === 'trip' || phase === 'exit' || phase === 'outcome';
   out.cabinY = phase === 'trip' ? s.cabinPrevY + (s.cabinY - s.cabinPrevY) * s.alpha : s.cabinY;
   if (s.walkerInCabin) {
     out.walkerX = CABIN_CENTER_X;

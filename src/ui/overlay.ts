@@ -552,7 +552,7 @@ export function createUi(options: UiOptions): Ui {
     launchText.set(t.launch);
     show(launch, vm.phase === 'tuning');
     panelRestartText.set(t.restart);
-    show(panelRestart, vm.phase === 'trip');
+    show(panelRestart, vm.phase === 'boarding' || vm.phase === 'trip');
     enable(panelRestart, !vm.paused);
 
     // Mesures.
@@ -813,7 +813,8 @@ export function createUi(options: UiOptions): Ui {
     run(() => level.restart());
   });
 
-  // Tactile : ◀ ▶ tant que le doigt appuie ; « Action » selon la phase.
+  // Tactile : ◀ ▶ tant que le doigt appuie ; « Action » selon la phase (régler, lancer, passer
+  // l'embarquement ou la sortie, recommencer, reprendre).
   const hold = (button: HTMLButtonElement, move: () => unknown): void => {
     button.addEventListener('pointerdown', (event) => {
       event.preventDefault();
@@ -836,6 +837,9 @@ export function createUi(options: UiOptions): Ui {
           return level.interact();
         case 'tuning':
           return level.launch();
+        case 'boarding':
+        case 'exit':
+          return level.skipAnimation();
         case 'outcome':
           return level.restart();
         case 'paused':

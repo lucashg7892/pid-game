@@ -35,7 +35,11 @@ function toConsole(level: Level1): void {
 }
 
 /** Joue un trajet en peignant chaque image ; renvoie le maximum de triangles observé. */
-function playTrip(kp: number, painter: LevelPainter, level: Level1 = createLevel1()): number {
+function playTrip(
+  kp: number,
+  painter: LevelPainter,
+  level: Level1 = createLevel1({ animations: false }),
+): number {
   painter.setPixelSize(PIXEL);
   let time = 0;
   toConsole(level);
@@ -56,7 +60,7 @@ function playTrip(kp: number, painter: LevelPainter, level: Level1 = createLevel
 describe('LevelPainter', () => {
   it('état initial : décor, bonhomme, cabine, levier ; ni courbe ni erreur ni jauge', () => {
     const painter = new LevelPainter();
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     painter.setPixelSize(PIXEL);
     painter.paint(level.snapshot, level.signals, 0, false);
     expect(painter.decor.vertexCount).toBeGreaterThan(1000);
@@ -77,7 +81,7 @@ describe('LevelPainter', () => {
   ] as const) {
     it(`Kp = ${String(kp)} : ${outcome} au pas ${String(k)}, sans débordement, budget tenu`, () => {
       const painter = new LevelPainter();
-      const level = createLevel1();
+      const level = createLevel1({ animations: false });
       const maxTriangles = playTrip(kp, painter, level);
       expect(level.snapshot.outcome).toBe(outcome);
       expect(level.snapshot.outcomeK).toBe(k);
@@ -100,7 +104,7 @@ describe('LevelPainter', () => {
 
   it('jauge : crayon rouge seulement quand la force est saturée', () => {
     const painter = new LevelPainter();
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     toConsole(level);
     level.setKp(2500);
     level.launch();
@@ -123,7 +127,7 @@ describe('LevelPainter', () => {
 
   it('cote d’erreur seulement à la victoire', () => {
     const win = new LevelPainter();
-    const levelWin = createLevel1();
+    const levelWin = createLevel1({ animations: false });
     playTrip(2500, win, levelWin);
     const step = new LevelPainter();
     playTrip(800, step);
@@ -139,7 +143,7 @@ describe('LevelPainter', () => {
   });
 
   it('boiling : décor redessiné 8 fois par seconde, jamais avec prefers-reduced-motion', () => {
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     const boiling = new LevelPainter();
     const still = new LevelPainter();
     for (let i = 0; i <= 60; i += 1) {
@@ -158,7 +162,7 @@ describe('LevelPainter', () => {
 
   it('aucune allocation : 1000 mises à jour gardent les mêmes ArrayBuffer', () => {
     const painter = new LevelPainter();
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     painter.setPixelSize(PIXEL);
     toConsole(level);
     level.setKp(3500);
@@ -189,7 +193,7 @@ describe('LevelPainter', () => {
 
   it('ne garde aucune référence à l’instantané', () => {
     const painter = new LevelPainter();
-    const level = createLevel1();
+    const level = createLevel1({ animations: false });
     painter.paint(level.snapshot, level.signals, 0, false);
     const values = Object.values(painter as unknown as Record<string, unknown>);
     expect(values).not.toContain(level.snapshot);
@@ -199,7 +203,7 @@ describe('LevelPainter', () => {
 
 describe('état affiché et ancres', () => {
   function snapshot(over: Partial<LevelSnapshot>): LevelSnapshot {
-    return { ...createLevel1().snapshot, ...over };
+    return { ...createLevel1({ animations: false }).snapshot, ...over };
   }
   it('interpole la cabine pendant le trajet, la fige à l’issue', () => {
     const d = createDisplay();

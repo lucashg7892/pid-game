@@ -164,3 +164,37 @@ export const WALKER_MAX_X = -0.3;
 
 /** Vitesse de marche du bonhomme (m/s). */
 export const WALKER_SPEED = 1.5;
+
+/**
+ * Poste du bonhomme au pupitre (m) : abscisse fixe de ses pieds pendant le réglage, à gauche de la
+ * console, tourné vers elle (+1). Déduite du dessin (constantes de `src/render`, que `src/game` ne
+ * peut pas importer, recopiées ici) : bord gauche du pupitre à CONSOLE_X − CONSOLE_HALF_WIDTH
+ * = −1 − 0,30 = −1,30 m ; demi-largeur du bonhomme debout 0,14 m (le plus large de
+ * STANCE_HALF_WIDE = 0,14, HAT_BRIM_HALF = 0,13 et HEAD_RADIUS = 0,13 ; le bras tendu vers le levier
+ * est fait pour passer au-dessus du pupitre) ; marge visible de 0,11 m (environ 9 px à 80 px/m,
+ * cadrage 1280 × 720). D'où −1,30 − 0,14 − 0,11 = −1,55 m. Dans la zone de la console
+ * ({@link CONSOLE_REACH}) et dans les bornes de la marche.
+ */
+export const CONSOLE_POST_X = -1.55;
+
+/**
+ * Début du pas de sortie (m) : bord droit du plancher de la cabine, CABIN_CENTER_X + CABIN_WIDTH / 2
+ * = 3,8 m. Avant cette abscisse, les pieds du bonhomme sont à la hauteur finale de la cabine.
+ */
+export const EXIT_STEP_MIN_X = CABIN_CENTER_X + CABIN_WIDTH / 2;
+
+/**
+ * Fin du pas de sortie (m) : bord gauche du plateau d'arrivée, {@link ARRIVAL_LEDGE_MIN_X} = 4 m.
+ * Au-delà, les pieds sont à la hauteur du plateau (r). Entre les deux (0,2 m, le jeu entre la
+ * cabine et le plateau), la hauteur des pieds passe linéairement de l'une à l'autre.
+ */
+export const EXIT_STEP_MAX_X = ARRIVAL_LEDGE_MIN_X;
+
+/**
+ * Point d'arrivée de la sortie sur le plateau (m) : 0,6 m après son bord. Assez loin pour que le
+ * bonhomme, bras levés compris (demi-largeur 0,25 m dans la pose de victoire du rendu), soit tout
+ * entier sur le plateau (4 + 0,25 < 4,6) ; assez près pour ne pas passer sous la jauge de force,
+ * dessinée au-dessus du plateau à hauteur de tête à partir de x = 5,1 m (GAUGE_MIN_X = 5,2 m moins
+ * ses graduations de 0,1 m) : 4,6 + 0,25 = 4,85 < 5,1.
+ */
+export const EXIT_END_X = ARRIVAL_LEDGE_MIN_X + 0.6;

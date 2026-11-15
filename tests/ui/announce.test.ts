@@ -33,6 +33,27 @@ describe('annonces', () => {
     expect(drain(level, 'fr')).toEqual([]);
   });
 
+  it('avec animations (D32) : la victoire n’est annoncée qu’à la fin de la sortie', () => {
+    const level = tuning(2500, true);
+    drain(level, 'fr');
+    level.launch();
+    expect(drain(level, 'fr')).toEqual([
+      `Lancement avec Kp = 2500${NB}N/m${NB}: la consigne passe de 0 à 3${NB}m.`,
+    ]);
+    for (let i = 0; i < 10_000 && level.snapshot.phase !== 'exit'; i += 1) level.update(1 / 60);
+    expect(drain(level, 'fr')).toEqual([
+      `Moteur à fond\u202F! Il ne peut pas fournir plus de 5000${NB}N${NB}: c’est la saturation.`,
+    ]);
+    // Pendant toute la sortie : aucune annonce.
+    for (let i = 0; i < 10_000 && level.snapshot.phase === 'exit'; i += 1) {
+      expect(drain(level, 'fr')).toEqual([]);
+      level.update(1 / 60);
+    }
+    expect(drain(level, 'fr')).toEqual([
+      `Réussi\u202F! La cabine s’est stabilisée 0,20${NB}m sous le plateau d’arrivée.`,
+    ]);
+  });
+
   it('issues en anglais avec la valeur de e', () => {
     const step = finished(800);
     expect(drain(step, 'en').at(-1)).toBe(

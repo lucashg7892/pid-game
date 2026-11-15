@@ -1,6 +1,6 @@
 # Développement
 
-À quoi sert cette page : installer le projet, connaître chaque script npm et les conventions de code. État au commit `02119f7` pour le code ; intégration continue et déploiement au commit `88ae23c` (T-011). Pour un pas-à-pas sous Windows destiné à un non-développeur, voir le [tutoriel de lancement local](tutoriel-lancer-en-local.md).
+À quoi sert cette page : installer le projet, connaître chaque script npm et les conventions de code. État au commit `3810193` pour le code (lot A de la v0.3, branche `v0.3-salle-de-controle`, non fusionnée ; la version du paquet reste 0.2.0, la v0.3 n'est pas publiée) ; intégration continue et déploiement au commit `88ae23c` (T-011). Pour un pas-à-pas sous Windows destiné à un non-développeur, voir le [tutoriel de lancement local](tutoriel-lancer-en-local.md).
 
 ## Prérequis
 
@@ -28,7 +28,7 @@ Pour les tests e2e, installez aussi Chromium pour Playwright : `npx playwright i
 
 ## Scripts npm
 
-Commandes exactes de `package.json` au commit `02119f7` (11 scripts, inchangés depuis `7bcd9ce` ; la version du paquet est 0.2.0). Sous PowerShell, écrire `npm.cmd` et `npx.cmd`.
+Commandes exactes de `package.json` au commit `3810193` (11 scripts, inchangés depuis `7bcd9ce` ; la version du paquet est 0.2.0). Sous PowerShell, écrire `npm.cmd` et `npx.cmd`.
 
 | Script | Commande | Usage |
 |---|---|---|
@@ -41,7 +41,7 @@ Commandes exactes de `package.json` au commit `02119f7` (11 scripts, inchangés 
 | `npm run test:cov` | `vitest run --coverage` | tests unitaires et couverture de `src/sim` ; échoue sous 95 % des lignes ou 90 % des branches (voir [tests.md](tests.md#couverture)) |
 | `npm run build` | `vite build` | build de production dans `dist/` |
 | `npm run preview` | `vite preview` | sert le contenu de `dist/` |
-| `npm run e2e` | `playwright test` | tests de bout en bout (108 au commit `02119f7`, 74 à `a308ada`, 70 à `08908b6`, 69 à `119519b`, relevés par `npx.cmd playwright test --list`) dans Chromium, contre le build servi par `vite preview` ; construit le site avant (voir [tests.md](tests.md#tests-de-bout-en-bout-playwright)) |
+| `npm run e2e` | `playwright test` | tests de bout en bout (146 au commit `3810193`, 108 à `02119f7`, 74 à `a308ada`, 70 à `08908b6`, 69 à `119519b`, relevés par `npx.cmd playwright test --list`) dans Chromium, contre le build servi par `vite preview` ; construit le site avant (voir [tests.md](tests.md#tests-de-bout-en-bout-playwright)) |
 | `npm run check` | `npm run typecheck && npm run lint && npm run test && npm run build` | vérification complète avant livraison |
 
 ### Tests de bout en bout et `PW_CHROME_PATH`
@@ -78,7 +78,7 @@ Le script `test:cov` a été ajouté par T-003 avec le paquet `@vitest/coverage-
 
 Cible de compilation : ES2023 (`tsconfig.json` et `build.target` de `vite.config.ts`).
 
-## Arborescence au commit `02119f7`
+## Arborescence au commit `3810193`
 
 Liste tirée de `git ls-files`.
 
@@ -91,20 +91,20 @@ src/main.ts    point de composition
 src/sim/       noyau de simulation (10 fichiers dont controllers/pi.ts), voir simulation.md
 src/i18n/      i18n FR/EN (7 fichiers TypeScript + locales/fr.json, locales/en.json)
 src/app/       état d'application : machine d'écrans et catalogue (3 fichiers), voir architecture.md
-src/game/      logique des niveaux 1 et 2 (9 fichiers), voir jeu.md
+src/game/      logique des niveaux 1 et 2 (9 fichiers, dont les phases de poste, d'embarquement et de sortie), voir jeu.md
 src/render/    rendu au crayon (19 fichiers), voir rendu.md
 src/ui/        interface et écrans titre et menu (12 fichiers TypeScript + ui.css + screens.css), voir interface.md
 tests/smoke.test.ts  tests/sim/ (12 fichiers)  tests/i18n/ (6 fichiers)  tests/app/ (2 fichiers)
-tests/game/    7 fichiers de test + helpers.ts (outils partagés)
+tests/game/    8 fichiers de test (dont animations.test.ts) + helpers.ts (outils partagés)
 tests/render/  13 fichiers de test
 tests/ui/      8 fichiers de test + helpers.ts
-tests/e2e/     10 fichiers .spec.ts + console.ts, overlay.ts, png.ts
-docs/img/      35 captures PNG (voir README.md, section Captures)
+tests/e2e/     14 fichiers .spec.ts (dont next-level, v03-poste-embarquement, v03-rendu, t039-interface) + console.ts, overlay.ts, png.ts
+docs/img/      40 captures PNG (voir README.md, section Captures)
 validation/    oracle MATLAB de T-005 et de T-023 : matlab/ (9 scripts t005_*, 8 scripts t018_*), data/ (5 CSV), README.md
 docs/  orchestration/
 ```
 
-`dist/`, `node_modules/` et `coverage/` ne sont pas versionnés. Les sorties des tests e2e (`playwright-report/`, `test-results/`) sont aussi ignorées par git. Le dépôt git (branche `main`) avait 15 commits au commit `566a8a3` (`git rev-list --count 566a8a3`) ; la correspondance tâche → commit est dans [CHANGELOG.md](CHANGELOG.md#correspondance-tâche--commit). Depuis T-011 (commit `8736af7`), `.github/workflows/` contient `ci.yml` et `deploy.yml` (sections suivantes). Le dépôt a 18 commits au commit `88ae23c` (`git rev-list --count 88ae23c`) 39 au commit `119519b`, 47 au commit `a308ada` et 58 au commit `02119f7` (`git rev-list --count HEAD`, branche `migration`). `CLAUDE.md` à la racine donne les règles de travail du projet.
+`dist/`, `node_modules/` et `coverage/` ne sont pas versionnés. Les sorties des tests e2e (`playwright-report/`, `test-results/`) sont aussi ignorées par git. Le dépôt git (branche `main`) avait 15 commits au commit `566a8a3` (`git rev-list --count 566a8a3`) ; la correspondance tâche → commit est dans [CHANGELOG.md](CHANGELOG.md#correspondance-tâche--commit). Depuis T-011 (commit `8736af7`), `.github/workflows/` contient `ci.yml` et `deploy.yml` (sections suivantes). Le dépôt a 18 commits au commit `88ae23c` (`git rev-list --count 88ae23c`) 39 au commit `119519b`, 47 au commit `a308ada`, 58 au commit `02119f7` (`git rev-list --count HEAD`, branche `migration`) et 65 au commit `3810193` (même commande, branche `v0.3-salle-de-controle`). `CLAUDE.md` à la racine donne les règles de travail du projet.
 
 ## Licence
 
@@ -143,5 +143,6 @@ Le site sera alors servi sous le chemin `/pid-game/`, qui correspond à la base 
 | `08908b6` | 907,79 kB | **252,84 kB** | `npm.cmd run build` (rédacteur, 2026-11-14, code de sortie 0) |
 | `a308ada` | 909,76 kB | **253,52 kB** | `npm.cmd run build` (rédacteur, 2026-11-14, code de sortie 0 ; « 71 modules transformed ») |
 | `02119f7` | 911,31 kB | **254,02 kB** | `npm.cmd run build` (rédacteur, 2026-11-14, code de sortie 0 ; « 71 modules transformed ») |
+| `3810193` | 915,57 kB | **255,49 kB** | `npm.cmd run build` (rédacteur, 2026-11-15, code de sortie 0 ; « 71 modules transformed ») |
 
-Un seul fichier JavaScript, dominé par `three/webgpu`. Feuille de style : 5,86 kB (2,09 kB gzip) à `566a8a3`, 7,30 kB (2,42 kB gzip) à `119519b` et `08908b6`, 7,51 kB (2,45 kB gzip) à `a308ada`, 7,70 kB (2,50 kB gzip) à `02119f7`. Polices : 23 944 et 20 112 octets, chargées à la demande. Vite affiche l'avertissement « Some chunks are larger than 500 kB after minification ». Budget visé par la spec T-001 §7 : 400 ko gzip pour le JS initial, respecté.
+Un seul fichier JavaScript, dominé par `three/webgpu`. Feuille de style : 5,86 kB (2,09 kB gzip) à `566a8a3`, 7,30 kB (2,42 kB gzip) à `119519b` et `08908b6`, 7,51 kB (2,45 kB gzip) à `a308ada`, 7,70 kB (2,50 kB gzip) à `02119f7`, 7,78 kB (2,53 kB gzip) à `3810193`. Polices : 23 944 et 20 112 octets, chargées à la demande. Vite affiche l'avertissement « Some chunks are larger than 500 kB after minification ». Budget visé par la spec T-001 §7 : 400 ko gzip pour le JS initial, respecté.

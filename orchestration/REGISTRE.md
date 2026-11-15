@@ -84,6 +84,7 @@ Depuis D19 (ADR-014), les règles courantes sont dans `CLAUDE.md` : rôles dans 
 | T-038 | réalisateur | Rendu du lot A : position et hauteur des pieds réelles, poses par action (poste, embarquement, sortie, arrivée), `prefers-reduced-motion` branché sur `setAnimations` ; 6 e2e et 5 captures `t038-*` ; scène inchangée (diffs de pixels confinés au bonhomme et au panneau d'issue) | VALIDÉ (N2) | — |
 | T-039 | réalisateur | R3 (panneau de réglage épinglé au poste, taille constante), R4 (annonce de lancement au départ réel du trajet, `createLaunchGate`), R5 (« Action » sans effet en phase d'issue) ; 10 e2e et tests unitaires qui échouent sans la correction (sauf annonce : fonctions nouvelles) | VALIDÉ (N2) | — |
 | T-040 | orchestrateur | Captures du lot A refaites (panneau de réglage, panneau de réussite avec « Niveau suivant », bonhomme au poste, aide, `t019-*`) : 12 PNG ; les autres captures restaurées | FAIT (N1) | — |
+| D-019 | rédacteur | Doc du lot A de la v0.3 : ADR-009 (sept phases), ADR-015 (`nextLevel`), `jeu.md`, `interface.md`, `rendu.md`, CHANGELOG, défauts connus ; compte rendu du lot dans `logs/v0.3-lot-A.md` | FAIT (N1) | logs/v0.3-lot-A.md |
 | T-000 | réalisateur | Pilote : git init, .gitignore, .gitattributes | VALIDÉ | logs/T-000.md |
 | T-001 | concepteur | Spec de la tranche verticale | VALIDÉ | logs/T-001.md |
 | T-002 | réalisateur | Socle outillé (npm, TS, Vite, lint, tests) | VALIDÉ (réserves) | logs/T-002.md |

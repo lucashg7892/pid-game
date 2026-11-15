@@ -1,6 +1,6 @@
 # Internationalisation et accessibilité
 
-À quoi sert cette page : décrire le module de traduction FR/EN (`src/i18n`, validé en T-006 et complété en T-010) et la façon d'ajouter une clé ou une langue. La seconde partie décrit l'accessibilité réalisée et testée en T-010. État au commit `02119f7`.
+À quoi sert cette page : décrire le module de traduction FR/EN (`src/i18n`, validé en T-006 et complété en T-010) et la façon d'ajouter une clé ou une langue. La seconde partie décrit l'accessibilité réalisée et testée en T-010. État au commit `3810193` (lot A de la v0.3, branche `v0.3-salle-de-controle`, non fusionnée).
 
 ## Partie 1 — i18n (validé, T-006)
 
@@ -24,7 +24,7 @@ Il est branché depuis T-010 : `src/main.ts` crée le traducteur avec `detectLoc
 ### Structure des locales
 
 - Un fichier JSON plat par langue : `{ "clé": "texte", … }`, sans imbrication.
-- 163 clés par langue, les mêmes dans les deux fichiers (comptage par script au commit `02119f7`, inchangé depuis `a308ada` : la chasse aux bugs n'a ajouté aucune clé, T-029 a seulement modifié des valeurs ; 159 à `08908b6` ; 158 à `119519b` ; 115 au commit `13e8b7e`, 111 à `566a8a3`, T-014 en avait ajouté 4 ; parité vérifiée par `tests/i18n/catalogs.test.ts`). T-006 en avait créé 89 ; T-010 en a ajouté 22 (liste plus bas) ; T-017d, T-019, T-021b, T-022 et T-024 en ont ajouté 48 (section « Clés ajoutées depuis T-017 »).
+- 164 clés par langue, les mêmes dans les deux fichiers (comptage par script au commit `3810193` : le lot A en a supprimé 2 et ajouté 3, voir « Clés ajoutées depuis T-017 » ; 163 à `02119f7` et à `a308ada` : la chasse aux bugs n'a ajouté aucune clé, T-029 a seulement modifié des valeurs ; 159 à `08908b6` ; 158 à `119519b` ; 115 au commit `13e8b7e`, 111 à `566a8a3`, T-014 en avait ajouté 4 ; parité vérifiée par `tests/i18n/catalogs.test.ts`). T-006 en avait créé 89 ; T-010 en a ajouté 22 (liste plus bas) ; T-017d, T-019, T-021b, T-022 et T-024 en ont ajouté 48 (section « Clés ajoutées depuis T-017 »).
 - Fins de ligne LF, aucune clé dupliquée, aucune valeur vide (tests).
 
 ### Convention de clés
@@ -42,10 +42,10 @@ Exemples : `level1.fail.noLift`, `hud.status.win`. Aucune clé n'est le préfixe
 | `app.` | titre, chargement, langue, erreurs générales, invite de rotation | 10 |
 | `title.` | écran titre : bouton « Jouer », copyright, licence (T-017d) | 3 |
 | `menu.` | menu des niveaux : titre, retour, nom de la liste, annonces d'écran (T-017d) | 5 |
-| `level1.` | textes du niveau 1 : objectif, Kp, échecs, victoire | 25 |
+| `level1.` | textes du niveau 1 : objectif, Kp, échecs, victoire | 24 |
 | `level2.` | textes du niveau 2 : objectif, Kp fixé, Ki, échecs, victoire (T-021b), légende de la jauge I (T-024) | 19 |
 | `hud.` | courbes, légende, jauge, valeurs affichées, messages d'état, bandeau d'aide, étiquettes de Kp et de Ki, jauge du terme intégral (T-024) | 53 |
-| `controls.` | boutons, aide des commandes, noms des touches | 30 |
+| `controls.` | boutons (dont « Niveau suivant »), aide des commandes, noms des touches | 32 |
 | `a11y.` | noms accessibles et descriptions pour lecteurs d'écran | 7 |
 | `fallback.` | page de repli : sans WebGPU ni WebGL2, contexte GPU perdu (`fallback.lost.*`), erreur inattendue (`fallback.error.*`) | 11 |
 
@@ -62,8 +62,7 @@ Titre du jeu : `app.title` vaut « Huygens’s world » dans les deux langues (a
 | `hud.hint.label` | Que faire maintenant | What to do now |
 | `hud.hint.item` | {keys} : {action} | {keys}: {action} |
 | `hud.hint.or` | ou | or |
-| `hud.hint.walk` | avancer vers la console | walk to the console |
-| `hud.hint.use` | utiliser la console | use the console |
+| `hud.hint.use` | utiliser la console (« régler l’ascenseur » depuis T-037) | use the console (« set up the lift » depuis T-037) |
 | `hud.hint.tune` | régler Kp | set Kp |
 | `hud.hint.tuneBig` | pas de 1000 | steps of 1000 |
 | `hud.hint.launch` | lancer | launch |
@@ -80,11 +79,11 @@ Titre du jeu : `app.title` vaut « Huygens’s world » dans les deux langues (a
 | `controls.key.pageUp` | Page préc. | Page Up |
 | `controls.key.pageDown` | Page suiv. | Page Down |
 
-Dans `hud.hint.item`, l'espace avant « : » est U+00A0 en français. Aucune clé n'a été supprimée ; seule `app.title` a changé de valeur.
+Dans `hud.hint.item`, l'espace avant « : » est U+00A0 en français. Aucune clé n'a été supprimée par T-010 ; seule `app.title` a changé de valeur. Depuis, T-037 a supprimé `hud.hint.walk` (le bandeau « avancer vers la console » n'existe plus : E ouvre le réglage de partout) et réécrit `hud.hint.use`, dont les textes d'aujourd'hui sont « régler l’ascenseur » et « set up the lift ».
 
 ### Clés ajoutées depuis T-017
 
-48 clés ajoutées (163 − 115), identiques en nombre dans les deux langues. Textes et valeurs : `src/i18n/locales/fr.json` et `en.json`, décrits par page : [interface.md](interface.md) (écrans, jauge, niveau 2), [jeu.md](jeu.md) (règles du niveau 2).
+48 clés ajoutées jusqu'à `02119f7` (163 − 115), puis, par le lot A, 3 ajoutées et 2 supprimées (164 au commit `3810193`), identiques en nombre dans les deux langues. Textes et valeurs : `src/i18n/locales/fr.json` et `en.json`, décrits par page : [interface.md](interface.md) (écrans, jauge, niveau 2), [jeu.md](jeu.md) (règles du niveau 2).
 
 | Tâche | Préfixe | Clés |
 |---|---|---|
@@ -98,8 +97,11 @@ Dans `hud.hint.item`, l'espace avant « : » est U+00A0 en français. Aucune cl�
 | T-022 | `hud.` | `status.fail.stepKi` (annonce « trop court » du niveau 2, paramètre `{e}`) |
 | T-024 | `hud.` | `igauge.title` (« Terme intégral I »), `igauge.value` (« I : {i} N »), `readout.iTerm` (« Terme I : {i} N », ligne réservée aux lecteurs d'écran) |
 | T-024 | `level2.` | `legend.integral` (ligne de légende de la jauge I) |
+| T-036 | `controls.` | `nextLevel` (« Niveau suivant » / « Next level », bouton du panneau de réussite) ; supprime `level1.comingSoon` |
+| T-037 | `hud.` | `hint.skip` (« passer » / « skip », bandeau de l'embarquement et de la sortie) ; supprime `hud.hint.walk` |
+| T-037 | `controls.` | `help.skip` (« E, Entrée ou Espace pendant l’embarquement ou la sortie : passer l’animation » / « E, Enter or Space while boarding or getting off: skip the animation ») |
 
-Valeurs modifiées sans nouvelle clé : T-019 et T-020 (vocabulaire « plateau d'arrivée » à la place de « quai » en français, nombres 0,5 m et 3,36 m dans `level1.fail.step`, `level1.fail.bonk`, `hud.status.fail.step`, `hud.status.fail.bonk` ; `level1.goal` réécrit ; `hud.legend.setpoint`, `hud.status.win`, `level1.win`), T-021b (`level1.comingSoon` : « Le niveau 2 t’attend dans le menu : merci d’avoir joué ! »), P-006 (`fallback.lost.explanation` et `fallback.error.explanation` : « recommencer » au lieu de « reprendre »). T-022 (D27 et D29) : `level2.fail.step` (10 s, 0,1 m), `level2.fail.slow` et `hud.status.fail.slow` (10 s), `level2.goal` (tolérance de 0,1 m), `level2.win` (reformulé : le terme I amène la cabine pile au plateau). T-029 (chasse aux bugs, sans nouvelle clé) : B-06, `level1.goal` anglais réécrit pour dire comme le français que l'on prend l'ascenseur jusqu'au plateau d'en face, 3 m plus haut (« To get across, ride the lift up to the ledge on the far side, 3 m higher. The farther the cabin is from that height, the harder the motor pulls. ») ; B-08, `controls.help.interact` (« … utiliser la console, puis lancer » / « … use the console, then launch ») et `controls.help.touch` et `controls.help.touchKi` (« Action pour utiliser la console et lancer » / « Action to use the console and launch »). Deux tests de `catalogs.test.ts` les gardent (25 → 27 tests). Le test des nombres physiques cités (`catalogs.test.ts`) a été mis à jour en conséquence ; depuis T-022, il vérifie aussi que la durée (10 s) et la tolérance (0,1 m) du niveau 2 citées égalent les constantes du jeu.
+Valeurs modifiées sans nouvelle clé : T-037 (`hud.hint.use` : « régler l’ascenseur » / « set up the lift » ; `controls.help.interact` : « E, Entrée ou Espace : régler l’ascenseur de n’importe où sur le quai, puis lancer » / « E, Enter or Space: set up the lift from anywhere on the ledge, then launch » ; `controls.help.touch` et `touchKi` n'ont pas bougé : ils disent encore « Action pour utiliser la console et lancer », sans « passer », écart relevé par le validateur de T-037 et non corrigé), T-019 et T-020 (vocabulaire « plateau d'arrivée » à la place de « quai » en français, nombres 0,5 m et 3,36 m dans `level1.fail.step`, `level1.fail.bonk`, `hud.status.fail.step`, `hud.status.fail.bonk` ; `level1.goal` réécrit ; `hud.legend.setpoint`, `hud.status.win`, `level1.win`), T-021b (`level1.comingSoon` : « Le niveau 2 t’attend dans le menu : merci d’avoir joué ! », clé supprimée par T-036 avec l'arrivée du bouton « Niveau suivant »), P-006 (`fallback.lost.explanation` et `fallback.error.explanation` : « recommencer » au lieu de « reprendre »). T-022 (D27 et D29) : `level2.fail.step` (10 s, 0,1 m), `level2.fail.slow` et `hud.status.fail.slow` (10 s), `level2.goal` (tolérance de 0,1 m), `level2.win` (reformulé : le terme I amène la cabine pile au plateau). T-029 (chasse aux bugs, sans nouvelle clé) : B-06, `level1.goal` anglais réécrit pour dire comme le français que l'on prend l'ascenseur jusqu'au plateau d'en face, 3 m plus haut (« To get across, ride the lift up to the ledge on the far side, 3 m higher. The farther the cabin is from that height, the harder the motor pulls. ») ; B-08, `controls.help.interact` (« … utiliser la console, puis lancer » / « … use the console, then launch ») et `controls.help.touch` et `controls.help.touchKi` (« Action pour utiliser la console et lancer » / « Action to use the console and launch »). Deux tests de `catalogs.test.ts` les gardent (25 → 27 tests). Le test des nombres physiques cités (`catalogs.test.ts`) a été mis à jour en conséquence ; depuis T-022, il vérifie aussi que la durée (10 s) et la tolérance (0,1 m) du niveau 2 citées égalent les constantes du jeu.
 
 **Copyright.** `title.copyright` vaut « Copyright (c) 2026 lucashg7892 » dans les deux langues, `title.license` « Licence MIT » / « MIT License ». `tests/i18n/license.test.ts` (5 tests) les compare au fichier `LICENSE` : exactement une ligne de copyright, année et titulaire, première ligne de la licence, et aucune autre clé qui contienne « copyright » ou « © ».
 
@@ -247,7 +249,7 @@ Liste complète au commit `c00e678`, inchangée à `119519b` (seul le type `Unit
 Le code suppose aujourd'hui deux langues. Étapes :
 
 1. Ajouter l'étiquette BCP 47 à `SUPPORTED_LOCALES` (`src/i18n/catalogs.ts`).
-2. Créer `src/i18n/locales/<langue>.json` avec les 163 clés, l'importer dans `catalogs.ts`, le typer `Catalog` et l'ajouter à `CATALOGS`.
+2. Créer `src/i18n/locales/<langue>.json` avec les 164 clés, l'importer dans `catalogs.ts`, le typer `Catalog` et l'ajouter à `CATALOGS`.
 3. Revoir `otherLocale` : il renvoie l'autre langue d'une paire. Avec trois langues, la bascule doit devenir un choix.
 4. Revoir `formatQuantity` : le collage de `%` est codé pour l'anglais seulement.
 5. Ajouter les règles typographiques de la langue dans `tests/i18n/catalogs.test.ts` (les tests actuels traitent FR et EN nommément).
@@ -256,25 +258,26 @@ Le code suppose aujourd'hui deux langues. Étapes :
 
 ## Partie 2 — Accessibilité (validé, T-010)
 
-Réalisée en T-010 (`src/ui`), testée par les scénarios e2e (d), (e) et (f) de `tests/e2e/ui.spec.ts`, en français et en anglais. Les tests e2e sont exécutés par l'orchestrateur, pas par le rédacteur : 28 tests verts à `566a8a3` (log T-010), 41 verts à la fin de T-020 (log T-020) et 58 verts à la fin de T-021a (log T-021a) ; `npx.cmd playwright test --list` en liste 69 au commit `119519b`, dont le rédacteur n'a exécuté aucun (voir [tests.md](tests.md#tests-de-bout-en-bout-playwright)).
+Réalisée en T-010 (`src/ui`), testée par les scénarios e2e (d), (e) et (f) de `tests/e2e/ui.spec.ts`, en français et en anglais. Les tests e2e sont exécutés par l'orchestrateur, pas par le rédacteur : 28 tests verts à `566a8a3` (log T-010), 41 verts à la fin de T-020 (log T-020) et 58 verts à la fin de T-021a (log T-021a) ; `npx.cmd playwright test --list` en liste 146 au commit `3810193` (69 à `119519b`), dont le rédacteur n'a exécuté aucun (voir [tests.md](tests.md#tests-de-bout-en-bout-playwright)).
 
 | Exigence de la spec §8 | Réalisation | Preuve |
 |---|---|---|
 | clavier : tout le niveau jouable sans souris | marche, console, réglage, lancement, pause, recommencer au clavier ; table des touches dans [interface.md](interface.md#touches) | e2e (a) FR et (b) EN au clavier réel, jusqu'à la victoire et au choc |
 | ordre de tabulation logique, focus visible (contour 3 px) | seuls des contrôles prennent le focus ; le cycle revient au bouton « ? » ; contour `solid 3px` | e2e (d) |
 | noms accessibles | boutons, curseur (`slider`), champ (`spinbutton`), panneau (`group`), canvas (`img`) nommés par les clés traduites | e2e (d), FR et EN |
-| lecteurs d'écran | région `aria-live="polite"` unique : réglage, lancement, première saturation (une fois par trajet), issue avec la valeur de e, pause, reprise, recommencer | e2e (d) ; `tests/ui/announce.test.ts` |
+| lecteurs d'écran | région `aria-live="polite"` unique : réglage, lancement (annoncé au départ réel du trajet, pas au début de l'embarquement, T-039), première saturation (une fois par trajet), issue avec la valeur de e (à l'arrivée sur le plateau pour une victoire animée), pause, reprise, recommencer | e2e (d) et R4 de `t039-interface.spec.ts` ; `tests/ui/announce.test.ts` ; **pas d'essai avec un vrai lecteur d'écran** |
 | aucune touche ne fait défiler la page | toutes les touches du jeu et ↑ ↓ Début Fin Espace Entrée sont interceptées quand le focus est sur la page | e2e (e) |
-| perte de focus | marche arrêtée ; pause automatique pendant un trajet, pas en approche | e2e (f) et (f bis) |
+| perte de focus | marche arrêtée ; pause automatique quand le jeu avance seul (embarquement, trajet, sortie), pas en approche ni en réglage | e2e (f) et (f bis) ; `tests/ui/help.test.ts` |
 | fenêtre d'aide modale (T-015) | `role="dialog"` avec `aria-modal="true"` ; focus sur « Fermer l’aide » à l'ouverture, piégé dans l'aide, rendu à l'ouvreur à la fermeture ; pause pendant un trajet | e2e (j) à (m) ; `tests/ui/help.test.ts` |
-| bouton Pause (T-015) | nom accessible fixé par son libellé, sans `aria-pressed` ; focus sur « Rejouer le niveau » à l'apparition de l'issue | e2e (n) |
+| bouton Pause (T-015) | nom accessible fixé par son libellé, sans `aria-pressed` ; focus sur « Rejouer le niveau » à l'apparition de l'issue, ou sur « Niveau suivant » à la réussite du niveau 1 (T-036) | e2e (n) ; `next-level.spec.ts` (a) et (e) |
+| passer l'animation (T-037) | E, Entrée et Espace (et « Action » au tactile) passent l'embarquement et la sortie : tout le niveau reste jouable au clavier, sans attendre une animation ; touche maintenue sans effet | e2e (c) de `v03-poste-embarquement.spec.ts` ; **tactile réel non essayé** |
 | écrans titre et menu (T-017) | deux `<main>` nommés par leur titre ; boutons natifs d'au moins 44 px ; focus posé à l'arrivée (« Jouer » ; au menu, « Niveau 1 » depuis le titre ou le niveau quitté au retour d'un niveau, A-05) ; phrase annoncée dans une région `aria-live` de l'écran (`menu.announce.title`, `menu.announce.menu`) ; canvas `aria-hidden` hors d'un niveau, son nom rétabli à l'entrée dans un niveau ; ↑ ↓ et Échap au menu ; aucune animation | e2e `screens.spec.ts` (FR et EN) ; `tests/ui/screen-keys.test.ts`, `screens-model.test.ts` ; **pas d'essai avec un vrai lecteur d'écran** |
 | aide ouverte (T-017abc, T-026) | papier opaque (K23) ; commandes du niveau suspendues tant que l'aide est ouverte, à la souris (K24) et au clavier (B-01, T-026) | e2e (o), (p) et (r) de `ui.spec.ts` ; `tests/ui/keys.test.ts` |
 | étiquettes de la jauge (T-019) | `aria-hidden` : le panneau des mesures et le nom de la jauge portent la même information | e2e (a) de `ui.spec.ts` |
 | jauge du terme intégral (T-024, niveau 2) | les étiquettes « Terme intégral I » et « I : … N » sont `aria-hidden`, comme celles de la jauge de force (elles passent par `gaugeLabel`) ; le panneau des mesures porte en plus une ligne « Terme I : … N » (`hud.readout.iTerm`, classe `ui-sr`) lue par les lecteurs d'écran, absente (cachée) au niveau 1 ; la jauge se distingue par son motif (hachures, repère m·g) et jamais par le rouge | e2e (i) et (k) de `level2.spec.ts` ; `tests/ui/level2-view-model.test.ts` |
 | couleurs : motif en plus de la teinte | consigne en pointillés, hauteur en trait plein, erreur hachurée ; seul le rouge de la jauge saturée est une couleur | captures ; [rendu.md](rendu.md#courbe-yt) |
 | contrastes ≥ 4,5:1 | texte ≈ 14:1, secondaire ≈ 9:1, rouge ≈ 7:1, déclarés dans `src/ui/ui.css` | **non mesuré par un test** |
-| mouvement réduit | « boiling » figé (`prefers-reduced-motion`), transitions CSS supprimées ; il n'y a pas de secousse de caméra ; les écrans titre et menu n'ont aucune animation ; depuis T-030 (K22), la préférence est suivie en cours de partie (événement `change` de la requête média, écouteur retiré à l'arrêt) | `tests/render/noise.test.ts`, `level-painter.test.ts`, `reduced-motion.test.ts` ; e2e `reduced-motion.spec.ts` (suivi du changement et retrait de l'écouteur) ; les écrans titre et menu avec mouvement réduit émulé et les contrastes ne sont pas testés (K13) |
+| mouvement réduit | « boiling » figé (`prefers-reduced-motion`), transitions CSS supprimées ; il n'y a pas de secousse de caméra ; les écrans titre et menu n'ont aucune animation ; depuis T-030 (K22), la préférence est suivie en cours de partie (événement `change` de la requête média, écouteur retiré à l'arrêt) ; depuis T-038, elle coupe aussi les animations du bonhomme (poste immédiat, pas d'embarquement ni de sortie : à la victoire, le bonhomme reste dans la cabine) | `tests/render/noise.test.ts`, `level-painter.test.ts`, `reduced-motion.test.ts` ; e2e `reduced-motion.spec.ts` (suivi du changement, retrait de l'écouteur, animations coupées) ; les écrans titre et menu avec mouvement réduit émulé et les contrastes ne sont pas testés (K13) |
 | sans WebGPU ni WebGL2 | page de repli statique traduite, sans exception | e2e `?renderer=none` (FR, EN) |
 | perte du contexte GPU, exception inattendue (T-014) | page de repli traduite, interface retirée (pas de boutons morts) | `tests/e2e/failure.spec.ts` (FR, EN) |
 | langue | bouton avec l'attribut `lang` de l'autre langue ; `<html lang>` mis à jour (par `main.ts` depuis T-017) ; Kp et phase conservés ; langue conservée entre titre, menu et niveau | e2e (c) de `ui.spec.ts`, (e) de `screens.spec.ts` |

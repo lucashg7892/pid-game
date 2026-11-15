@@ -7,7 +7,7 @@ Liste tenue par l'orchestrateur. Rien ici n'est bloquant pour la v0.1.
 | K1 | Signe moins affiché avec un trait d'union ASCII (« -0,03 m », « Force : -102 N ») | T-010 | mineur → corrigé (P-005) |
 | K2 | Portrait 390 px : étiquette permanente de Kp en partie masquée par l'invite de rotation | T-010 | mineur → corrigé (P-005) |
 | K3 | Aucune touche pour refermer le panneau de réglage sans lancer | T-010 | mineur → corrigé (P-005) |
-| K4 | Embarquement et sortie du bonhomme non animés | T-009 | mineur |
+| K4 | Embarquement et sortie du bonhomme non animés | T-009 | mineur → corrigé (v0.3 lot A : T-037 logique, T-038 rendu ; D32) |
 | K5 | Portrait sur téléphone : scène minuscule (17 m de décor dans la largeur) | T-009 | mineur |
 | K6 | Échec « marche trop haute » déclaré seulement au bout de 15 s | T-007 | corrigé (D24, T-020) : 6 s, puis 10 s (D27, T-022) |
 | K7 | Bornes de la fenêtre : marge de 1,74 mm sous la poutre à Kp = 5000 et de 1,79 mm au-dessus à 5100 ; marge de tolérance de 9,5 mm à Kp = 1000 (cible [1000 ; 5000], D25) | T-020 (ex-K7 : 5,8 mm à Kp = 3800) | à surveiller |
@@ -54,3 +54,4 @@ Liste tenue par l'orchestrateur. Rien ici n'est bloquant pour la v0.1.
 | K48 | v0.3 lot A (R1 à R5 du validateur de T-037) | T-037 | corrigé (T-038 : rendu des poses et `prefers-reduced-motion` ; T-039 : panneau de réglage fixe, annonce de lancement au départ réel, « Action » sans effet à l'issue) |
 | K49 | Captures du panneau de réussite du niveau 1 périmées par le bouton « Niveau suivant » (T-036) : `t017-issue-menu`, `t020-poutre-fr` (diff de pixels confiné au panneau, 12–374 × 165–501) | T-038 (comparaison) | mineur → corrigé (T-040 : captures refaites) |
 | K50 | Panneau de réglage (T-039) : il réserve en permanence la ligne « verrouillé » (invisible hors lancement) pour ne plus changer de taille au lancement ; un blanc de 27 px apparaît au-dessus de « Lancer » ; le panneau reste épinglé à la position « bonhomme au poste » pendant le trajet ; la phrase de `src/game/events.ts` (« départ d'un trajet » pour `launch`, émis au début de l'embarquement) n'est plus exacte | T-039 | mineur |
+| K51 | Aide tactile : `controls.help.touch` et `touchKi` ne mentionnent pas que le bouton « Action » passe l'animation d'embarquement et de sortie (R6 du validateur de T-037) | T-037 | mineur |

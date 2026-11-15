@@ -1,6 +1,6 @@
 # Interface du joueur (`src/ui`)
 
-À quoi sert cette page : décrire ce que le joueur voit et ce qu'il peut faire, phase par phase : textes, panneau de réglage, touches, accessibilité, disposition à l'écran, police. Elle décrit le commit `02119f7` (interface validée en T-010, corrigée par P-005, T-014, T-015, puis étendue par T-017 : écrans titre et menu, bouton « Menu », destruction de l'interface du niveau ; T-019 : étiquettes de la jauge ; T-021b : niveau 2 ; T-022 : trajet de 10 s, Kp par défaut 2000, annonce « trop court » du niveau 2 ; T-024 : jauge du terme intégral I au niveau 2 ; T-026 à T-033 : correctifs de la chasse aux bugs de la v0.2, voir [CHANGELOG.md](CHANGELOG.md)). T-025 a régénéré les captures périmées par T-022 (K35 corrigé) ; celles qui montrent encore une ancienne valeur (t019, t010-02, t010-05) le disent dans leur légende. Le dessin de la scène est dans [rendu.md](rendu.md), les règles du niveau dans [jeu.md](jeu.md).
+À quoi sert cette page : décrire ce que le joueur voit et ce qu'il peut faire, phase par phase : textes, panneau de réglage, touches, accessibilité, disposition à l'écran, police. Elle décrit le commit `3810193`, lot A de la v0.3 « salle de contrôle » (branche `v0.3-salle-de-controle`, non fusionnée : T-036 bouton « Niveau suivant », T-037 poste, embarquement et sortie, T-038 rendu des poses, T-039 panneau de réglage stable, annonce de lancement différée et bouton « Action » sans effet à l'issue, T-040 captures refaites). Le reste vient de l'état `02119f7` (interface validée en T-010, corrigée par P-005, T-014, T-015, puis étendue par T-017 : écrans titre et menu, bouton « Menu », destruction de l'interface du niveau ; T-019 : étiquettes de la jauge ; T-021b : niveau 2 ; T-022 : trajet de 10 s, Kp par défaut 2000, annonce « trop court » du niveau 2 ; T-024 : jauge du terme intégral I au niveau 2 ; T-026 à T-033 : correctifs de la chasse aux bugs de la v0.2, voir [CHANGELOG.md](CHANGELOG.md)). T-025 a régénéré les captures périmées par T-022 (K35 corrigé), T-040 celles que le lot A avait périmées (K49) ; celle qui montre encore une ancienne valeur (t010-05) le dit dans sa légende. Le dessin de la scène est dans [rendu.md](rendu.md), les règles du niveau dans [jeu.md](jeu.md).
 
 ## Principe
 
@@ -69,17 +69,25 @@ En permanence, la barre du haut montre le titre « Huygens’s world », l'**ét
 
 ### Approche
 
-Une bulle rappelle l'objectif ; le bandeau indique d'avancer vers la console. Arrivé à la console, la bulle invite à l'utiliser. Depuis T-019, la bulle d'ouverture (`level1.goal`) dit : « Pour traverser, monte en ascenseur jusqu’au plateau d’en face, 3 m plus haut. Plus la cabine est loin de cette hauteur, plus le moteur tire fort. » Le mot « quai » est remplacé par « plateau d'arrivée » dans les textes français du niveau (les nombres de ces textes suivent T-020 : 0,5 m et 3,36 m).
+Une bulle rappelle l'objectif ; le bandeau dit partout « E : régler l'ascenseur » (`hud.hint.use`) : depuis T-037, E ouvre le réglage de n'importe où sur le quai, sans avoir à marcher jusqu'à la console. Arrivé dans la zone de la console, la bulle invite à l'utiliser. Depuis T-019, la bulle d'ouverture (`level1.goal`) dit : « Pour traverser, monte en ascenseur jusqu’au plateau d’en face, 3 m plus haut. Plus la cabine est loin de cette hauteur, plus le moteur tire fort. » Le mot « quai » est remplacé par « plateau d'arrivée » dans les textes français du niveau (les nombres de ces textes suivent T-020 : 0,5 m et 3,36 m).
 
-![Approche (capture de T-019, refaite au commit `a308ada` : l'étiquette de Kp affiche le défaut de 2000 N/m)](img/t019-approche-fr.png)
+![Approche en français (capture de T-019, refaite par T-040 : l'étiquette de Kp affiche le défaut de 2000 N/m, le bandeau dit « E : régler l'ascenseur » même loin de la console)](img/t019-approche-fr.png)
 
-![Approche, 1280 × 720 : bulle d'ouverture et étiquettes de la jauge, Kp = 2000 N/m (capture e2e de T-010, régénérée par T-025)](img/t010-01-aide.png)
+![Approche, 1280 × 720 : bulle d'ouverture et étiquettes de la jauge, Kp = 2000 N/m (capture e2e de T-010, régénérée par T-025 puis par T-040)](img/t010-01-aide.png)
 
 ### Réglage
 
-Le panneau Kp s'ouvre à gauche du bonhomme et de la console, sans les couvrir. Il contient : la valeur en grand (« 2500 N/m »), les boutons − et +, un curseur de 0 à 8000 par pas de 100, un champ numérique, l'aide de Kp, la plage et le bouton « Lancer ». Le curseur part de Kp = 2000 N/m (`KP_DEFAULT`, dans la fenêtre de réussite depuis T-022 : lancer sans régler gagne).
+Le panneau Kp s'ouvre **tout de suite** à l'appui sur E (depuis n'importe où sur le quai), à gauche du bonhomme et de la console, sans les couvrir. Le bonhomme rejoint à 1,5 m/s son poste, à gauche du pupitre (−1,55 m), tourné vers lui, main sur le levier ; E, Entrée ou Espace pendant cette marche lancent le trajet depuis là où il est. Depuis T-039 (R3), la **taille et la position du panneau ne changent plus** pendant la marche vers le poste ni au lancement : la disposition place son obstacle sur le bonhomme au poste, pas sur sa position en direct (voir « Disposition »), et la ligne « verrouillé » reste toujours réservée (classe `is-idle`, invisible tant que le réglage est libre ; effet de bord : un blanc de 27 px au-dessus de « Lancer », K50). Il contient : la valeur en grand (« 2500 N/m »), les boutons − et +, un curseur de 0 à 8000 par pas de 100, un champ numérique, l'aide de Kp, la plage et le bouton « Lancer ». Le curseur part de Kp = 2000 N/m (`KP_DEFAULT`, dans la fenêtre de réussite depuis T-022 : lancer sans régler gagne).
 
-![Réglage : panneau Kp ouvert (capture de T-010 non régénérée, périmée : elle montre l'ancien réglage, Kp = 1000 N/m au départ du curseur ; le test (a) de ui.spec.ts la reproduit maintenant avec 2000 N/m ; K35)](img/t010-02-panneau.png)
+![Réglage : panneau Kp ouvert à 2500 N/m, curseur focalisé, bonhomme près du pupitre, bandeau « + / − : régler Kp · Page préc. / Page suiv. : pas de 1000 · E ou Entrée : lancer » (capture e2e de T-010, refaite par T-040)](img/t010-02-panneau.png)
+
+![Poste, niveau 1 : le bonhomme est à gauche du pupitre, la main sur le levier, sans le chevaucher ; panneau de réglage ouvert à Kp = 2500 N/m (capture e2e de T-038, refaite par T-040)](img/t038-poste-niveau1.png)
+
+### Embarquement (T-037)
+
+À « Lancer », le bonhomme marche du poste jusqu'au centre de la cabine (284 pas, 2,37 s depuis le poste) ; le trajet ne démarre qu'à son arrivée. Le panneau reste ouvert, verrouillé (« Kp est verrouillé pendant le trajet. ») avec « Recommencer » (`panelRestart` est visible en `boarding` et en `trip`) ; les mesures du trajet ne sont pas encore affichées. Le bandeau passe à `skip` : « E ou Entrée : passer · R : recommencer · Échap : mettre en pause ». E, Entrée ou Espace (ou « Action » au tactile) passent l'embarquement : le bonhomme est placé dans la cabine et le trajet part. Une touche maintenue (`repeat`) ne passe pas l'embarquement.
+
+![Embarquement : le bonhomme marche vers le centre de la cabine ; panneau verrouillé avec « Kp est verrouillé pendant le trajet. » et « Recommencer », bandeau « E ou Entrée : passer · R : recommencer · Échap : mettre en pause » (capture e2e de T-038, refaite par T-040)](img/t038-embarquement.png)
 
 ### Trajet
 
@@ -87,21 +95,33 @@ Le panneau reste visible mais verrouillé (« Kp est verrouillé pendant le traj
 
 Voir la capture en tête de [rendu.md](rendu.md).
 
+### Sortie (T-037)
+
+Après une **victoire** (avec animations), le jeu ne montre pas l'issue tout de suite : la cabine est figée, le bonhomme sort sur le plancher, franchit le pas (0,2 m) puis avance sur le plateau d'arrivée (208 pas, 1,73 s). Les mesures du trajet (temps, erreur, légende, jauge) restent affichées et le panneau de réglage se ferme ; le panneau d'issue n'apparaît qu'à l'arrivée, et l'annonce d'issue part alors. Même bandeau `skip` et même touche que pour l'embarquement. Les échecs affichent leur issue aussitôt, comme avant. Avec « mouvement réduit », il n'y a pas de sortie : l'issue s'affiche au pas de victoire, bonhomme dans la cabine.
+
+![Sortie, niveau 1 : à mi-pas, le bonhomme franchit l'écart entre la cabine et le plateau ; la courbe, les mesures (« Temps : 2,4 s », « Erreur : 0,20 m ») et la légende dépliée sont affichées, pas l'issue (capture e2e de T-038)](img/t038-sortie-pas-niveau1.png)
+
 Pendant la saturation du moteur (Kp = 4500 N/m, 0,1 s après le lancement), la jauge est rouge et le mot « Saturé » est affiché (`hud.saturated`) ; la région `aria-live` annonce `level1.saturation`.
 
 ![Saturation à Kp = 4500 N/m, 0,1 s après le lancement (capture e2e de T-016)](img/t016-saturation.png)
 
 ### Issue
 
-Un panneau donne le titre de l'issue, un message qui explique le mécanisme physique, et deux boutons, « Rejouer le niveau » et « Menu ». Depuis T-028 (A-02), les deux boutons vivent dans un **pied collant** (`div.ui-outcome-actions`, `position: sticky` en bas du panneau, fond de papier opaque) : si le message défile dans le panneau, les boutons restent dans la partie visible. En mode bandes, quand la bande sous la scène fait moins de `MIN_OUTCOME_ROOM` (120 px), le panneau se pose en bas, au-dessus du bandeau, sur `OUTCOME_FALLBACK_HEIGHT` (150 px) de haut au plus (titre, message qui défile, boutons collés) : « Rejouer » et « Menu » sont visibles et cliquables de 1024 × 600 à 667 × 375, aux deux niveaux, à la victoire et au choc (e2e (r) de `ui.spec.ts`, 16 tests). Au plus bas (667 × 375), ce panneau recouvre le bas de la cage : défaut K39. À la victoire, la cote chiffrée « e = 0,20 m » (erreur **mesurée**) est posée à côté de la marche, et le panneau donne la formule avec l'erreur **théorique** m·g/Kp, puis l'annonce du terme I.
+Un panneau donne le titre de l'issue, un message qui explique le mécanisme physique, et des boutons : « Rejouer le niveau » et « Menu », plus, **à la réussite du niveau 1 seulement**, « Niveau suivant » (T-036, D33). Depuis T-028 (A-02), les boutons vivent dans un **pied collant** (`div.ui-outcome-actions`, `position: sticky` en bas du panneau, fond de papier opaque) : si le message défile dans le panneau, les boutons restent dans la partie visible. En mode bandes, quand la bande sous la scène fait moins de `MIN_OUTCOME_ROOM` (120 px), le panneau se pose en bas, au-dessus du bandeau, sur `OUTCOME_FALLBACK_HEIGHT` (150 px) de haut au plus (titre, message qui défile, boutons collés) : « Rejouer » et « Menu » sont visibles et cliquables de 1024 × 600 à 667 × 375 (test écrit avant « Niveau suivant »), aux deux niveaux, à la victoire et au choc (e2e (r) de `ui.spec.ts`, 16 tests). Au plus bas (667 × 375), ce panneau recouvre le bas de la cage : défaut K39. À la victoire, la cote chiffrée « e = 0,20 m » (erreur **mesurée**) est posée à côté de la marche, et le panneau donne la formule avec l'erreur **théorique** m·g/Kp, puis l'annonce du terme I.
 
 ![Victoire à Kp = 2500 N/m (capture e2e de T-010)](img/t010-04-victoire.png)
 
+![Sortie terminée, niveau 1 : le bonhomme est sur le plateau, bras levés ; « Niveau réussi ! » avec « Niveau suivant » (focalisé), « Rejouer le niveau » et « Menu » sur une seconde ligne, cote « e = 0,20 m » (capture e2e de T-038)](img/t038-sortie-arrivee-niveau1.png)
+
 ![Choc en anglais, à l'ancien réglage : Kp = 4500 N/m, avant T-020 (capture de T-010 non régénérée ; le test (b) de ui.spec.ts joue maintenant Kp = 7000 N/m)](img/t010-05-bonk-en.png)
+
+**Bouton « Niveau suivant » (T-036).** Il porte la clé `controls.nextLevel` (« Niveau suivant » / « Next level ») et précède « Rejouer le niveau » (classe `ui-next`, marge de droite 0,5 em ; les boutons passent à la ligne si la place manque). Il existe seulement si `main.ts` fournit l'option `onNext` à `createUi`, c'est-à-dire si `nextLevelId(levelId)` n'est pas `null` : au niveau 1 (suivant : niveau 2), pas au niveau 2, dernier niveau. Il n'est visible qu'à la réussite (`vm.outcome === 'win'`) : jamais après un échec. À l'apparition de l'issue de réussite, le focus est sur lui (sinon sur « Rejouer ») ; il est désactivé en pause, et le focus qui y était passe alors au bouton « Pause » ; un double-clic n'agit qu'une fois (garde A-01 : `event.detail > 1` ignoré) ; il est inerte tant que l'aide est ouverte (`commandsBlocked`). Il appelle `machine.nextLevel()` : un niveau 2 neuf remplace le niveau 1 ([ADR-015](decisions/ADR-015-etat-application-machine-ecrans.md#évolution-v03-lot-a-2026-11-15--la-commande-nextlevel)). Le message « Le niveau 2 t'attend dans le menu : merci d'avoir joué ! » (`level1.comingSoon`) est supprimé. Défaut K47 : à 1280 × 720 et en portrait, « Menu » passe à la ligne sous les deux autres boutons avec sa marge gauche (léger décalage) ; en paysage bas (844 × 390), le panneau défile et seuls le titre et les boutons sont visibles.
+
+![Niveau 2, Ki = 800, sortie terminée : le bonhomme est sur le plateau, bras levés ; « Niveau réussi ! » avec « Rejouer le niveau » et « Menu » seulement (pas de « Niveau suivant »), « I : 498 N », « Force : 491 N », cote « e = 0,00 m » (capture e2e de T-038)](img/t038-sortie-niveau2.png)
 
 ### Pause
 
-« Échap » (hors phase de réglage) ou le bouton « Pause » figent le jeu ; le bandeau indique comment reprendre. En phase de réglage, « Échap » ferme le panneau de Kp au lieu de mettre en pause. Le bouton « Pause » change de libellé (« Reprendre ») sans attribut `aria-pressed`. Si le panneau d'issue est ouvert, le bouton « Rejouer le niveau » est désactivé tant que le jeu est en pause (B-04, T-029 : `enable(outcomeButton, !vm.paused)`) ; si le focus était sur lui, il passe au bouton « Pause ». La reprise le réactive. En pause, le bouton « Menu » (clé `controls.menu`, identique en français et en anglais) est visible dans la barre du haut.
+« Échap » (hors phase de réglage) ou le bouton « Pause » figent le jeu ; le bandeau indique comment reprendre. En phase de réglage, « Échap » ferme le panneau de Kp au lieu de mettre en pause. Le bouton « Pause » change de libellé (« Reprendre ») sans attribut `aria-pressed`. Si le panneau d'issue est ouvert, les boutons « Rejouer le niveau » et « Niveau suivant » sont désactivés tant que le jeu est en pause (B-04, T-029 : `enable(outcomeButton, !vm.paused)` ; T-036 pour « Niveau suivant ») ; si le focus était sur l'un d'eux, il passe au bouton « Pause ». La reprise le réactive. En pause, le bouton « Menu » (clé `controls.menu`, identique en français et en anglais) est visible dans la barre du haut.
 
 ### Bouton « Menu » (T-017e)
 
@@ -109,7 +129,7 @@ Le bouton « Menu » ramène au menu des niveaux, **sans confirmation** : le niv
 
 En portrait étroit (≤ 700 px), pour que les quatre boutons de la barre du haut (« ? », langue, « Menu », « Reprendre ») tiennent en pause, le titre et l'étiquette Kp de la barre sont masqués par CSS (classe `is-paused`) : choix « le plus simple » de T-017e, à valider côté design (K26).
 
-![Issue avec le bouton « Menu » (capture e2e de T-017e)](img/t017-issue-menu.png)
+![Issue de réussite du niveau 1 avec les boutons « Niveau suivant », « Rejouer le niveau » et « Menu » (capture e2e de T-017e, refaite par T-040 ; faite sans animations, le bonhomme est resté dans la cabine)](img/t017-issue-menu.png)
 
 ## Étiquettes de la jauge de force (T-019)
 
@@ -151,7 +171,7 @@ Le niveau 2 réutilise la même interface : `createUi` lit `level.tuning` (`para
 - **Étiquette de la barre du haut** : « Kp = 2500 · Ki = 2000 » (`hud.ki.tag`, sans unités ; Ki = 500 jusqu'à T-021b).
 - **Touches** : les mêmes qu'au niveau 1 (`+`, `−`, Page préc., Page suiv.), qui appellent `level.adjustTuning` ; le bandeau dit « régler Ki » (`hud.hint.tuneKi`) puis « Ki est verrouillé » (`hud.hint.lockedKi`) pendant le trajet ; l'aide des commandes cite Ki (`controls.help.ki`, `controls.help.pauseKi`, `controls.help.touchKi`).
 - **Annonces** : `hud.status.readyKi`, `hud.status.launchKi` (Kp et Ki), `level2.saturation` à la première saturation, `hud.status.winKi`, `hud.status.fail.stepKi` (T-022 : « Échec : au bout de 10 s, la cabine est encore {e} m sous le plateau d’arrivée, plus loin que les 0,1 m permis. », à la place de `hud.status.fail.step` du niveau 1), `hud.status.fail.slow` (« … n’a pas fini de se stabiliser en 10 s »), `hud.status.resetKi`.
-- **Issues** : « Niveau réussi ! » (`level2.win`), « Trop court » (`level2.failTitle.step`, avec l'erreur), « Trop lent » (`level2.failTitle.slow`), « Choc contre la poutre » (`level2.failTitle.bonk`, qui explique le windup : « Trop de mémoire ! … Baisse Ki. »). Le teaser et le message « Le niveau 2 t'attend dans le menu » du niveau 1 ne s'affichent qu'au niveau 1.
+- **Issues** : « Niveau réussi ! » (`level2.win`), « Trop court » (`level2.failTitle.step`, avec l'erreur), « Trop lent » (`level2.failTitle.slow`), « Choc contre la poutre » (`level2.failTitle.bonk`, qui explique le windup : « Trop de mémoire ! … Baisse Ki. »). Le teaser du niveau 1 et le bouton « Niveau suivant » ne s'affichent qu'au niveau 1 (le niveau 2 est le dernier du catalogue).
 - **Jauge du terme intégral I** (T-024, K30) : voir [la section précédente](#jauge-du-terme-intégral-i-niveau-2-t-024).
 - **Pas encore là** : les annotations détaillées du windup, la loupe de la bande de tolérance et la courbe I(t) (K31, reportés).
 
@@ -179,13 +199,13 @@ K32 est corrigé depuis T-022 : la tolérance du niveau 2 est de 0,10 m, et le P
 
 ## Bandeau d'aide contextuel
 
-`chooseHint` (fichier `hints.ts`) choisit le bandeau d'après l'instantané ; `hintLine` produit son contenu dans la langue courante. Les touches sont dessinées comme des touches de clavier (`<kbd>`). Textes exacts vérifiés par `tests/ui/view-model.test.ts` (niveau 1 ; au niveau 2, `hintLine` cite Ki : « régler Ki », « Ki est verrouillé », vérifié par `tests/ui/level2-view-model.test.ts`) :
+`chooseHint` (fichier `hints.ts`) choisit le bandeau d'après l'instantané ; `hintLine` produit son contenu dans la langue courante. Les touches sont dessinées comme des touches de clavier (`<kbd>`). Depuis T-037, `walk` n'existe plus (le bandeau `use` vaut partout en approche) et `skip` s'ajoute. Textes exacts vérifiés par `tests/ui/view-model.test.ts` (niveau 1 ; au niveau 2, `hintLine` cite Ki : « régler Ki », « Ki est verrouillé », vérifié par `tests/ui/level2-view-model.test.ts`) :
 
 | Bandeau | Quand | Français | Anglais |
 |---|---|---|---|
-| `walk` | approche, loin de la console | → / D : avancer vers la console | → / D: walk to the console |
-| `use` | approche, à la console | E : utiliser la console | E: use the console |
+| `use` | approche, n'importe où sur le quai | E : régler l’ascenseur | E: set up the lift |
 | `tune` | réglage | + / − : régler Kp · Page préc. / Page suiv. : pas de 1000 · E ou Entrée : lancer | + / −: set Kp · Page Up / Page Down: steps of 1000 · E or Enter: launch |
+| `skip` | embarquement ou sortie | E ou Entrée : passer · R : recommencer · Échap : mettre en pause | E or Enter: skip · R: restart · Esc: pause |
 | `trip` | trajet | Kp est verrouillé · R : recommencer · Échap : mettre en pause | Kp is locked · R: restart · Esc: pause |
 | `outcome` | issue | R : réessayer | R: try again |
 | `paused` | pause | Jeu en pause. · Échap : reprendre | Game paused. · Esc: resume |
@@ -195,7 +215,7 @@ En français, l'espace avant « : » est une espace insécable (U+00A0), comme p
 
 ## Touches
 
-Traduction touche → intention par la fonction pure `keyToIntent` (`src/ui/keys.ts`), exécutée par `bindKeyboard` (`input.ts`). Vérifiée par `tests/ui/keys.test.ts` (37 tests, dont 27 touches × 20 combinaisons de phase et de focus) et par les scénarios e2e au clavier réel.
+Traduction touche → intention par la fonction pure `keyToIntent` (`src/ui/keys.ts`), exécutée par `bindKeyboard` (`input.ts`). Vérifiée par `tests/ui/keys.test.ts` (37 tests, dont 27 touches × 28 combinaisons de phase et de focus : 7 phases × 4 cibles de focus, 20 combinaisons avant T-037) et par les scénarios e2e au clavier réel.
 
 Règles générales :
 
@@ -223,25 +243,26 @@ Le focus est sur la page (aucun contrôle sélectionné). Colonne « Intention �
 | - du pavé numérique | `NumpadSubtract` | `-` | `kpDown` | Kp − 100 N/m |
 | Page préc. | `PageUp` | `PageUp` | `kpUpBig` | Kp + 1000 N/m |
 | Page suiv. | `PageDown` | `PageDown` | `kpDownBig` | Kp − 1000 N/m |
-| R | `KeyR` | `r` | `restart` | recommencer (trajet ou issue) |
+| R | `KeyR` | `r` | `restart` | recommencer (embarquement, trajet, sortie ou issue) |
 | ↑ | `ArrowUp` | `ArrowUp` | `block` | rien (empêche le défilement) |
 | ↓ | `ArrowDown` | `ArrowDown` | `block` | rien (empêche le défilement) |
 | Début | `Home` | `Home` | `block` | rien (empêche le défilement) |
 | Fin | `End` | `End` | `block` | rien (empêche le défilement) |
 
-Les touches de Kp n'agissent qu'en approche et en réglage ; ailleurs, le niveau répond `locked` (Kp verrouillé, décision D9). Au niveau 2, les mêmes touches règlent Ki (`bindKeyboard` appelle `level.adjustTuning`, qui agit sur la grandeur du niveau : ± 100 et ± 1000 N/(m·s)). La touche R n'agit que pendant le trajet et à l'issue.
+Les touches de Kp n'agissent qu'en approche et en réglage ; ailleurs, le niveau répond `locked` (Kp verrouillé, décision D9). Au niveau 2, les mêmes touches règlent Ki (`bindKeyboard` appelle `level.adjustTuning`, qui agit sur la grandeur du niveau : ± 100 et ± 1000 N/(m·s)). La touche R n'agit que pendant l'embarquement, le trajet, la sortie et à l'issue.
 
 ### Touches qui dépendent de la phase
 
-| Touche | `code` | Approche | Réglage | Trajet | Issue | Pause |
-|---|---|---|---|---|---|---|
-| E | `KeyE` | `interact` | `launch` | `block` | `block` | `block` |
-| Entrée | `Enter` | `interact` | `launch` | `block` | `block` | `block` |
-| Entrée du pavé numérique | `NumpadEnter` | `interact` | `launch` | `block` | `block` | `block` |
-| Espace | `Space` | `interact` | `launch` | `block` | `block` | `block` |
-| Échap | `Escape` | `pause` | `closeTuning` | `pause` | `pause` | `resume` |
+| Touche | `code` | Approche | Réglage | Embarquement | Trajet | Sortie | Issue | Pause |
+|---|---|---|---|---|---|---|---|---|
+| E | `KeyE` | `interact` | `launch` | `skip` | `block` | `skip` | `block` | `block` |
+| Entrée | `Enter` | `interact` | `launch` | `skip` | `block` | `skip` | `block` | `block` |
+| Entrée du pavé numérique | `NumpadEnter` | `interact` | `launch` | `skip` | `block` | `skip` | `block` | `block` |
+| Espace | `Space` | `interact` | `launch` | `skip` | `block` | `skip` | `block` | `block` |
+| Échap | `Escape` | `pause` | `closeTuning` | `pause` | `pause` | `pause` | `pause` | `resume` |
 
-- `interact` en approche ouvre le réglage si le bonhomme est à la console, sinon ne fait rien.
+- `interact` en approche ouvre le réglage **de n'importe où sur le quai** (D31) ; le bonhomme marche alors vers son poste.
+- `skip` (embarquement et sortie, T-037) appelle `level.skipAnimation()` : le bonhomme est placé dans la cabine (le trajet part) ou sur le plateau (l'issue s'affiche). Avec `repeat`, E, Entrée et Espace sont bloquées : la touche de lancement maintenue ne passe pas l'embarquement.
 - **E lance le trajet en phase de réglage.** Échap, lui, referme le panneau sans lancer : l'intention `closeTuning` appelle `level.interact()`, qui en réglage referme le panneau (événement `tuningClosed`). Avant P-005, aucune touche ne le faisait (K3).
 - Échap, quand l'aide des commandes est ouverte, la referme (`closeHelp`), sans mettre en pause ni fermer le réglage, quelle que soit la phase.
 
@@ -255,26 +276,26 @@ Les touches de Kp n'agissent qu'en approche et en réglage ; ailleurs, le niveau
 
 ### Perte de focus
 
-Quand la fenêtre perd le focus ou que l'onglet est masqué : la marche s'arrête et, pendant un trajet, le jeu se met en pause. En approche, il n'y a pas de pause (tests e2e (f) et (f bis)).
+Quand la fenêtre perd le focus ou que l'onglet est masqué : la marche s'arrête et, quand le jeu avance seul (embarquement, trajet, sortie : `isRunningPhase`), il se met en pause. En approche et en réglage, il n'y a pas de pause (tests e2e (f) et (f bis)).
 
 ### Souris et tactile
 
-- **Souris** : clic sur le pupitre ou le pied de la console (en approche) = utiliser la console. Tous les boutons et le curseur du panneau sont cliquables.
-- **Tactile** (écran à pointeur grossier, `pointer: coarse`) : boutons ◀ et ▶ de 56 × 56 px (marcher tant que le doigt appuie) et un bouton « Action » qui ouvre la console, lance, recommence ou reprend selon la phase. Ces boutons n'ont pas été essayés sur un vrai écran tactile (réserve du log T-010).
+- **Souris** : clic sur le pupitre ou le pied de la console (en approche) = ouvrir le réglage. Tous les boutons et le curseur du panneau sont cliquables.
+- **Tactile** (écran à pointeur grossier, `pointer: coarse`) : boutons ◀ et ▶ de 56 × 56 px (marcher tant que le doigt appuie) et un bouton « Action » qui ouvre le réglage (approche), lance (réglage), passe l'embarquement ou la sortie, ou reprend (pause) selon la phase. À l'issue, « Action » n'a **aucun effet** (T-039, R5) : « Rejouer », « Recommencer », « Niveau suivant » et « Menu » servent à cela ; un second appui pendant la sortie ne fait plus perdre l'issue (avant T-039, il la passait puis recommençait). Ces boutons n'ont pas été essayés sur un vrai écran tactile (réserve du log T-010).
 
 ## Aide des commandes « ? »
 
 Le bouton « ? » ouvre une fenêtre d'aide (`role="dialog"`, `aria-modal="true"`) qui liste les commandes au clavier, à la souris et au tactile (clés `controls.help.`). Depuis T-015 (`setHelp`, `src/ui/overlay.ts` ; règles pures dans `src/ui/help.ts`) :
 
-- **pause** : ouvrir l'aide pendant un trajet met le jeu en pause ; la fermer reprend le jeu seulement si c'est l'aide qui avait mis en pause (`helpPauseDecision`). Une pause demandée par le joueur avant l'ouverture n'est pas levée par la fermeture. Hors trajet, l'aide ne change pas la phase ;
+- **pause** : ouvrir l'aide quand le jeu avance seul (embarquement, trajet, sortie : `isRunningPhase`, T-037) met le jeu en pause ; la fermer reprend le jeu seulement si c'est l'aide qui avait mis en pause (`helpPauseDecision`). Une pause demandée par le joueur avant l'ouverture n'est pas levée par la fermeture. Hors de ces phases, l'aide ne change pas la phase ;
 - **focus** : à l'ouverture, le focus va sur « Fermer l’aide » ; Tab et Maj+Tab restent dans l'aide (`trapFocusIndex`) ; à la fermeture, le focus revient à l'élément qui l'avait à l'ouverture, ou, à défaut (élément disparu, désactivé ou masqué), au bouton « ? » ;
 - Échap ou « Fermer l’aide » la referme ; tant qu'elle est ouverte, le clavier ne commande plus le jeu (B-01, T-026, voir « Touches ») ;
-- le texte de l'aide d'interaction dit « E, Entrée ou Espace : utiliser la console, puis lancer » (`controls.help.interact`) et, au tactile, « Action pour utiliser la console et lancer » (`controls.help.touch`, `controls.help.touchKi`), en anglais de même (B-08, T-029) ;
+- l'aide compte **8 lignes** (`helpLines` de `staticTexts`) : déplacement, interaction, passer l'animation, réglage de Kp ou de Ki, recommencer, Échap, souris, tactile. Depuis T-037, le texte d'interaction dit « E, Entrée ou Espace : régler l’ascenseur de n’importe où sur le quai, puis lancer » (`controls.help.interact`) et une ligne neuve « E, Entrée ou Espace pendant l’embarquement ou la sortie : passer l’animation » (`controls.help.skip`) ; la ligne tactile dit encore « Action pour utiliser la console et lancer » (`controls.help.touch`, `controls.help.touchKi`, B-08, T-029), sans citer « passer » : écart du texte tactile, non corrigé ;
 - la couche de l'aide est au-dessus des mesures du trajet (`z-index: 2` sur `.ui-help`).
 
 Corrigés par T-017abc : **K23** (le papier de l'aide est opaque, les mesures du trajet ne transparaissent plus ; e2e (p)) et **K24** (tant que l'aide est ouverte, les commandes du niveau sont suspendues : « Pause » / « Reprendre », « Menu », le réglage, le champ numérique, le clic sur la console et le bouton tactile « Action » n'agissent pas ; seule la fermeture de l'aide agit, qui reprend le jeu par `helpPauseDecision` si l'aide l'avait mis en pause ; règle pure `commandsBlocked(helpOpen)` de `src/ui/help.ts` ; e2e (o)).
 
-À l'apparition du panneau d'issue, le focus est porté sur son bouton « Rejouer le niveau » ; quand le panneau se ferme, le focus qui s'y trouvait est rendu au document (`releaseFocus`).
+À l'apparition du panneau d'issue, le focus est porté sur « Niveau suivant » à la réussite du niveau 1, sur « Rejouer le niveau » sinon ; quand le panneau se ferme, le focus qui s'y trouvait est rendu au document (`releaseFocus`).
 
 ## Langue
 
@@ -287,12 +308,14 @@ Une région `aria-live="polite"` (`role="status"`) annonce une phrase par évén
 | Événement | Annonce (clé) |
 |---|---|
 | ouverture du réglage | `hud.status.ready` (niveau 2 : `hud.status.readyKi`) |
-| lancement | `hud.status.launch` avec Kp (niveau 2 : `hud.status.launchKi` avec Kp et Ki) |
+| lancement | `hud.status.launch` avec Kp (niveau 2 : `hud.status.launchKi` avec Kp et Ki), **différée** jusqu'au départ réel du trajet (voir plus bas) |
 | première saturation (une fois par trajet) | `level1.saturation` (niveau 2 : `level2.saturation`) |
-| issue | `hud.status.win`, `hud.status.fail.step`, `hud.status.fail.noLift` ou `hud.status.fail.bonk`, avec l'erreur finale à 2 décimales ; au niveau 2, `hud.status.winKi`, `hud.status.fail.stepKi` et `hud.status.fail.slow` |
+| issue (à l'arrivée sur le plateau pour une victoire animée) | `hud.status.win`, `hud.status.fail.step`, `hud.status.fail.noLift` ou `hud.status.fail.bonk`, avec l'erreur finale à 2 décimales ; au niveau 2, `hud.status.winKi`, `hud.status.fail.stepKi` et `hud.status.fail.slow` |
 | recommencer | `hud.status.reset` (niveau 2 : `hud.status.resetKi`) |
 | pause, reprise | `hud.status.paused`, `hud.status.resumed` |
 | fermeture du réglage | rien |
+
+**Annonce de lancement différée (T-039, R4).** L'événement `launch` est émis au début de l'embarquement, environ 2,4 s avant que la consigne change vraiment : l'annonce « la consigne passe de 0 à 3 m » serait partie trop tôt. `announce.ts` fournit trois fonctions pures : `createLaunchGate()` (porte `{ pending }`), `admitEvent(gate, event, phase)` (renvoie `false` et met la porte en attente pour un `launch` reçu avant le départ du trajet ; un `reset`, un `tuningOpened` ou un `tuningClosed` annulent l'attente) et `releaseLaunch(gate, phase)` (vrai une seule fois, quand la phase devient `trip`, `exit` ou `outcome`). `createUi` annonce alors la phrase à partir d'un événement `launch` préalloué. Sans animations, le trajet part dans la même image : annonce immédiate. Ces fonctions ne sont pas exportées par `src/ui/index.ts`. Tests : `tests/ui/announce.test.ts` (4 → 9 tests) et e2e R4 de `t039-interface.spec.ts`. Les captures et les tests e2e n'ont pas été passés à un lecteur d'écran.
 
 Chaque événement est consommé une seule fois. Le canvas porte `role="img"` et un nom traduit (`a11y.canvas`). Détail : [i18n-accessibilite.md](i18n-accessibilite.md#partie-2--accessibilité-validé-t-010).
 
@@ -310,7 +333,7 @@ Sur un écran en portrait de moins de 700 px de large, une invite propose de tou
 
 - la **cage** (colonne x ∈ [0 ; 4] m sur toute la hauteur de la zone de jeu) : rien ne masque l'ascenseur ni la courbe ;
 - la **console** (boîte de ± 0,35 m autour du pupitre) ;
-- le **bonhomme** quand il est sur le quai (± 0,3 m autour de sa tête).
+- le **bonhomme** quand il est sur le quai (± 0,3 m autour de sa tête). Tant que le panneau de réglage est ouvert (phases `tuning`, `boarding` et `trip`), `computeLayout(g, out, pinWalkerAtPost)` épingle cet obstacle au poste du bonhomme (`CONSOLE_POST_X` ; hauteur `WALKER_STAND_HEIGHT` = 1,8 m) au lieu de sa position en direct : le panneau ne bouge pas pendant la marche (T-039, R3 ; test `layout.test.ts`, 38 → 40 tests). Conséquence (K50) : le panneau reste épinglé à cette position pendant le trajet.
 
 Deux modes :
 
@@ -345,13 +368,13 @@ Principaux exports, groupés par fichier :
 
 | Fichier | Exports |
 |---|---|
-| `overlay.ts` | `createUi(options) → Ui` (`Ui` : `helpOpen`, `update`, `setHelp`, `destroy`) ; types `Ui`, `UiOptions` (dont `level: Level`, `onMenu?`) |
+| `overlay.ts` | `createUi(options) → Ui` (`Ui` : `helpOpen`, `update`, `setHelp`, `destroy`) ; types `Ui`, `UiOptions` (dont `level: Level`, `onMenu?`, `onNext?`) |
 | `input.ts` | `bindKeyboard(level: Level, ui, window)` (renvoie la fonction qui retire les écouteurs ; appelée au retour au menu), `focusTargetOf` |
 | `keys.ts` | `keyToIntent`, `kpDeltaOf`, `walkSideOf`, `KP_SMALL_STEP` (100), `KP_BIG_STEP` (1000) ; types `KeyInput`, `KeyIntent`, `FocusTarget` |
-| `hints.ts` | `chooseHint`, `hintLine`, `hintText`, `KEY_SYMBOLS`, `KEY_SEPARATOR` ; types `HintId`, `HintItem`, `HintLine`, `HintSegment` |
+| `hints.ts` | `chooseHint`, `hintLine`, `hintText`, `KEY_SYMBOLS`, `KEY_SEPARATOR` ; types `HintId` (`use`, `tune`, `skip`, `trip`, `outcome`, `paused`, `help`), `HintItem`, `HintLine`, `HintSegment` |
 | `view-model.ts` | `createViewModelBuilder`, `staticTexts`, `effectivePhase` ; types `ViewModel`, `ViewModelBuilder`, `StaticTexts`, `UiState` |
 | `layout.ts` | `computeLayout`, `createLayout`, `consoleRect`, `walkerRect`, `walkerOnLedge`, `isConsoleHit`, `intersects`, `boxExtent` ; types `UiGeometry`, `UiLayout`, `PanelBox`, `ScreenRect`, `ScreenXY` |
-| `announce.ts` | `announcementFor`, `formatError`, `formatKp`, `ERROR_DIGITS` |
+| `announce.ts` | `announcementFor`, `formatError`, `formatKp`, `ERROR_DIGITS` (le fichier exporte aussi `createLaunchGate`, `admitEvent`, `releaseLaunch` et le type `LaunchGate`, que `index.ts` ne réexporte pas) |
 | `screens.ts` | `createTitleScreen`, `createMenuScreen` ; types `Screen`, `TitleScreenOptions`, `MenuScreenOptions` |
 | `screens-model.ts` | `buildTitleView`, `buildMenuView`, `levelLabel`, `LEVEL_TITLE_KEYS` ; types `TitleView`, `MenuView`, `MenuEntryView` |
 | `screen-keys.ts` | `screenKeyToIntent` ; types `ScreenKeyInput`, `ScreenKeyIntent` |
@@ -376,6 +399,7 @@ Constantes de disposition exportées par `layout.ts` (pixels CSS, sauf mention) 
 | `OUTCOME_FALLBACK_HEIGHT` | 150 | hauteur de l'issue en repli : titre, message qui défile, boutons collés (T-028) |
 | `MIN_PANEL_BESIDE` | 280 | largeur minimale d'un panneau posé à gauche du bonhomme et de la console (sinon il est posé au-dessus) |
 | `WALKER_HALF_WIDTH` | 0,3 m | demi-largeur de la boîte protégée du bonhomme |
+| `WALKER_STAND_HEIGHT` | 1,8 m | hauteur du bonhomme debout, chapeau compris, pour l'obstacle épinglé au poste (T-039 ; exportée par `layout.ts`, pas par `index.ts`) |
 | `CONSOLE_HALF_BOX` | 0,35 m | demi-largeur de la boîte protégée de la console |
 | `CONSOLE_BOX_ABOVE` | 0,35 m | hauteur de la boîte protégée au-dessus du pupitre |
 | `CONSOLE_HIT_HALF_WIDTH` | 0,6 m | demi-largeur de la zone de clic de la console |

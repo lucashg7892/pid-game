@@ -1,6 +1,6 @@
 # Rendu au crayon (`src/render`)
 
-À quoi sert cette page : expliquer comment le jeu dessine la scène : démarrage du moteur graphique, cadrage, papier millimétré, traits de crayon, bonhomme, courbe et jauge, budget de dessin. Elle décrit le commit `02119f7` (rendu validé en T-008 et T-009 ; échecs en cours de route ajoutés par T-014 ; cadrage fixé et ancres de la jauge par T-019 et T-020 ; session de rendu réutilisable entre les écrans par T-017 ; trajet de 10 s et courbe sur 1201 points par T-022 ; jauge du terme intégral au niveau 2 par T-024 ; ancres de l'image affichée, ancres du niveau entrant et suivi de « mouvement réduit » par T-030 et T-031, issus de la chasse aux bugs de la v0.2). Les textes posés par-dessus la scène sont dans [interface.md](interface.md).
+À quoi sert cette page : expliquer comment le jeu dessine la scène : démarrage du moteur graphique, cadrage, papier millimétré, traits de crayon, bonhomme, courbe et jauge, budget de dessin. Elle décrit le commit `3810193`, lot A de la v0.3 (branche `v0.3-salle-de-controle`, non fusionnée) : T-038 y a branché le dessin du bonhomme sur sa position et sa hauteur réelles et sur ses poses (poste, embarquement, sortie), et `prefers-reduced-motion` sur les animations de la logique ; la scène elle-même est inchangée. Le reste vient de l'état `02119f7` (rendu validé en T-008 et T-009 ; échecs en cours de route ajoutés par T-014 ; cadrage fixé et ancres de la jauge par T-019 et T-020 ; session de rendu réutilisable entre les écrans par T-017 ; trajet de 10 s et courbe sur 1201 points par T-022 ; jauge du terme intégral au niveau 2 par T-024 ; ancres de l'image affichée, ancres du niveau entrant et suivi de « mouvement réduit » par T-030 et T-031, issus de la chasse aux bugs de la v0.2). Les textes posés par-dessus la scène sont dans [interface.md](interface.md).
 
 ![Le niveau 1 en cours de trajet, 1280 × 720 (capture e2e de T-010)](img/t010-03-trajet.png)
 
@@ -22,7 +22,7 @@ Le test e2e du cycle de vie (`ui.spec.ts`, (q)) enchaîne attach, detach, attach
 
 ### Fichiers purs et fichiers three
 
-Sur les 19 fichiers du module (inchangés en nombre depuis `13e8b7e`), 13 n'importent pas three (dont `index.ts`) et `camera.ts` n'en importe qu'un type : ils se testent sous Node, sans navigateur (`tests/render/`, 122 tests).
+Sur les 19 fichiers du module (inchangés en nombre depuis `13e8b7e`), 13 n'importent pas three (dont `index.ts`) et `camera.ts` n'en importe qu'un type : ils se testent sous Node, sans navigateur (`tests/render/`, 136 tests au commit `3810193`).
 
 | Fichier | three ? | Rôle |
 |---|---|---|
@@ -215,24 +215,32 @@ Les points viennent de `level.signals` (valeurs **avant** chaque pas) ; la point
 
 ## Bonhomme
 
-Le bonhomme bâton a un chapeau melon. `walker-pose.ts` calcule ses 13 articulations pour 7 attitudes, choisies par `choosePose` d'après la phase :
+Le bonhomme bâton a un chapeau melon. `walker-pose.ts` calcule ses 13 articulations pour 7 attitudes. Depuis T-038, `choosePose(phase, snapshot)` (`level-display.ts`) les choisit d'abord d'après la phase de l'issue, puis d'après **l'action du bonhomme** (`walkerAction` de l'instantané, voir [jeu.md](jeu.md#poste-embarquement-et-sortie-v03-t-037)) :
 
-| Phase | Attitude |
+| Phase effective, action | Attitude |
 |---|---|
-| approche, à l'arrêt | `stand` (debout, jambes tendues) |
-| approche, en marche | `walk` |
-| réglage | `reach` (main sur le levier) |
-| trajet | `stand`, au centre de la cabine |
-| victoire | `cheer` (bras levés) |
-| choc | `bonk` (assis, chapeau tombé) |
-| marche trop haute | `akimbo` (mains sur les hanches) |
-| cabine au sol | `shrug` (haussement d'épaules) |
+| issue, victoire (`outcome` = `win`) | `cheer` (bras levés) |
+| issue, choc | `bonk` (assis, chapeau tombé) |
+| issue, marche trop haute | `akimbo` (mains sur les hanches) |
+| issue, cabine au sol | `shrug` (haussement d'épaules) |
+| `free` (approche), à l'arrêt | `stand` (debout, jambes tendues) |
+| `free` (approche), en marche | `walk` |
+| `toPost` (marche vers le poste) | `walk` |
+| `atPost` (au poste, réglage) | `reach` (main sur le levier) |
+| `boarding` (embarquement) | `walk` |
+| `inCabin` (trajet) | `stand`, au centre de la cabine |
+| `exiting`, `stepping` (sortie) | `walk` |
+| `arrived` (sortie terminée) | `stand` si l'issue n'était pas lue ; en pratique la phase est `outcome` et la victoire donne `cheer` |
 
-En pause, l'attitude est celle de la phase qui reprendra.
+En pause, la phase effective est celle qui reprendra (`effectivePhase`). Pendant `exit`, l'issue est déjà jugée mais la phase n'est pas encore `outcome` : la pose reste `walk` jusqu'à l'arrivée, puis `cheer`.
+
+**Position et hauteur des pieds (T-038).** `computeDisplay(snapshot, out)` ne déduit plus la position de `walkerInCabin` : le bonhomme est dessiné où le dit l'instantané, dans toutes les phases. Abscisse : `lerp(walkerPrevX, walkerX, alpha)` partout. Hauteur des pieds (`walkerGround`) : `lerp(walkerPrevY, walkerY, alpha)` pendant le trajet et pendant le pas de sortie (`walkerAction` = `stepping`), `walkerY` tel quel ailleurs (constante, ou `cabinY` figé). Orientation : `walkerFacing`. Avant T-038, le bonhomme était dessiné au centre de la cabine à bord (hauteur de la cabine) et sur le quai sinon. `tripVisible` (courbe et erreur dessinées) vaut aussi pendant `exit`. `tests/render/level-painter.test.ts` (14 → 17 tests) vérifie la pose d'après l'action, le dessin à la position de l'instantané sans dépendre de `walkerInCabin`, et que la hauteur n'est pas interpolée à l'issue ni hors trajet.
 
 Cinématique : jambes en cinématique inverse (hanche et pied imposés, genou calculé), buste et bras en cinématique directe. Les longueurs des membres sont donc identiques dans toutes les attitudes (testé). La marche suit la **distance parcourue** (un cycle de deux pas par 1,1 m), pas le temps : à l'arrêt, les jambes ne bougent pas, et le pied d'appui reste au sol.
 
-L'embarquement dans la cabine et la sortie après la victoire ne sont pas animés : le bonhomme apparaît directement au centre de la cabine (réserve des logs T-009 et T-010).
+**Embarquement et sortie : K4 corrigé.** Le bonhomme marche du poste à la cabine, puis, après une victoire, sur le plancher, par-dessus l'écart de 0,2 m entre la cabine et le plateau (ses pieds montent ou descendent de l'erreur finale, `finalError`), et sur le plateau. Le test e2e `v03-rendu.spec.ts` (4 tests : poste, embarquement, sortie aux deux niveaux) mesure le dessin sur des captures sans l'interface : la tête est dessinée à l'abscisse attendue, la montée mesurée au pas égale l'erreur attendue à 0,07 m près, et le bonhomme n'est pas dans la masse hachurée du plateau. Captures : `t038-poste-niveau1`, `t038-embarquement`, `t038-sortie-pas-niveau1`, `t038-sortie-arrivee-niveau1`, `t038-sortie-niveau2` (légendes dans [interface.md](interface.md#ce-que-voit-le-joueur-phase-par-phase)). Le rendu sans animations a été comparé à `b94dd8b` (avant le lot A) : trajet et issue identiques pixel pour pixel sur 4 scénarios (journal T-037). Les diffs de pixels du lot A restent confinés au bonhomme et au panneau d'issue (registre, T-038).
+
+**Mouvement réduit (T-038, R2 de T-037).** `main.ts` calcule les animations voulues par `animationsSetting && !session.reducedMotion` : à la création du niveau (option `animations` de `createLevel1` et `createLevel2`) et, à chaque image dans `onFrameEnd`, par `level.setAnimations(...)` rappelé seulement quand la valeur change. La préférence est suivie en cours de partie (voir plus haut). Avec « mouvement réduit », pas de marche vers le poste, pas d'embarquement et pas de sortie : le bonhomme est au poste aussitôt, le trajet part au lancement, et à la victoire il **reste dans la cabine** (issue au pas de victoire) ; c'est un choix de design signalé par le réalisateur, que le registre ne tranche pas. Tests : e2e `reduced-motion.spec.ts` (2 tests ajoutés : poste immédiat, trajet sans embarquement et issue sans sortie ; changement de préférence en cours de partie). Non essayé : un vrai appareil ou système avec « réduire les animations », le tactile réel.
 
 ## Jauge de force
 
@@ -253,7 +261,7 @@ T-024 (K30) ajoute au niveau 2 une seconde jauge, à droite de la jauge de force
 
 ## Interpolation et ancres pour l'interface
 
-`computeDisplay` applique le contrat de [jeu.md](jeu.md#contrats-pour-le-rendu-et-linterface) : cabine à `lerp(cabinPrevY, cabinY, alpha)` pendant le trajet, figée à l'issue ; bonhomme à `lerp(walkerPrevX, walkerX, alpha)` sur le quai.
+`computeDisplay` applique le contrat de [jeu.md](jeu.md#contrats-pour-le-rendu-et-linterface) : cabine à `lerp(cabinPrevY, cabinY, alpha)` pendant le trajet, figée à l'issue ; bonhomme à `lerp(walkerPrevX, walkerX, alpha)` partout, pieds à `lerp(walkerPrevY, walkerY, alpha)` pendant le trajet et le pas de sortie (voir « Bonhomme »).
 
 `computeAnchors` calcule, à chaque image, la position en pixels CSS des éléments que l'interface annote : dessus du pupitre de la console, centre du plancher de la cabine, milieu de la cote d'erreur, haut de la tête du bonhomme, haut de la jauge, et, depuis T-019, le bord gauche de l'échelle de la jauge au niveau du haut (`gaugeMax`, étiquette « 5000 N max ») et du repère du poids (`gaugeWeight`, étiquette « poids »), à `GAUGE_LABEL_X` = `GAUGE_MAX_X` + 0,2 m. Depuis T-024, `iGauge` (milieu du bord haut de la jauge I, étiquette « Terme intégral I » puis « I : … N ») et `iGaugeVisible` (vrai au niveau 2) complètent les ancres ; au niveau 2, `gaugeMax` et `gaugeWeight` se placent à `GAUGE_I_LABEL_X` = `GAUGE_I_MAX_X` + 0,2 m. `main.ts` copie `iGauge` et lit `iGaugeVisible` par un accesseur, car la valeur change d'une image à l'autre. Ces ancres sont un objet réutilisé, réécrit à chaque image (`session.anchors()`) et remis à zéro par `resetAnchors` quand le niveau est détaché. `main.ts` les transmet à `src/ui` sous forme de données, car `src/ui` n'a pas le droit d'importer `src/render`.
 
@@ -261,8 +269,8 @@ T-024 (K30) ajoute au niveau 2 une seconde jauge, à droite de la jauge de force
 
 | Grandeur | Valeur | Source |
 |---|---|---|
-| JavaScript du build | 909,76 kB, **253,52 kB gzip** (un seul fichier) ; 907,79 kB et 252,84 kB à `08908b6` ; 907,32 kB et 252,72 kB à `119519b` ; 885,25 kB et 246,57 kB à `566a8a3` | `npm.cmd run build` au commit `a308ada` (rédacteur, code de sortie 0) |
-| CSS du build | 7,51 kB, 2,45 kB gzip ; 7,30 kB et 2,42 kB à `08908b6` ; 5,86 kB et 2,09 kB à `566a8a3` | idem |
+| JavaScript du build | 915,57 kB, **255,49 kB gzip** (un seul fichier) ; 911,31 kB et 254,02 kB à `02119f7` ; 909,76 kB et 253,52 kB à `a308ada` ; 907,79 kB et 252,84 kB à `08908b6` ; 907,32 kB et 252,72 kB à `119519b` ; 885,25 kB et 246,57 kB à `566a8a3` | `npm.cmd run build` au commit `3810193` (rédacteur, D-019, code de sortie 0 ; les autres valeurs sont celles des commits cités) |
+| CSS du build | 7,78 kB, 2,53 kB gzip ; 7,70 kB et 2,50 kB à `02119f7` ; 7,51 kB et 2,45 kB à `a308ada` ; 7,30 kB et 2,42 kB à `08908b6` ; 5,86 kB et 2,09 kB à `566a8a3` | idem |
 | budget JS initial | 400 ko gzip | spec T-001 §7 |
 | polices | 23 944 + 20 112 octets (woff2) | `public/fonts/` |
 | appels de dessin | 4 à l'état initial (e2e), 7 au plus | `render.spec.ts`, `level-view.ts` |
@@ -290,4 +298,4 @@ Valeurs des constantes du papier : tableau de la section « Papier millimétré 
 
 ## Tests
 
-Tests Vitest de `tests/render/` (133) et tests e2e de `tests/e2e/render.spec.ts`, `level.spec.ts`, `level2.spec.ts`, `failure.spec.ts`, `saturation.spec.ts`, `ui.spec.ts`, `k10-a07.spec.ts` et `reduced-motion.spec.ts` : voir [tests.md](tests.md). Justification des choix : [ADR-010](decisions/ADR-010-rendu-crayon.md).
+Tests Vitest de `tests/render/` (136, relevés au commit `3810193`) et tests e2e de `tests/e2e/render.spec.ts`, `level.spec.ts`, `level2.spec.ts`, `failure.spec.ts`, `saturation.spec.ts`, `ui.spec.ts`, `k10-a07.spec.ts`, `reduced-motion.spec.ts` et `v03-rendu.spec.ts` : voir [tests.md](tests.md). Justification des choix : [ADR-010](decisions/ADR-010-rendu-crayon.md).

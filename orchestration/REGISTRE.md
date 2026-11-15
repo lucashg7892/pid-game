@@ -36,6 +36,9 @@ Tenu par l'orchestrateur. Les sous-agents ne modifient jamais ce fichier.
 | D28 | Niveau 1, Kp par défaut (2026-11-13) | `KP_DEFAULT` = 2000 N/m (dans la fenêtre) ; `KI_DEFAULT` en découle (= `KP_DEFAULT`, D26) |
 | D29 | Niveau 2, tolérance (2026-11-13) | K32 corrigé : `LEVEL2_ARRIVAL_TOLERANCE` = 0,10 m (au lieu de `STEP_TOLERANCE`), pour que Ki soit nécessaire |
 | D30 | Portrait étroit (2026-11-13) | K26 reporté : le portrait étroit n'est pas prioritaire |
+| D31 | v0.3, poste au pupitre (2026-11-14) | La touche E ouvre le réglage depuis n'importe où sur le quai de départ ; le panneau s'ouvre tout de suite ; le bonhomme rejoint en marchant un poste fixe à gauche du pupitre, tourné vers lui, main sur le levier, sans chevaucher le dessin du pupitre ; commun aux deux niveaux |
+| D32 | v0.3, embarquement et sortie, K4 (2026-11-14) | Au lancement le bonhomme marche jusqu'à la cabine et y entre avant le départ ; en cas de réussite il sort et avance sur le plateau d'arrivée (le pas de sortie franchit l'erreur finale réelle : il monte si la cabine est trop basse, descend si elle est trop haute) ; l'issue s'affiche à la fin de la sortie ; échecs inchangés ; une touche passe l'animation ; pas d'animation avec `prefers-reduced-motion` ; animations sur l'horloge de simulation, sans effet sur le trajet ni son issue |
+| D33 | v0.3, niveau suivant (2026-11-14) | Bouton « Niveau suivant » sur l'écran de réussite, avec « Rejouer » et « Menu », accessible au clavier, absent sur le dernier niveau |
 
 ## 2. Protocole
 

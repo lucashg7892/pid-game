@@ -187,6 +187,25 @@ export function createAnchors(): LevelAnchors {
   };
 }
 
+/** Remet les ancres à zéro (aucun niveau affiché : plus rien de périmé à lire). */
+export function resetAnchors(out: LevelAnchors): void {
+  for (const point of [
+    out.console,
+    out.cabin,
+    out.errorDimension,
+    out.walkerHead,
+    out.forceGauge,
+    out.gaugeMax,
+    out.gaugeWeight,
+    out.iGauge,
+  ]) {
+    point.x = 0;
+    point.y = 0;
+  }
+  out.errorDimensionVisible = false;
+  out.iGaugeVisible = false;
+}
+
 function place(
   point: ScreenPoint,
   frame: Frame,

@@ -15,7 +15,7 @@ import {
 import { createFailureGuard, type RenderFailure } from './failure';
 import type { LevelSnapshot } from '../game';
 import type { SignalRecorder } from '../sim';
-import { computeAnchors, createAnchors, type LevelAnchors } from './level-display';
+import { computeAnchors, createAnchors, resetAnchors, type LevelAnchors } from './level-display';
 import { createLevelView, type LevelView } from './level-view';
 import type { RendererChoice } from './options';
 import { createPaperStage } from './stage';
@@ -46,6 +46,11 @@ export interface StartOptions {
    * l'horloge visuelle du « boiling » ; défaut : le temps d'image.
    */
   readonly onFrame?: (frameSeconds: number) => number;
+  /**
+   * Rappel appelé à la fin de chaque image de la boucle, après le dessin et le calcul des ancres :
+   * c'est là que l'interface se place d'après les ancres de l'image affichée (K10).
+   */
+  readonly onFrameEnd?: () => void;
   /**
    * Appelé une seule fois si le rendu échoue après son démarrage (perte du contexte GPU ou
    * exception dans `onFrame` ou le dessin) ; la session est déjà arrêtée et le renderer libéré.
@@ -121,10 +126,25 @@ export async function startRendering(
   let stopped = false;
   let level: LevelSource | null = null;
   let view: LevelView | null = null;
+  /** Repeint le niveau et recalcule les ancres d'après son état courant. */
+  const paintLevel = (): void => {
+    if (view !== null && level !== null) {
+      view.paint(level.snapshot, level.signals, visualSeconds, motion.reduced);
+      computeAnchors(
+        stage.frame,
+        surfaceWidth,
+        surfaceHeight,
+        view.painter.display,
+        level.snapshot,
+        anchors,
+      );
+    }
+  };
   const detach = (): void => {
     view?.dispose();
     view = null;
     level = null;
+    resetAnchors(anchors);
   };
   const attach = (source: LevelSource): void => {
     if (stopped) {
@@ -135,6 +155,8 @@ export async function startRendering(
     view = createLevelView(stage.scene);
     if (surfaceWidth > 0) {
       view.resize(stage.frame);
+      // Ancres du niveau qui entre (et non celles du précédent) dès l'attache (A-07).
+      paintLevel();
     }
   };
   if (options.level !== undefined) {
@@ -150,17 +172,7 @@ export async function startRendering(
   /** Repeint le niveau, met à jour les ancres et dessine (aucune allocation de notre part). */
   const draw = (visualAdvance: number): void => {
     visualSeconds += visualAdvance;
-    if (view !== null && level !== null) {
-      view.paint(level.snapshot, level.signals, visualSeconds, motion.reduced);
-      computeAnchors(
-        stage.frame,
-        surfaceWidth,
-        surfaceHeight,
-        view.painter.display,
-        level.snapshot,
-        anchors,
-      );
-    }
+    paintLevel();
     stage.render();
   };
   const info = renderer.info.render;
@@ -187,6 +199,7 @@ export async function startRendering(
     renderer,
     failureGuard.guard((frameSeconds) => {
       draw(onFrame === undefined ? frameSeconds : onFrame(frameSeconds));
+      options.onFrameEnd?.();
       if (!firstFrameDone) {
         firstFrameDone = true;
         resolveFirstFrame(stats());

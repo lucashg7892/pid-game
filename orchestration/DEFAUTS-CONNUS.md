@@ -13,7 +13,7 @@ Liste tenue par l'orchestrateur. Rien ici n'est bloquant pour la v0.1.
 | K7 | Bornes de la fenêtre : marge de 1,74 mm sous la poutre à Kp = 5000 et de 1,79 mm au-dessus à 5100 ; marge de tolérance de 9,5 mm à Kp = 1000 (cible [1000 ; 5000], D25) | T-020 (ex-K7 : 5,8 mm à Kp = 3800) | à surveiller |
 | K8 | WebGPU réel jamais exercé par un test automatique | T-008 | limite d'outillage |
 | K9 | Boutons tactiles non essayés sur un vrai écran tactile | T-010 | à vérifier |
-| K10 | Ancres de l'interface avec une image de retard (`ui.update()` avant `level.update`) | D-010 | mineur |
+| K10 | Ancres de l'interface avec une image de retard (`ui.update()` avant `level.update`) | D-010 | mineur → corrigé (T-031 : `onFrameEnd`, l'interface suit les ancres de l'image affichée ; le test e2e K10 est une garde de cohérence, il passe aussi sans la correction car le décalage de 2 px par image n'existe qu'en temps réel ; A-07, lui, a un test qui échoue sans la correction) |
 | K11 | 10 vulnérabilités npm modérées dans la chaîne de lint (dev seulement) | T-002 | à revoir à la montée de version |
 | K12 | Couverture Vitest de src/ui : 36,6 % (fichiers DOM couverts par l'e2e seulement) | D-010 | information |
 | K13 | Contrastes et `prefers-reduced-motion` non testés en e2e | D-010 | à vérifier |

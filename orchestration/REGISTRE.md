@@ -73,6 +73,7 @@ Depuis D19 (ADR-014), les règles courantes sont dans `CLAUDE.md` : rôles dans 
 | T-029 | réalisateur | Six mineurs de la chasse aux bugs : A-05 (focus du menu), A-09 (carte très basse), B-03 (Échap dans le champ numérique), B-04 (bouton d'issue inerte en pause), B-06 (bulle anglaise), B-08 (aide : lancer) ; tests de régression | VALIDÉ (N2) | — |
 | P-011 | orchestrateur | Chasse aux bugs : défauts mineurs non corrigés consignés (K39 à K46) ; commentaire de `iTerm` corrigé (B-09) | FAIT (N1) | — |
 | T-030 | réalisateur | K22 : `prefers-reduced-motion` suivi dynamiquement (`createReducedMotionWatcher`), écouteur retiré à l'arrêt ; tests unitaire et e2e | VALIDÉ (N2) | — |
+| T-031 | réalisateur | K10 (interface mise à jour après le dessin, `onFrameEnd`) et A-07 (ancres du niveau entrant dès l'attache) ; tests unitaire et e2e | VALIDÉ (N2) | — |
 | T-000 | réalisateur | Pilote : git init, .gitignore, .gitattributes | VALIDÉ | logs/T-000.md |
 | T-001 | concepteur | Spec de la tranche verticale | VALIDÉ | logs/T-001.md |
 | T-002 | réalisateur | Socle outillé (npm, TS, Vite, lint, tests) | VALIDÉ (réserves) | logs/T-002.md |

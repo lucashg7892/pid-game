@@ -384,14 +384,15 @@ async function main(): Promise<void> {
       if (c === null) {
         return 0;
       }
-      // Mise à jour de l'interface avec les ancres de l'image précédente (décalage d'une image,
-      // invisible pour des étiquettes), puis avance du niveau.
-      c.refreshUi();
       if (e2e) {
         return 0;
       }
       c.level.update(frameSeconds);
       return frameSeconds;
+    },
+    // Interface mise à jour après le dessin, d'après les ancres de l'image affichée (K10).
+    onFrameEnd: () => {
+      current?.refreshUi();
     },
     onFailure: handleFailure,
   });

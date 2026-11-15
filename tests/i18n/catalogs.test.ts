@@ -205,6 +205,26 @@ describe('CA-2 : clés de la spec T-001 §6', () => {
   });
 });
 
+describe('textes corrigés en T-029 (B-06, B-08)', () => {
+  it('B-06 : la bulle anglaise du niveau 1 cite l’ascenseur et la hauteur de 3 m, comme la française', () => {
+    expect(FR['level1.goal']).toContain(`3${NBSP}m`);
+    expect(EN['level1.goal']).toBe(
+      `To get across, ride the lift up to the ledge on the far side, 3${NBSP}m higher. The farther the cabin is from that height, the harder the motor pulls.`,
+    );
+    expect(EN['level1.goal']).toContain('lift');
+    expect(EN['level1.goal']).toContain(`3${NBSP}m`);
+  });
+
+  it('B-08 : l’aide d’interaction cite le lancement, au clavier et au tactile, dans les deux langues', () => {
+    expect(FR['controls.help.interact']).toMatch(/puis lancer$/);
+    expect(EN['controls.help.interact']).toMatch(/then launch$/);
+    for (const key of ['controls.help.touch', 'controls.help.touchKi'] as const) {
+      expect(FR[key], key).toContain('et lancer');
+      expect(EN[key], key).toContain('and launch');
+    }
+  });
+});
+
 describe('typographie', () => {
   it('apostrophe typographique U+2019 partout, jamais U+0027 ; points de suspension U+2026', () => {
     for (const l of SUPPORTED_LOCALES) {

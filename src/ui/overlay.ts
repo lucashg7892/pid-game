@@ -585,6 +585,10 @@ export function createUi(options: UiOptions): Ui {
     show(teaserNode, vm.outcome === 'win' && showsTeaser);
     show(soonNode, vm.outcome === 'win' && showsTeaser);
     outcomeButtonText.set(vm.outcomeButton);
+    enable(outcomeButton, !vm.paused);
+    if (vm.paused && document.activeElement === outcomeButton) {
+      pauseButton.focus({ preventScroll: true });
+    }
     show(dimensionNode, vm.dimension !== '');
     dimension.set(vm.dimension);
 
@@ -763,6 +767,12 @@ export function createUi(options: UiOptions): Ui {
     update();
   };
   numberInput.addEventListener('change', commitNumber);
+  // Échap annule la saisie : le champ retrouve la valeur courante avant que le réglage se ferme.
+  numberInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      numberInput.valueAsNumber = tunedNow();
+    }
+  });
   panel.addEventListener('submit', (event) => {
     event.preventDefault();
     commitNumber();

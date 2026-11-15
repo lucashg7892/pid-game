@@ -24,7 +24,14 @@ import {
   type Level,
   type LevelSnapshot,
 } from './game';
-import { LEVELS, createAppMachine, type AppMachine, type AppResult, type AppState } from './app';
+import {
+  LEVELS,
+  createAppMachine,
+  type AppMachine,
+  type AppResult,
+  type AppState,
+  type ScreenId,
+} from './app';
 import { createTranslator, detectLocale, type Translator } from './i18n';
 import {
   PLAY_ZONE,
@@ -418,7 +425,7 @@ async function main(): Promise<void> {
     };
   };
 
-  const mountMenu = (): (() => void) => {
+  const mountMenu = (previous: ScreenId | null): (() => void) => {
     canvas.setAttribute('aria-hidden', 'true');
     const root = container('screens');
     const screen = createMenuScreen({
@@ -431,7 +438,7 @@ async function main(): Promise<void> {
       onBack: () => {
         machine.back();
       },
-      ...(lastLevelId === undefined ? {} : { focusLevelId: lastLevelId }),
+      ...(lastLevelId === undefined || previous !== 'level' ? {} : { focusLevelId: lastLevelId }),
     });
     return () => {
       screen.destroy();
@@ -511,13 +518,13 @@ async function main(): Promise<void> {
   };
 
   /** Monte l'écran de l'état donné. */
-  const show = (state: Readonly<AppState>): void => {
+  const show = (state: Readonly<AppState>, previous: ScreenId | null = null): void => {
     switch (state.screen) {
       case 'title':
         unmount = mountTitle();
         return;
       case 'menu':
-        unmount = mountMenu();
+        unmount = mountMenu(previous);
         return;
       case 'level':
         lastLevelId = state.levelId ?? undefined;
@@ -545,13 +552,13 @@ async function main(): Promise<void> {
       );
     }
     show(machine.state);
-    machine.subscribe((state) => {
+    machine.subscribe((state, previous) => {
       if (failed) {
         return;
       }
       try {
         unmountCurrent();
-        show(state);
+        show(state, previous);
       } catch (error: unknown) {
         session.stop();
         handleFailure({

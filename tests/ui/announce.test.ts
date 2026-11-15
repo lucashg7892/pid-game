@@ -4,7 +4,14 @@
  */
 import { describe, expect, it } from 'vitest';
 import type { GameEvent, Level1 } from '../../src/game';
-import { announcementFor, formatError, formatKp } from '../../src/ui/announce';
+import {
+  admitEvent,
+  announcementFor,
+  createLaunchGate,
+  formatError,
+  formatKp,
+  releaseLaunch,
+} from '../../src/ui/announce';
 import { NB, advance, finished, tr, tuning } from './helpers';
 
 /** Consomme les événements en attente et renvoie les annonces (copie des champs). */
@@ -92,5 +99,79 @@ describe('annonces', () => {
     expect(formatError(tr('fr'), 0.1964)).toBe('0,20');
     expect(formatError(tr('en'), 0.1964)).toBe('0.20');
     expect(formatError(tr('en'), Number.NaN)).toBe('0.00');
+  });
+});
+
+/** Annonces comme les rend l'interface : porte de lancement, libération avant la consommation. */
+function drainGated(level: Level1, gate: ReturnType<typeof createLaunchGate>): string[] {
+  const t = tr('fr');
+  const out: string[] = [];
+  if (releaseLaunch(gate, level.snapshot.phase)) {
+    out.push(
+      announcementFor({ type: 'launch', k: 0, outcome: null, attempt: 0 }, level.snapshot, t) ?? '',
+    );
+  }
+  level.drainEvents((event) => {
+    if (!admitEvent(gate, event, level.snapshot.phase)) return;
+    const text = announcementFor(event, level.snapshot, t);
+    if (text !== null) out.push(text);
+  });
+  return out;
+}
+
+const LAUNCH_FR = `Lancement avec Kp = 2500${NB}N/m${NB}: la consigne passe de 0 à 3${NB}m.`;
+
+describe('annonce de lancement différée (R4)', () => {
+  it('pas annoncée pendant l’embarquement, annoncée une fois au départ du trajet', () => {
+    const level = tuning(2500, true);
+    const gate = createLaunchGate();
+    drainGated(level, gate);
+    level.launch();
+    expect(level.snapshot.phase).toBe('boarding');
+    expect(drainGated(level, gate)).toEqual([]);
+    let said: string[] = [];
+    for (let i = 0; i < 10_000 && level.snapshot.phase === 'boarding'; i += 1) {
+      level.update(1 / 60);
+      said = said.concat(drainGated(level, gate));
+    }
+    expect(level.snapshot.phase).toBe('trip');
+    expect(said).toEqual([LAUNCH_FR]);
+    expect(drainGated(level, gate)).toEqual([]);
+  });
+
+  it('une seule annonce quand le joueur passe l’embarquement', () => {
+    const level = tuning(2500, true);
+    const gate = createLaunchGate();
+    drainGated(level, gate);
+    level.launch();
+    expect(drainGated(level, gate)).toEqual([]);
+    level.skipAnimation();
+    expect(drainGated(level, gate)).toEqual([LAUNCH_FR]);
+    expect(drainGated(level, gate)).toEqual([]);
+  });
+
+  it('sans animation : annoncée tout de suite, une seule fois', () => {
+    const level = tuning(2500);
+    const gate = createLaunchGate();
+    drainGated(level, gate);
+    level.launch();
+    expect(drainGated(level, gate)).toEqual([LAUNCH_FR]);
+    expect(drainGated(level, gate)).toEqual([]);
+  });
+
+  it('recommencer pendant l’embarquement annule l’annonce : rien au prochain essai', () => {
+    const level = tuning(2500, true);
+    const gate = createLaunchGate();
+    drainGated(level, gate);
+    level.launch();
+    drainGated(level, gate);
+    level.restart();
+    const after = drainGated(level, gate);
+    expect(after.some((line) => line.startsWith('Lancement'))).toBe(false);
+    expect(gate.pending).toBe(false);
+    for (let i = 0; i < 300; i += 1) {
+      level.update(1 / 60);
+      expect(drainGated(level, gate)).toEqual([]);
+    }
   });
 });

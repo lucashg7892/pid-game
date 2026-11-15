@@ -12,6 +12,7 @@
  *   scène, réglage et issue dans la bande au-dessous.
  * Le bandeau d'aide est en bas de l'écran, sous la scène s'il y a la place, sinon en bas à gauche.
  */
+import { CONSOLE_POST_X, CONSOLE_X } from '../game';
 
 /** Rectangle écran (pixels CSS, origine en haut à gauche). */
 export interface ScreenRect {
@@ -154,6 +155,8 @@ export const MIN_BANNER_BAND = 56;
 export const MIN_PANEL_BESIDE = 280;
 /** Demi-largeur de la boîte du bonhomme (m). */
 export const WALKER_HALF_WIDTH = 0.3;
+/** Hauteur du bonhomme debout, chapeau compris (m) : environ 1,8 m dans le dessin. */
+export const WALKER_STAND_HEIGHT = 1.8;
 /** Demi-largeur de la boîte de la console (m). */
 export const CONSOLE_HALF_BOX = 0.35;
 /** Hauteur de la boîte de la console au-dessus du pupitre (levier) (m). */
@@ -296,8 +299,10 @@ export function consoleRect(g: Readonly<UiGeometry>): ScreenRect {
  * Calcule la disposition (fonction pure, sans allocation : réécrit `out`).
  * @param g géométrie de l'écran.
  * @param out disposition à réécrire.
+ * @param pinWalkerAtPost vrai tant que le panneau de réglage est ouvert : son obstacle est le
+ *   bonhomme au poste ({@link CONSOLE_POST_X}) et non sa position en direct.
  */
-export function computeLayout(g: UiGeometry, out: UiLayout): UiLayout {
+export function computeLayout(g: UiGeometry, out: UiLayout, pinWalkerAtPost = false): UiLayout {
   const { width, height, cage, scene } = g;
   const leftMax = cage.left - MARGIN;
   const rightMin = cage.right + MARGIN;
@@ -358,7 +363,15 @@ export function computeLayout(g: UiGeometry, out: UiLayout): UiLayout {
       Math.min(consoleLeft, onLedge ? g.walkerHead.x - WALKER_HALF_WIDTH * ppm : consoleLeft) -
       MARGIN;
     const obstacleTop = Math.min(consoleTop, onLedge ? g.walkerHead.y : consoleTop) - MARGIN;
-    placeBesideOrAbove(out.panel, MAX_WIDTH.panel, g, obstacleLeft, obstacleTop, leftMax);
+    if (pinWalkerAtPost) {
+      // Panneau de réglage ouvert : le bonhomme va au poste, la boîte ne suit pas sa marche.
+      const postHeadX = g.console.x - (CONSOLE_X - CONSOLE_POST_X) * ppm;
+      const postLeft = Math.min(consoleLeft, postHeadX - WALKER_HALF_WIDTH * ppm) - MARGIN;
+      const postTop = Math.min(consoleTop, g.groundY - WALKER_STAND_HEIGHT * ppm) - MARGIN;
+      placeBesideOrAbove(out.panel, MAX_WIDTH.panel, g, postLeft, postTop, leftMax);
+    } else {
+      placeBesideOrAbove(out.panel, MAX_WIDTH.panel, g, obstacleLeft, obstacleTop, leftMax);
+    }
     placeBesideOrAbove(out.outcome, MAX_WIDTH.outcome, g, obstacleLeft, obstacleTop, leftMax);
     const bw = Math.min(MAX_WIDTH.bubble, leftWidth);
     const head = g.walkerHead.y - 12;

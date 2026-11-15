@@ -10,7 +10,7 @@
  */
 import type { GameEvent, Level } from '../game';
 import type { Translator } from '../i18n';
-import { announcementFor } from './announce';
+import { admitEvent, announcementFor, createLaunchGate, releaseLaunch } from './announce';
 import type { HintLine } from './hints';
 import { commandsBlocked, helpPauseDecision, trapFocusIndex } from './help';
 import {
@@ -448,6 +448,8 @@ export function createUi(options: UiOptions): Ui {
   let gaugeTitleVisible = true;
   let integralVisible = false;
   let topPaused = false;
+  // Panneau de réglage ouvert : sa place ne suit pas la marche du bonhomme (R3).
+  let panelPinned = false;
 
   const announce = (text: string): void => {
     const line = document.createElement('p');
@@ -457,7 +459,13 @@ export function createUi(options: UiOptions): Ui {
       live.firstElementChild?.remove();
     }
   };
+  // Annonce de lancement différée jusqu'au départ réel du trajet (R4) ; objet alloué une fois.
+  const launchGate = createLaunchGate();
+  const launchEvent: GameEvent = { type: 'launch', k: 0, outcome: null, attempt: 0 };
   const onEvent = (event: Readonly<GameEvent>): void => {
+    if (!admitEvent(launchGate, event, level.snapshot.phase)) {
+      return;
+    }
     const text = announcementFor(event, level.snapshot, tr);
     if (text !== null) {
       announce(text);
@@ -523,6 +531,7 @@ export function createUi(options: UiOptions): Ui {
 
     // Panneau Kp.
     show(panel, vm.panelOpen);
+    panelPinned = vm.panelOpen;
     panelLabel.set(t.panelLabel);
     panelTitle.set(t.kpLabel);
     kpValue.set(vm.kpValue);
@@ -548,7 +557,8 @@ export function createUi(options: UiOptions): Ui {
     kpHelp.set(t.kpHelp);
     kpRange.set(t.kpRange);
     locked.set(t.kpLocked);
-    show(lockedNode, vm.panelLocked);
+    // Place réservée même sans message (invisible) : la hauteur du panneau ne change pas au lancement.
+    lockedNode.classList.toggle('is-idle', !vm.panelLocked);
     launchText.set(t.launch);
     show(launch, vm.phase === 'tuning');
     panelRestartText.set(t.restart);
@@ -637,7 +647,7 @@ export function createUi(options: UiOptions): Ui {
   };
 
   const place = (g: Readonly<UiGeometry>): void => {
-    computeLayout(g, layout);
+    computeLayout(g, layout, panelPinned);
     const h = g.height;
     bannerBox.apply(layout.banner, h);
     bubbleBox.apply(layout.bubble, h);
@@ -666,6 +676,12 @@ export function createUi(options: UiOptions): Ui {
     }
     if (g !== undefined) {
       geometry = g;
+    }
+    if (releaseLaunch(launchGate, level.snapshot.phase)) {
+      const text = announcementFor(launchEvent, level.snapshot, tr);
+      if (text !== null) {
+        announce(text);
+      }
     }
     level.drainEvents(onEvent);
     if (pausedByHelp && level.snapshot.phase !== 'paused') {
@@ -841,7 +857,9 @@ export function createUi(options: UiOptions): Ui {
         case 'exit':
           return level.skipAnimation();
         case 'outcome':
-          return level.restart();
+          // Aucune action : « Rejouer », « Recommencer », « Niveau suivant » et « Menu » servent à cela
+          // (un second appui sur la sortie ne doit pas annuler l'issue, R5).
+          return null;
         case 'paused':
           return level.resume();
         case 'trip':

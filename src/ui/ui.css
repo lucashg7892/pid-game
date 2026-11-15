@@ -272,6 +272,11 @@
   color: var(--ui-red);
 }
 
+/* Réglage libre : la ligne garde sa place (le panneau ne change pas de taille au lancement). */
+.ui-locked.is-idle {
+  visibility: hidden;
+}
+
 .ui-actions {
   display: flex;
   justify-content: flex-end;

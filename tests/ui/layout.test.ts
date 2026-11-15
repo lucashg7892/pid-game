@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ARRIVAL_LEDGE_HEIGHT,
   CABIN_CENTER_X,
+  CONSOLE_POST_X,
   CONSOLE_X,
   START_LEDGE_HEIGHT,
   VOID_MAX_X,
@@ -265,6 +266,42 @@ describe('computeLayout', () => {
     const l = computeLayout(g, createLayout());
     expect(l.panel.edge).toBeLessThanOrEqual(Math.round(g.walkerHead.y - 12));
     expect(boxExtent(l.panel).bottom).toBeLessThan(g.walkerHead.y);
+  });
+
+  it('réglage ouvert (R3) : le panneau ne dépend pas de la marche, il évite le bonhomme au poste', () => {
+    for (const [w, h, level2] of [
+      [1280, 720, false],
+      [1280, 720, true],
+      [1920, 1080, false],
+      [390, 844, false],
+      [390, 844, true],
+    ] as const) {
+      const reference = computeLayout(
+        geometry(w, h, CONSOLE_POST_X, level2),
+        createLayout(),
+        true,
+      ).panel;
+      for (const walkerX of WALKER_POSITIONS) {
+        const g = geometry(w, h, walkerX, level2);
+        const panel = computeLayout(g, createLayout(), true).panel;
+        expect(panel, `${String(w)}×${String(h)}, x = ${String(walkerX)}`).toEqual(reference);
+      }
+      const post = geometry(w, h, CONSOLE_POST_X, level2);
+      const extent = boxExtent(reference);
+      const walker = walkerRect(post);
+      expect(walker).not.toBeNull();
+      if (walker !== null) expect(intersects(extent, walker)).toBe(false);
+      expect(intersects(extent, consoleRect(post))).toBe(false);
+    }
+  });
+
+  it('réglage ouvert : l’obstacle est le poste, sans épingle il suit le bonhomme', () => {
+    const live = computeLayout(geometry(1280, 720, WALKER_SPAWN_X), createLayout()).panel;
+    const pinned = computeLayout(geometry(1280, 720, WALKER_SPAWN_X), createLayout(), true).panel;
+    expect(pinned).not.toEqual(live);
+    expect(pinned).toEqual(
+      computeLayout(geometry(1280, 720, CONSOLE_POST_X), createLayout(), true).panel,
+    );
   });
 
   it('écran trop bas pour une bande sous la scène : bandeau en bas à gauche de la cage', () => {

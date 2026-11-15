@@ -70,6 +70,11 @@
 
 .ui-screen-legal {
   flex: none;
+  align-self: center;
+  padding: 0.3em 1em;
+  border-radius: 6px;
+  /* Papier opaque : la grille du canvas ne traverse plus la mention de copyright (K27). */
+  background: #fbf7ec;
   color: var(--ui-ink-soft);
   font-size: 0.85em;
   text-align: center;

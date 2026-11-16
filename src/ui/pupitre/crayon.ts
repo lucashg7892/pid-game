@@ -104,6 +104,16 @@ export const MINE_ROUGE: Mine = {
   repasse: false,
 };
 
+/** Hachure rouge de remplissage (zone hors limites, saturation). */
+export const MINE_ROUGE_HACHURE: Mine = {
+  largeur: 0.8,
+  alpha: 0.5,
+  couleur: ROUGE,
+  tremble: 0.5,
+  depasse: 1,
+  repasse: false,
+};
+
 /** Dessine une polyligne tremblée (points à plat : x0, y0, x1, y1…). */
 function passe(
   ctx: CanvasRenderingContext2D,
@@ -256,12 +266,13 @@ export function hachures(
   pas: number,
   mine: Mine,
   r: Alea,
+  regle: CanvasFillRule = 'nonzero',
 ): void {
   const [x, y, w, h] = boite;
   ctx.save();
   ctx.beginPath();
   zone(ctx);
-  ctx.clip();
+  ctx.clip(regle);
   const cx = x + w / 2;
   const cy = y + h / 2;
   const demi = Math.hypot(w, h) / 2 + 4;

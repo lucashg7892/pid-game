@@ -77,4 +77,11 @@ export interface ColonnePupitre {
    * @param etat état du pupitre.
    */
   dessiner(ctx: CanvasRenderingContext2D, rect: RectPlan, etat: Readonly<EtatPupitre>): void;
+  /**
+   * Résumé texte de la colonne pour les lecteurs d'écran (optionnel : une colonne dessinée sans
+   * équivalent DOM en fournit un). Le pupitre le pose dans un élément masqué visuellement, sans
+   * `aria-live`, et le relit à faible fréquence : il peut allouer, mais doit rester court.
+   * @param etat état du pupitre.
+   */
+  resume?(etat: Readonly<EtatPupitre>): string;
 }

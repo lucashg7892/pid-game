@@ -38,6 +38,8 @@ export const MESSAGE_PARAMS = {
   'board.value.ki': ['ki'],
   'pupitre.annonce.issueSature': ['reglage'],
   'pupitre.annonce.issueLibre': ['reglage'],
+  'pupitre.machine.cabine': ['y'],
+  'pupitre.machine.resume': ['etat', 'y', 'appliquee', 'demandee'],
 } as const satisfies Partial<Record<MessageKey, readonly string[]>>;
 
 /** Clés qui attendent des paramètres. */

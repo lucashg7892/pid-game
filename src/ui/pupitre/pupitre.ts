@@ -17,6 +17,7 @@ import type { Level, LevelSnapshot } from '../../game';
 import type { Translator } from '../../i18n';
 import { creerColonneVide } from './colonne-vide';
 import type { ColonnePupitre, EtatPupitre } from './colonne';
+import { creerColonneMachine } from './machine';
 import { pupitreVisible, reglageDe, valeurDe, type ReglagePupitre } from './modele';
 import { COLONNES, placerPlan, type PlacementPlan } from './plan';
 import {
@@ -81,6 +82,9 @@ export interface Pupitre {
   destroy(): void;
 }
 
+/** Période de mise à jour des résumés pour les lecteurs d'écran (ms). */
+const PERIODE_RESUME = 500;
+
 /** Crée un élément avec une classe. */
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -120,7 +124,7 @@ export function creerPupitre(options: OptionsPupitre): Pupitre {
   const niveau = level.snapshot.levelId;
   const colonnes = new Map<string, ColonnePupitre>();
   colonnes.set('reglage', creerColonneReglage());
-  colonnes.set('machine', creerColonneVide('machine'));
+  colonnes.set('machine', creerColonneMachine());
   colonnes.set('courbes', creerColonneVide('courbes'));
   for (const c of options.colonnes ?? []) {
     colonnes.set(c.id, c);
@@ -142,6 +146,11 @@ export function creerPupitre(options: OptionsPupitre): Pupitre {
   toileVive.setAttribute('aria-hidden', 'true');
   const titre = el('h2', 'ui-sr', plan);
   titre.id = 'ui-pupitre-titre';
+  // Résumés texte des colonnes dessinées (lecteurs d'écran) : un paragraphe masqué par colonne, sans
+  // aria-live (la région live du jeu est unique), relu au plus deux fois par seconde.
+  const resumes = new Map<string, HTMLElement>();
+  let resumeMaj = Number.NEGATIVE_INFINITY;
+  let resumeLangue = '';
   const geo = geometrieReglage(COLONNES.reglage);
 
   const creerControles = (g: GeometrieLevier, idAide: string): ControlesLevier => {
@@ -392,7 +401,37 @@ export function creerPupitre(options: OptionsPupitre): Pupitre {
     ctx.setTransform(k, 0, 0, k, 0, 0);
   };
 
+  /** Met à jour les résumés texte des colonnes, au plus tous les 500 ms (ou si la langue change). */
+  const majResumes = (): void => {
+    const maintenant = etatPartage.maintenant;
+    if (
+      resumeLangue === tr.locale &&
+      maintenant - resumeMaj < PERIODE_RESUME &&
+      maintenant >= resumeMaj
+    ) {
+      return;
+    }
+    resumeMaj = maintenant;
+    resumeLangue = tr.locale;
+    for (const [id, c] of colonnes) {
+      if (c.resume === undefined) {
+        continue;
+      }
+      let noeud = resumes.get(id);
+      if (noeud === undefined) {
+        noeud = el('p', 'ui-sr ui-pupitre-resume', plan);
+        noeud.id = `ui-pupitre-resume-${id}`;
+        resumes.set(id, noeud);
+      }
+      const texte = c.resume(etat);
+      if (noeud.textContent !== texte) {
+        noeud.textContent = texte;
+      }
+    }
+  };
+
   const dessiner = (): void => {
+    majResumes();
     if (ctxFond === null || ctxVif === null) {
       return;
     }

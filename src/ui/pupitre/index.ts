@@ -45,4 +45,36 @@ export {
   type GeometrieLevier,
   type GeometrieReglage,
 } from './reglage';
+export { creerColonneMachine, type OptionsMachine } from './machine';
+export {
+  animationMachine,
+  arrondir,
+  effort,
+  etatMachineDirect,
+  etatMachineVide,
+  resumeMachine,
+  texteForce,
+  texteHauteur,
+  type AnimationMachine,
+  type EtatMachine,
+} from './machine-etat';
+export {
+  ESPACE,
+  FORCE_MAX,
+  JAUGE_MAX,
+  JAUGE_MIN,
+  RAD_PAR_M,
+  REGLE_MAX,
+  angleRotor,
+  depassement,
+  disposition,
+  fractionJauge,
+  geometrieJauge,
+  hauteurAffichee,
+  yJauge,
+  yRegle,
+  type Depassement,
+  type DispositionMachine,
+  type GeometrieJauge,
+} from './machine-plan';
 export { creerPupitre, type OptionsPupitre, type Pupitre } from './pupitre';

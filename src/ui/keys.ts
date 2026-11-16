@@ -10,6 +10,9 @@
  * - champ numérique : comportement natif pour tout sauf Échap ;
  * - bouton (ou autre contrôle activable) : Entrée et Espace restent natifs ;
  * - curseur : flèches, Début et Fin restent natives (elles règlent la valeur) ;
+ * - pupitre de contrôle (T-049) : en phase de réglage il s'ouvre tout seul (E ou Entrée lancent, Échap
+ *   le ferme comme avant) ; E l'ouvre en lecture seule là où elle ne servait à rien (trajet, issue,
+ *   pause), et la touche E comme Échap le referment (Échap avant la pause) ;
  * - T (par `code`, comme E et R) : ouvre ou ferme le tableau d'école en tout temps, sauf dans le
  *   champ numérique (la frappe y reste native) ; une répétition ne fait rien ;
  * - aide ou tableau ouvert (K24) : aucune commande du jeu ; seuls Échap, Tab et le comportement natif des
@@ -53,6 +56,8 @@ export interface KeyInput {
   readonly helpOpen: boolean;
   /** Vrai si le tableau d'école est ouvert. */
   readonly boardOpen: boolean;
+  /** Vrai si le pupitre est ouvert en lecture seule (hors phase de réglage). */
+  readonly pupitreLecture: boolean;
 }
 
 /**
@@ -79,6 +84,8 @@ export type KeyIntent =
   | 'closeHelp'
   | 'openBoard'
   | 'closeBoard'
+  | 'openPupitre'
+  | 'closePupitre'
   | 'closeTuning';
 
 /** Écart de Kp d'une touche + ou − (N/m). */
@@ -145,8 +152,8 @@ function kpIntentOf(code: string, key: string): KeyIntent {
 }
 
 /**
- * Intention de « E / Entrée / Espace » selon la phase : ouvrir le réglage, lancer, puis passer
- * l'embarquement ou la sortie. Une répétition automatique ne fait rien : la touche de lancement
+ * Intention de « E / Entrée / Espace » selon la phase : ouvrir le réglage (le pupitre), lancer, puis
+ * passer l'embarquement ou la sortie ; `block` là où elle ne sert à rien (E y ouvre le pupitre). Une répétition automatique ne fait rien : la touche de lancement
  * maintenue ne passe pas l'embarquement.
  */
 function useIntentOf(phase: LevelPhase, repeat: boolean): KeyIntent {
@@ -201,6 +208,9 @@ export function keyToIntent(input: KeyInput): KeyIntent {
     if (input.helpOpen) {
       return 'closeHelp';
     }
+    if (input.pupitreLecture) {
+      return 'closePupitre';
+    }
     if (phase === 'tuning') {
       return 'closeTuning';
     }
@@ -232,6 +242,13 @@ export function keyToIntent(input: KeyInput): KeyIntent {
   if (isUseKey) {
     if (focus === 'button' && code !== 'KeyE') {
       return 'none';
+    }
+    if (code === 'KeyE' && !input.repeat) {
+      if (input.pupitreLecture) {
+        return 'closePupitre';
+      }
+      const use = useIntentOf(phase, false);
+      return use === 'block' ? 'openPupitre' : use;
     }
     return useIntentOf(phase, input.repeat);
   }

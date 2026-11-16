@@ -134,7 +134,7 @@ for (const lvl of LEVELS) {
     page,
   }) => {
     const problems = await open(page, `e2e=1&anim=1&screen=${lvl.id}`);
-    const panel = page.locator('#ui .ui-panel');
+    const panel = page.locator('#ui .ui-pupitre');
     const outcome = page.locator('#ui .ui-outcome');
     const banner = page.locator('#ui .ui-banner');
     let s = await advance(page);
@@ -142,13 +142,13 @@ for (const lvl of LEVELS) {
     expect(s.phase).toBe('approach');
     await expect(banner).toContainText(FR('hud.hint.use'));
     const start = s.walkerX;
-    // E depuis l'entrée : panneau ouvert tout de suite.
+    // E depuis l'entrée : pupitre ouvert tout de suite.
     await page.keyboard.press('e');
     s = await advance(page);
     expect(s.phase).toBe('tuning');
     expect(s.action).toBe('toPost');
     await expect(panel).toBeVisible();
-    await expect(panel.locator('.ui-primary')).toBeEnabled();
+    await expect(panel.locator('.ui-pupitre-lancer')).toBeEnabled();
     s = await advance(page, 1);
     expect(s.walkerX).toBeGreaterThan(start);
     expect(s.action).toBe('toPost');
@@ -164,8 +164,9 @@ for (const lvl of LEVELS) {
     await page.keyboard.up('Enter');
     s = await advance(page);
     expect(s.phase).toBe('boarding');
-    await expect(panel).toBeVisible();
-    await expect(panel.locator('.ui-locked')).toBeVisible();
+    // Lancé : le pupitre se range, la scène montre l'embarquement (il se rouvre en lecture seule
+    // avec le bouton « Pupitre », sans pause : voir pupitre.spec.ts).
+    await expect(panel).toBeHidden();
     await expect(banner).toContainText(FR('hud.hint.skip'));
     s = await advance(page, 1);
     expect(s.phase).toBe('boarding');

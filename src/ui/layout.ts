@@ -6,13 +6,14 @@
  * ni la courbe.
  *
  * Deux dispositions :
- * - « côtés » (paysage) : panneaux de réglage, bulle et issue à gauche de la cage, au-dessus du
- *   quai de départ ; mesures du trajet à droite, au-dessus du quai d'arrivée ;
+ * - « côtés » (paysage) : bulle et issue à gauche de la cage, au-dessus du quai de départ ;
+ *   mesures du trajet à droite, au-dessus du quai d'arrivée ;
  * - « bandes » (portrait, côtés trop étroits) : bulle et mesures dans la bande au-dessus de la
- *   scène, réglage et issue dans la bande au-dessous.
+ *   scène, issue dans la bande au-dessous.
+ * Le pupitre de contrôle (T-049) n'est pas placé ici : il tient la fenêtre entre la barre du haut et
+ * le bandeau (`pupitre/plan.ts`) ; l'issue se replie alors dans la bande du bandeau ({@link dockOutcome}).
  * Le bandeau d'aide est en bas de l'écran, sous la scène s'il y a la place, sinon en bas à gauche.
  */
-import { CONSOLE_POST_X, CONSOLE_X } from '../game';
 
 /** Rectangle écran (pixels CSS, origine en haut à gauche). */
 export interface ScreenRect {
@@ -88,8 +89,6 @@ export interface UiLayout {
   readonly banner: PanelBox;
   /** Bulle d'objectif ou d'invite. */
   readonly bubble: PanelBox;
-  /** Panneau Kp. */
-  readonly panel: PanelBox;
   /** Panneau d'issue. */
   readonly outcome: PanelBox;
   /** Mesures du trajet et légende. */
@@ -159,8 +158,6 @@ export const MIN_BANNER_BAND = 56;
 export const MIN_PANEL_BESIDE = 280;
 /** Demi-largeur de la boîte du bonhomme (m). */
 export const WALKER_HALF_WIDTH = 0.3;
-/** Hauteur du bonhomme debout, chapeau compris (m) : environ 1,8 m dans le dessin. */
-export const WALKER_STAND_HEIGHT = 1.8;
 /** Demi-largeur de la boîte de la console (m). */
 export const CONSOLE_HALF_BOX = 0.35;
 /** Hauteur de la boîte de la console au-dessus du pupitre (levier) (m). */
@@ -175,7 +172,6 @@ export const BOARD_HIT_MIN = 44;
 export const MAX_WIDTH = Object.freeze({
   banner: 960,
   bubble: 320,
-  panel: 360,
   outcome: 440,
   readout: 320,
   help: 480,
@@ -192,7 +188,6 @@ export function createLayout(): UiLayout {
     mode: 'sides',
     banner: box(),
     bubble: box(),
-    panel: box(),
     outcome: box(),
     readout: box(),
     help: box(),
@@ -305,10 +300,8 @@ export function consoleRect(g: Readonly<UiGeometry>): ScreenRect {
  * Calcule la disposition (fonction pure, sans allocation : réécrit `out`).
  * @param g géométrie de l'écran.
  * @param out disposition à réécrire.
- * @param pinWalkerAtPost vrai tant que le panneau de réglage est ouvert : son obstacle est le
- *   bonhomme au poste ({@link CONSOLE_POST_X}) et non sa position en direct.
  */
-export function computeLayout(g: UiGeometry, out: UiLayout, pinWalkerAtPost = false): UiLayout {
+export function computeLayout(g: UiGeometry, out: UiLayout): UiLayout {
   const { width, height, cage, scene } = g;
   const leftMax = cage.left - MARGIN;
   const rightMin = cage.right + MARGIN;
@@ -369,15 +362,6 @@ export function computeLayout(g: UiGeometry, out: UiLayout, pinWalkerAtPost = fa
       Math.min(consoleLeft, onLedge ? g.walkerHead.x - WALKER_HALF_WIDTH * ppm : consoleLeft) -
       MARGIN;
     const obstacleTop = Math.min(consoleTop, onLedge ? g.walkerHead.y : consoleTop) - MARGIN;
-    if (pinWalkerAtPost) {
-      // Panneau de réglage ouvert : le bonhomme va au poste, la boîte ne suit pas sa marche.
-      const postHeadX = g.console.x - (CONSOLE_X - CONSOLE_POST_X) * ppm;
-      const postLeft = Math.min(consoleLeft, postHeadX - WALKER_HALF_WIDTH * ppm) - MARGIN;
-      const postTop = Math.min(consoleTop, g.groundY - WALKER_STAND_HEIGHT * ppm) - MARGIN;
-      placeBesideOrAbove(out.panel, MAX_WIDTH.panel, g, postLeft, postTop, leftMax);
-    } else {
-      placeBesideOrAbove(out.panel, MAX_WIDTH.panel, g, obstacleLeft, obstacleTop, leftMax);
-    }
     placeBesideOrAbove(out.outcome, MAX_WIDTH.outcome, g, obstacleLeft, obstacleTop, leftMax);
     const bw = Math.min(MAX_WIDTH.bubble, leftWidth);
     const head = g.walkerHead.y - 12;
@@ -427,7 +411,6 @@ export function computeLayout(g: UiGeometry, out: UiLayout, pinWalkerAtPost = fa
       topBand,
       bandTop - titleBand,
     );
-    set(out.panel, MARGIN, Math.min(MAX_WIDTH.panel * 1.5, full), 'top', below, belowRoom);
     const outcomeWidth = Math.min(MAX_WIDTH.outcome * 1.5, full);
     if (belowRoom >= MIN_OUTCOME_ROOM) {
       set(out.outcome, MARGIN, outcomeWidth, 'top', below, belowRoom);
@@ -445,6 +428,22 @@ export function computeLayout(g: UiGeometry, out: UiLayout, pinWalkerAtPost = fa
     }
   }
   return out;
+}
+
+/** Hauteur de la bande du bas laissée visible sous le pupitre (px) : celle du bandeau d'aide. */
+export const DOCK_HEIGHT = 76;
+
+/**
+ * Replie le panneau d'issue dans la bande du bas, sous le pupitre ouvert : il garde ses boutons
+ * (Rejouer, Niveau suivant, Menu) visibles et accessibles, le pupitre ne les masque jamais.
+ * Fonction pure : réécrit `out`.
+ * @param out boîte de l'issue.
+ * @param width largeur de la fenêtre (px).
+ * @param height hauteur de la fenêtre (px).
+ */
+export function dockOutcome(out: PanelBox, width: number, height: number): void {
+  const w = Math.min(MAX_WIDTH.banner, width - 2 * MARGIN);
+  set(out, (width - w) / 2, w, 'bottom', height - 8, DOCK_HEIGHT);
 }
 
 /**

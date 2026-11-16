@@ -1,5 +1,5 @@
 /**
- * Interface DOM (T-010) en navigateur réel, WebGL2 imposé : aide contextuelle, panneau Kp,
+ * Interface DOM (T-010) en navigateur réel, WebGL2 imposé : aide contextuelle, pupitre de réglage,
  * messages pédagogiques, commandes définitives au clavier réel, langue, accessibilité, police,
  * disposition. Captures dans docs/img/t010-*.png.
  *
@@ -177,7 +177,6 @@ async function checkPanelsAvoidCage(
   for (const selector of [
     '.ui-banner',
     '.ui-bubble',
-    '.ui-panel',
     '.ui-readout',
     '.ui-outcome',
     '.ui-help',
@@ -233,7 +232,7 @@ async function checkPanelsAvoidCage(
   return report;
 }
 
-test('(a) FR, clavier réel : aide, marche, panneau Kp, + ×5, Entrée, victoire, R', async ({
+test('(a) FR, clavier réel : aide, marche, pupitre (Kp), + ×5, Entrée, victoire, R', async ({
   page,
 }) => {
   const problems = await open(page, '?renderer=webgl&lang=fr');
@@ -256,25 +255,36 @@ test('(a) FR, clavier réel : aide, marche, panneau Kp, + ×5, Entrée, victoire
 
   await page.keyboard.press('e');
   const slider = page.getByRole('slider', { name: FR('level1.kp.label') });
+  const pupitre = page.locator('#ui .ui-pupitre');
+  await expect(pupitre).toBeVisible();
   await expect(slider).toBeFocused();
-  const value = page.locator('#ui .ui-kp-value');
-  await expect(value).toHaveText(`2000${NB}N/m`);
+  const value = page.getByRole('spinbutton', { name: FR('level1.kp.field') });
+  await expect(value).toHaveValue('2000');
   await expect(banner).toContainText('régler Kp');
   await expect(banner).toContainText('lancer');
   for (let i = 0; i < 5; i += 1) await page.keyboard.press('+');
-  await expect(value).toHaveText(`2500${NB}N/m`);
+  await expect(value).toHaveValue('2500');
   await expect(slider).toHaveValue('2500');
   await expect(page.locator('#ui .ui-kp-tag')).toHaveText(`Kp = 2500${NB}N/m`);
   await capture(page, 't010-02-panneau.png');
 
   await page.keyboard.press('Enter');
-  await expect(slider).toBeDisabled();
-  await expect(page.getByText(FR('level1.kp.locked'))).toBeVisible();
-  // D32 : embarquement (réglage verrouillé, « passer »), puis le trajet.
+  // Lancé : le pupitre se range pour montrer l'embarquement (D32), puis le trajet.
+  await expect(pupitre).toBeHidden();
   await expect(banner).toContainText(FR('hud.hint.skip'));
   await expect(banner).toContainText('Kp est verrouillé', { timeout: 10_000 });
   await expect(page.locator('#ui .ui-readout')).toBeVisible();
   await capture(page, 't010-03-trajet.png');
+  // E rouvre le pupitre en lecture seule : réglage verrouillé, sans pause ; Échap le referme.
+  await page.keyboard.press('e');
+  await expect(pupitre).toBeVisible();
+  await expect(slider).toBeDisabled();
+  await expect(pupitre.locator('.ui-pupitre-note')).toHaveText(FR('level1.kp.locked'));
+  await page.keyboard.press('Escape');
+  await expect(pupitre).toBeHidden();
+  // Ni pause à l'ouverture ni à la fermeture : le bouton propose toujours « Pause ».
+  await expect(page.getByRole('button', { name: FR('controls.pause'), exact: true })).toBeVisible();
+  await expect(banner).not.toContainText(FR('hud.status.paused'));
 
   const live = page.locator('[aria-live="polite"]');
   await expect(live).toContainText(
@@ -302,7 +312,7 @@ test('(a) FR, clavier réel : aide, marche, panneau Kp, + ×5, Entrée, victoire
   await expect(outcome).toBeHidden();
   await expect(slider).toBeEnabled();
   await expect(slider).toBeFocused();
-  await expect(value).toHaveText(`2500${NB}N/m`);
+  await expect(value).toHaveValue('2500');
   await expect(live).toContainText(FR('hud.status.reset'));
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });
@@ -319,7 +329,7 @@ test('(b) EN, clavier réel : Kp = 7000 (Page préc. ×4, + ×10), choc contre l
   await expect(slider).toBeFocused();
   for (let i = 0; i < 4; i += 1) await page.keyboard.press('PageUp');
   for (let i = 0; i < 10; i += 1) await page.keyboard.press('+');
-  await expect(page.locator('#ui .ui-kp-value')).toHaveText(`7000${NB}N/m`);
+  await expect(page.getByRole('spinbutton', { name: EN('level1.kp.field') })).toHaveValue('7000');
   await page.keyboard.press('Enter');
   const outcome = page.locator('#ui .ui-outcome');
   await expect(outcome).toContainText(EN('level1.fail.bonk'), { timeout: 10_000 });
@@ -339,16 +349,16 @@ test('(c) bascule de langue pendant le réglage : textes traduits, Kp et phase c
   expect(tuned.phase).toBe('tuning');
   const ui = page.locator('#ui');
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
-  await expect(ui.locator('.ui-panel-title')).toHaveText(FR('level1.kp.label'));
+  await expect(page.getByRole('slider', { name: FR('level1.kp.label') })).toHaveValue('3000');
   const lang = page.getByRole('button', { name: 'English' });
   await expect(lang.locator('span[lang="en"]')).toHaveText('English');
   await lang.click();
 
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   expect(await page.title()).toBe(EN('app.title'));
-  await expect(ui.locator('.ui-panel-title')).toHaveText(EN('level1.kp.label'));
   await expect(ui.locator('.ui-banner')).toContainText('set Kp');
-  await expect(ui.locator('.ui-kp-value')).toHaveText(`3000${NB}N/m`);
+  await expect(page.getByRole('spinbutton', { name: EN('level1.kp.field') })).toHaveValue('3000');
+  await expect(page.getByRole('dialog', { name: EN('pupitre.titre') })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Launch' })).toBeVisible();
   await expect(page.getByRole('slider', { name: EN('level1.kp.label') })).toHaveValue('3000');
   await expect(page.locator('#scene')).toHaveAttribute('aria-label', EN('a11y.canvas'));
@@ -358,7 +368,7 @@ test('(c) bascule de langue pendant le réglage : textes traduits, Kp et phase c
   // Textes visibles (la région aria-live garde l'historique des annonces : exclue).
   const text = (
     await Promise.all(
-      ['.ui-top', '.ui-panel', '.ui-banner'].map((selector) => ui.locator(selector).innerText()),
+      ['.ui-top', '.ui-pupitre', '.ui-banner'].map((selector) => ui.locator(selector).innerText()),
     )
   ).join('\n');
   for (const french of ['Gain proportionnel', 'régler', 'Lancer', 'Valeur de Kp', 'Afficher']) {
@@ -370,7 +380,8 @@ test('(c) bascule de langue pendant le réglage : textes traduits, Kp et phase c
 
   await page.getByRole('button', { name: 'Français' }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
-  await expect(ui.locator('.ui-panel-title')).toHaveText(FR('level1.kp.label'));
+  await expect(page.getByRole('slider', { name: FR('level1.kp.label') })).toHaveValue('3000');
+  await expect(page.getByRole('dialog', { name: FR('pupitre.titre') })).toBeVisible();
   expect(await page.title()).toBe(FR('app.title'));
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });
@@ -387,78 +398,95 @@ for (const lang of ['fr', 'en'] as const) {
       t('app.language.switch'),
       t('controls.pause'),
       t('board.open'),
-      t('controls.kpDecrease'),
-      t('controls.kpIncrease'),
+      t('pupitre.titre'),
       t('controls.launch'),
+      t('pupitre.fermer'),
     ];
     for (const name of names) {
       await expect(page.getByRole('button', { name, exact: true }), name).toBeVisible();
     }
     await expect(page.getByRole('slider', { name: t('level1.kp.label') })).toBeVisible();
     await expect(page.getByRole('spinbutton', { name: t('level1.kp.field') })).toBeVisible();
-    await expect(page.getByRole('group', { name: t('a11y.kpPanel') })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: t('pupitre.titre') })).toBeVisible();
     await expect(page.getByRole('img', { name: t('a11y.canvas') })).toBeVisible();
     await expect(page.locator('[aria-live="polite"]')).toHaveCount(1);
 
-    // Ordre de tabulation, depuis un point de départ maîtrisé : le premier contrôle de la barre
-    // du haut. (Dans Chrome, `blur()` ne ramène pas le point de départ de la navigation
-    // séquentielle au début du document : le Tab suivant repartait du curseur.)
     const focused = (): Promise<{ label: string; tag: string; interactive: boolean }> =>
       page.evaluate(() => {
         const a = document.activeElement;
         if (a === null) return { label: '', tag: '', interactive: false };
         const label =
           a.getAttribute('aria-label') ??
-          (a.getAttribute('aria-labelledby') !== null
-            ? 'slider'
-            : a === document.body
-              ? 'BODY'
-              : (a as HTMLElement).innerText.trim() || a.tagName);
+          (a === document.body ? 'BODY' : (a as HTMLElement).innerText.trim() || a.tagName);
         return {
           label,
           tag: a.tagName,
           interactive: a.matches('button, input, summary, a[href], select, textarea'),
         };
       });
-    const helpName = t('controls.help.show');
-    await page.getByRole('button', { name: helpName }).focus();
-    const order: string[] = [(await focused()).label];
-    for (let i = 0; i < 8; i += 1) {
+    // Le pupitre ouvert piège le focus (comme l'aide) : levier (focus à l'ouverture), champ,
+    // Lancer, Fermer, puis retour au levier. Le levier Ki, hors service, est sauté.
+    expect((await focused()).label).toBe(t('level1.kp.label'));
+    const trapped: string[] = [];
+    for (let i = 0; i < 5; i += 1) {
       await page.keyboard.press('Tab');
-      order.push((await focused()).label);
+      trapped.push((await focused()).label);
     }
-    expect(order).toEqual([
-      helpName,
-      t('app.language.switch'),
-      t('controls.pause'),
-      t('board.open'),
-      t('controls.kpDecrease'),
-      'slider',
-      t('controls.kpIncrease'),
-      'INPUT',
+    expect(trapped).toEqual([
+      t('level1.kp.field'),
       t('controls.launch'),
+      t('pupitre.fermer'),
+      t('level1.kp.label'),
+      t('level1.kp.field'),
     ]);
-    // Focus visible : contour de 3 px sur un vrai contrôle atteint au clavier (« Lancer »).
+    await page.keyboard.press('Shift+Tab');
+    expect((await focused()).label).toBe(t('level1.kp.label'));
+    await page.keyboard.press('Shift+Tab');
+    expect((await focused()).label).toBe(t('pupitre.fermer'));
+    // Focus visible : contour de 3 px sur un vrai contrôle atteint au clavier (« Fermer »).
     const outline = await page.evaluate(() => {
       const s = getComputedStyle(document.activeElement as Element);
       return `${s.outlineStyle} ${s.outlineWidth}`;
     });
     expect(outline).toBe('solid 3px');
-    // Suite du cycle jusqu'au retour au bouton d'aide : seuls des contrôles prennent le focus,
+    // Échap ferme le pupitre (retour à l'approche) ; la barre du haut reprend le focus au clavier.
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#ui .ui-pupitre')).toBeHidden();
+    expect((await run(page, [])).phase).toBe('approach');
+
+    // Ordre de tabulation, depuis un point de départ maîtrisé : le premier contrôle de la barre
+    // du haut. (Dans Chrome, `blur()` ne ramène pas le point de départ de la navigation
+    // séquentielle au début du document : le Tab suivant repartait du curseur.)
+    const firstName = t('pupitre.titre');
+    const helpName = t('controls.help.show');
+    await page.getByRole('button', { name: firstName, exact: true }).focus();
+    const order: string[] = [(await focused()).label];
+    for (let i = 0; i < 4; i += 1) {
+      await page.keyboard.press('Tab');
+      order.push((await focused()).label);
+    }
+    expect(order).toEqual([
+      firstName,
+      helpName,
+      t('app.language.switch'),
+      t('controls.pause'),
+      t('board.open'),
+    ]);
+    // Suite du cycle jusqu'au retour au premier bouton : seuls des contrôles prennent le focus,
     // en dehors du rebouclage du navigateur (au plus un passage par <body>). Aucun panneau ou
     // conteneur à défilement n'entre dans l'ordre de tabulation.
     const rest: { label: string; tag: string; interactive: boolean }[] = [];
     for (let i = 0; i < 30; i += 1) {
       await page.keyboard.press('Tab');
       const f = await focused();
-      if (f.label === helpName) break;
+      if (f.label === firstName) break;
       rest.push(f);
     }
     test.info().annotations.push({
       type: 'suite du cycle',
       description: rest.map((f) => `${f.tag}:${f.label.slice(0, 30)}`).join(' | '),
     });
-    expect((await focused()).label, 'le cycle revient au bouton d’aide').toBe(helpName);
+    expect((await focused()).label, 'le cycle revient au premier bouton').toBe(firstName);
     const strays = rest.filter((f) => !f.interactive && f.tag !== 'BODY');
     expect(strays, 'conteneurs non interactifs dans l’ordre de tabulation').toEqual([]);
     expect(rest.filter((f) => f.tag === 'BODY').length).toBeLessThanOrEqual(1);
@@ -472,7 +500,7 @@ for (const lang of ['fr', 'en'] as const) {
     await expect(dialog).toContainText(t('controls.help.mouse'));
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
-    expect((await run(page, [])).phase).toBe('tuning');
+    expect((await run(page, [])).phase).toBe('approach');
     await expect(page.getByRole('button', { name: t('controls.help.show') })).toBeFocused();
     expect(problems, CONSOLE_FAILURE).toEqual([]);
   });

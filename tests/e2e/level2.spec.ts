@@ -135,7 +135,7 @@ function hit(
 }
 
 /**
- * Aucun recouvrement entre l'étiquette Kp/Ki et les boutons du haut, entre le panneau de réglage
+ * Aucun recouvrement entre l'étiquette Kp/Ki et les boutons du haut, entre le pupitre de réglage
  * et le bandeau d'aide, et tout reste dans l'écran.
  */
 async function checkNoOverlap(page: Page, width: number, height: number): Promise<void> {
@@ -145,14 +145,15 @@ async function checkNoOverlap(page: Page, width: number, height: number): Promis
   expect(hit(tag, tools), 'étiquette Kp/Ki et boutons du haut').toBe(false);
   expect(hit(title, tools), 'titre et boutons du haut').toBe(false);
   expect(tag.x + tag.w, 'étiquette dans l’écran').toBeLessThanOrEqual(width);
-  const panel = page.locator('#ui .ui-panel');
+  const panel = page.locator('#ui .ui-pupitre');
   if (await panel.isVisible()) {
     const p = await boxOf(panel);
     const banner = await boxOf(page.locator('#ui .ui-banner'));
-    expect(hit(p, banner), 'panneau et bandeau').toBe(false);
-    expect(hit(p, tag), 'panneau et étiquette').toBe(false);
-    expect(p.y + p.h, 'panneau dans l’écran').toBeLessThanOrEqual(height);
-    expect(p.x + p.w, 'panneau dans l’écran').toBeLessThanOrEqual(width);
+    expect(hit(p, banner), 'pupitre et bandeau').toBe(false);
+    expect(hit(p, tag), 'pupitre et étiquette').toBe(false);
+    expect(hit(p, tools), 'pupitre et boutons du haut').toBe(false);
+    expect(p.y + p.h, 'pupitre dans l’écran').toBeLessThanOrEqual(height);
+    expect(p.x + p.w, 'pupitre dans l’écran').toBeLessThanOrEqual(width);
   }
   const bubble = page.locator('#ui .ui-bubble');
   if (await bubble.isVisible()) {
@@ -205,7 +206,6 @@ async function checkIGaugeLabels(page: Page, width: number, height: number): Pro
   for (const selector of [
     '.ui-readout',
     '.ui-bubble',
-    '.ui-panel',
     '.ui-outcome',
     '.ui-dimension',
     '.ui-kp-tag',
@@ -274,6 +274,12 @@ for (const lang of ['fr', 'en'] as const) {
   const level2Button = (page: Page): Locator =>
     page.getByRole('button', { name: t('level2.title'), exact: true });
   const slider = (page: Page): Locator => page.getByRole('slider', { name: t('level2.ki.label') });
+  const kpSlider = (page: Page): Locator =>
+    page.getByRole('slider', { name: t('level1.kp.label') });
+  const kiField = (page: Page): Locator =>
+    page.getByRole('spinbutton', { name: t('level2.ki.field') });
+  const kpField = (page: Page): Locator =>
+    page.getByRole('spinbutton', { name: t('level1.kp.field') });
 
   test(`(a) ${lang} : menu à deux entrées, niveau 2 au clavier, victoire à Ki = 800`, async ({
     page,
@@ -297,12 +303,14 @@ for (const lang of ['fr', 'en'] as const) {
 
     await run(page, TO_CONSOLE);
     await expect(slider(page)).toBeFocused();
-    await expect(page.locator('#ui .ui-fixed')).toHaveText(
-      t('level2.kp.fixed').replace('{kp}', '2500'),
-    );
-    await expect(page.locator('#ui .ui-kp-value')).toHaveText(`2000${NB}N/(m·s)`);
-    await expect(page.locator('#ui .ui-panel')).toContainText(t('level2.ki.help'));
-    await expect(page.locator('#ui .ui-panel')).toContainText(t('level2.ki.range'));
+    // Kp est fixé au niveau 2 : levier et champ grisés, valeur 2500 affichée.
+    await expect(kpSlider(page)).toBeDisabled();
+    await expect(kpSlider(page)).toHaveValue('2500');
+    await expect(kpField(page)).toBeDisabled();
+    await expect(kpField(page)).toHaveValue('2500');
+    await expect(kiField(page)).toHaveValue('2000');
+    await expect(page.locator('#ui-pupitre-aide-ki')).toContainText(t('level2.ki.help'));
+    await expect(page.locator('#ui-pupitre-aide-ki')).toContainText(t('level2.ki.range'));
     await expect(banner).toContainText(lang === 'fr' ? 'régler Ki' : 'set Ki');
 
     // Clavier, depuis le défaut 2000 : Page suiv. (− 1000), puis − trois fois et + une fois = 800
@@ -314,7 +322,7 @@ for (const lang of ['fr', 'en'] as const) {
     await expect(slider(page)).toHaveValue('1000');
     for (let i = 0; i < 3; i += 1) await page.keyboard.press('-');
     await page.keyboard.press('+');
-    await expect(page.locator('#ui .ui-kp-value')).toHaveText(`800${NB}N/(m·s)`);
+    await expect(kiField(page)).toHaveValue('800');
     await expect(slider(page)).toHaveValue('800');
     await expect(page.locator('#ui .ui-kp-tag')).toHaveText('Kp = 2500 · Ki = 800');
     await page.keyboard.press('PageDown');
@@ -327,12 +335,16 @@ for (const lang of ['fr', 'en'] as const) {
     await checkNoOverlap(page, 1280, 720);
 
     await page.keyboard.press('Enter');
-    await expect(slider(page)).toBeDisabled();
-    await expect(page.getByText(t('level2.ki.locked'))).toBeVisible();
+    // Lancé : le pupitre se range ; E le rouvre en lecture seule, Ki verrouillé, Kp toujours fixé.
+    await expect(page.locator('#ui .ui-pupitre')).toBeHidden();
     await expect(banner).toContainText(lang === 'fr' ? 'Ki est verrouillé' : 'Ki is locked');
-    // Kp reste affiché comme fixé pendant le trajet.
-    await expect(page.locator('#ui .ui-fixed')).toBeVisible();
+    await page.keyboard.press('e');
+    await expect(slider(page)).toBeDisabled();
+    await expect(page.locator('#ui .ui-pupitre-note')).toHaveText(t('level2.ki.locked'));
+    await expect(kpField(page)).toHaveValue('2500');
     await expect(page.locator('#ui .ui-readout')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#ui .ui-pupitre')).toBeHidden();
 
     // Le crochet de test fait avancer le temps : 0,3 s (moteur à fond), puis jusqu'à l'issue.
     await run(page, [['advance', 0.3]]);
@@ -369,16 +381,30 @@ for (const lang of ['fr', 'en'] as const) {
     await run(page, TO_CONSOLE);
 
     await slider(page).fill('1500');
-    await expect(page.locator('#ui .ui-kp-value')).toHaveText(`1500${NB}N/(m·s)`);
+    await expect(kiField(page)).toHaveValue('1500');
     expect((await run(page, [])).ki).toBe(1500);
-    const field = page.getByRole('spinbutton', { name: t('level2.ki.field') });
+    const field = kiField(page);
     await field.fill('2400');
     await field.press('Enter');
-    await expect(page.locator('#ui .ui-kp-value')).toHaveText(`2400${NB}N/(m·s)`);
-    await page.getByRole('button', { name: t('controls.kiIncrease') }).click();
-    await expect(slider(page)).toHaveValue('2500');
-    await page.getByRole('button', { name: t('controls.kiDecrease') }).click();
-    await page.getByRole('button', { name: t('controls.kiIncrease') }).click();
+    await expect(field).toHaveValue('2400');
+    // La manette de Ki, tirée à la souris le long de sa fente : tout en haut, puis tout en bas.
+    const zone = page.locator('#ui .ui-pupitre-zone').nth(1);
+    const box = await zone.boundingBox();
+    expect(box).not.toBeNull();
+    if (box === null) return;
+    const zx = box.x + box.width / 2;
+    await page.mouse.move(zx, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(zx, box.y + 4);
+    await page.mouse.up();
+    expect((await run(page, [])).ki).toBeGreaterThanOrEqual(7500);
+    await page.mouse.move(zx, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(zx, box.y + box.height - 3);
+    await page.mouse.up();
+    expect((await run(page, [])).ki).toBeLessThanOrEqual(500);
+    await field.fill('2500');
+    await field.press('Enter');
     await expect(slider(page)).toHaveValue('2500');
     // Valeur hors bornes dans le champ : ramenée à la borne.
     await field.fill('99999');
@@ -424,10 +450,13 @@ for (const lang of ['fr', 'en'] as const) {
     await page.keyboard.press('+');
     await page.keyboard.press('PageUp');
     expect((await run(page, [])).ki).toBe(300);
+    // Ouvert en lecture seule (E), le pupitre montre Ki verrouillé : levier et champ grisés.
+    await page.keyboard.press('e');
     await expect(slider(page)).toBeDisabled();
-    await expect(page.getByRole('spinbutton', { name: t('level2.ki.field') })).toBeDisabled();
-    await expect(page.getByRole('button', { name: t('controls.kiIncrease') })).toBeDisabled();
-    await expect(page.getByRole('button', { name: t('controls.kiDecrease') })).toBeDisabled();
+    await expect(kiField(page)).toBeDisabled();
+    await expect(page.locator('#ui .ui-pupitre-recommencer')).toBeEnabled();
+    await expect(page.locator('#ui .ui-pupitre-lancer')).toBeHidden();
+    await page.keyboard.press('Escape');
     const locked = await run(page, [
       ['setKi', 900],
       ['adjustKi', 100],
@@ -557,8 +586,10 @@ for (const lang of ['fr', 'en'] as const) {
     await expect(page.locator('#ui .ui-bubble')).toHaveText(t('level1.goal'));
     await run(page, TO_CONSOLE);
     await expect(page.getByRole('slider', { name: t('level1.kp.label') })).toBeFocused();
-    await expect(page.locator('#ui .ui-fixed')).toBeHidden();
-    await expect(page.locator('#ui .ui-kp-value')).toHaveText(`2000${NB}N/m`);
+    // Ki n’existe pas au niveau 1 : levier hors service, champ grisé.
+    await expect(page.getByRole('slider', { name: t('level2.ki.label') })).toBeDisabled();
+    await expect(page.getByRole('spinbutton', { name: t('level2.ki.field') })).toBeDisabled();
+    await expect(page.getByRole('spinbutton', { name: t('level1.kp.field') })).toHaveValue('2000');
     const s = await run(page, [['setKp', 2500], ['setKi', 100], ['launch'], ['advance', 4]]);
     expect(s.levelId).toBe('level1');
     expect(s.results.slice(0, 2)).toEqual(['accepted', 'ignored']);
@@ -616,7 +647,7 @@ test('(f) portrait 390×844 : réglage du niveau 2, étiquette Kp et Ki sans rec
   await run(page, [...TO_CONSOLE, ['setKi', 800]]);
   await settle(page);
   await expect(page.locator('#ui .ui-kp-tag')).toHaveText('Kp = 2500 · Ki = 800');
-  await expect(page.locator('#ui .ui-fixed')).toBeVisible();
+  await expect(page.getByRole('slider', { name: T.fr('level1.kp.label') })).toBeVisible();
   await checkNoOverlap(page, 390, 844);
   await shot(page, 't021-niveau2-portrait.png', true);
   // Pendant le trajet et à l'issue aussi.

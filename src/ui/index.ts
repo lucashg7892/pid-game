@@ -33,6 +33,7 @@ export {
   CONSOLE_HIT_ABOVE,
   CONSOLE_HIT_BELOW,
   CONSOLE_HIT_HALF_WIDTH,
+  DOCK_HEIGHT,
   MARGIN,
   MAX_WIDTH,
   MIN_BANNER_BAND,
@@ -46,6 +47,7 @@ export {
   computeLayout,
   consoleRect,
   createLayout,
+  dockOutcome,
   intersects,
   isConsoleHit,
   walkerOnLedge,
@@ -56,6 +58,7 @@ export {
   type UiGeometry,
   type UiLayout,
 } from './layout';
+export * from './pupitre';
 export { createUi, type Ui, type UiOptions } from './overlay';
 export { screenKeyToIntent, type ScreenKeyInput, type ScreenKeyIntent } from './screen-keys';
 export {

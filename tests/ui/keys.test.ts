@@ -80,6 +80,7 @@ function intent(
     focus,
     helpOpen: false,
     boardOpen: false,
+    pupitreLecture: false,
     ...extra,
   });
 }
@@ -95,6 +96,17 @@ const USE_BY_PHASE: Readonly<Record<LevelPhase, KeyIntent>> = {
   paused: 'block',
 };
 
+/**
+ * Intention attendue de E : celle de Entrée et Espace, sauf là où elles ne servent à rien (trajet,
+ * issue, pause) : E y ouvre le pupitre de contrôle en lecture seule (T-049).
+ */
+const E_BY_PHASE: Readonly<Record<LevelPhase, KeyIntent>> = {
+  ...USE_BY_PHASE,
+  trip: 'openPupitre',
+  outcome: 'openPupitre',
+  paused: 'openPupitre',
+};
+
 describe('keyToIntent : table touche × phase × focus', () => {
   // Pour chaque touche : intention attendue selon (phase, focus).
   const table: readonly (readonly [string, Key, (p: LevelPhase, f: FocusTarget) => KeyIntent])[] = [
@@ -103,7 +115,7 @@ describe('keyToIntent : table touche × phase × focus', () => {
     ['A (QWERTY)', KEY_A, (_p, f) => (f === 'number' ? 'none' : 'walkLeft')],
     ['Q (AZERTY, code KeyA)', AZERTY_Q, (_p, f) => (f === 'number' ? 'none' : 'walkLeft')],
     ['D', KEY_D, (_p, f) => (f === 'number' ? 'none' : 'walkRight')],
-    ['E', KEY_E, (p, f) => (f === 'number' ? 'none' : USE_BY_PHASE[p])],
+    ['E', KEY_E, (p, f) => (f === 'number' ? 'none' : E_BY_PHASE[p])],
     ['Entrée', ENTER, (p, f) => (f === 'number' || f === 'button' ? 'none' : USE_BY_PHASE[p])],
     [
       'Entrée du pavé',
@@ -366,5 +378,64 @@ describe("tableau d'école : touche T (T-042)", () => {
 
   it('tableau ouvert : Échap maintenue est ignorée', () => {
     expect(intent(ESCAPE, 'trip', 'none', { boardOpen: true, repeat: true })).toBe('block');
+  });
+});
+
+describe('keyToIntent : pupitre de contrôle (T-049)', () => {
+  it('E ouvre le pupitre en lecture seule en trajet, à l’issue et en pause ; ailleurs, comme avant', () => {
+    expect(intent(KEY_E, 'trip')).toBe('openPupitre');
+    expect(intent(KEY_E, 'outcome')).toBe('openPupitre');
+    expect(intent(KEY_E, 'paused')).toBe('openPupitre');
+    expect(intent(KEY_E, 'approach')).toBe('interact');
+    expect(intent(KEY_E, 'tuning')).toBe('launch');
+    expect(intent(KEY_E, 'boarding')).toBe('skip');
+    expect(intent(KEY_E, 'exit')).toBe('skip');
+  });
+
+  it('Entrée et Espace n’ouvrent jamais le pupitre', () => {
+    for (const key of [ENTER, SPACE]) {
+      for (const phase of PHASES) {
+        expect(intent(key, phase)).not.toBe('openPupitre');
+      }
+    }
+  });
+
+  it('pupitre ouvert en lecture seule : E et Échap le ferment, dans toutes les phases', () => {
+    for (const phase of PHASES) {
+      expect(intent(KEY_E, phase, 'none', { pupitreLecture: true }), phase).toBe('closePupitre');
+      expect(intent(ESCAPE, phase, 'none', { pupitreLecture: true }), phase).toBe('closePupitre');
+    }
+  });
+
+  it('Échap ferme le pupitre avant de mettre en pause, après l’aide et le tableau', () => {
+    expect(intent(ESCAPE, 'trip', 'none', { pupitreLecture: true })).toBe('closePupitre');
+    expect(intent(ESCAPE, 'trip', 'none', { pupitreLecture: true, helpOpen: true })).toBe(
+      'closeHelp',
+    );
+    expect(intent(ESCAPE, 'trip', 'none', { pupitreLecture: true, boardOpen: true })).toBe(
+      'closeBoard',
+    );
+    expect(intent(ESCAPE, 'trip')).toBe('pause');
+  });
+
+  it('répétition automatique : E maintenue n’ouvre ni ne ferme le pupitre', () => {
+    expect(intent(KEY_E, 'trip', 'none', { repeat: true })).toBe('block');
+    expect(intent(KEY_E, 'trip', 'none', { repeat: true, pupitreLecture: true })).toBe('block');
+  });
+
+  it('E tapée dans le champ numérique reste native, pupitre ouvert ou non', () => {
+    expect(intent(KEY_E, 'trip', 'number')).toBe('none');
+    expect(intent(KEY_E, 'trip', 'number', { pupitreLecture: true })).toBe('none');
+  });
+
+  it('aide ou tableau ouvert : E ne fait rien (bloquée), même pupitre ouvert', () => {
+    expect(intent(KEY_E, 'trip', 'none', { helpOpen: true, pupitreLecture: true })).toBe('block');
+    expect(intent(KEY_E, 'trip', 'none', { boardOpen: true })).toBe('block');
+  });
+
+  it('la marche et les touches de réglage ne sont pas touchées par le pupitre ouvert', () => {
+    expect(intent(KEY_D, 'approach', 'none', { pupitreLecture: true })).toBe('walkRight');
+    expect(intent(PLUS, 'tuning', 'range', { pupitreLecture: true })).toBe('kpUp');
+    expect(intent(PAGE_UP, 'tuning', 'range', { pupitreLecture: true })).toBe('kpUpBig');
   });
 });

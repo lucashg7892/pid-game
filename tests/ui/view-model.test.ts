@@ -28,6 +28,7 @@ const HINTS: Readonly<Record<'fr' | 'en', Readonly<Record<HintId, string>>>> = {
     paused: `Jeu en pause. · Échap${NB}: reprendre`,
     help: `Échap${NB}: fermer l’aide`,
     board: `Échap${NB}: fermer le tableau`,
+    pupitre: `Échap${NB}: fermer le pupitre`,
   },
   en: {
     use: 'E: set up the lift',
@@ -38,6 +39,7 @@ const HINTS: Readonly<Record<'fr' | 'en', Readonly<Record<HintId, string>>>> = {
     paused: 'Game paused. · Esc: resume',
     help: 'Esc: close the help',
     board: 'Esc: close the blackboard',
+    pupitre: 'Esc: close the desk',
   },
 };
 
@@ -47,7 +49,7 @@ function build(level: Level1, locale: 'fr' | 'en', helpOpen = false): Readonly<V
 
 describe('bandeau d’aide : chaque phase, FR et EN', () => {
   for (const locale of ['fr', 'en'] as const) {
-    it(`${locale} : textes exacts des sept bandeaux`, () => {
+    it(`${locale} : textes exacts des neuf bandeaux`, () => {
       const t = tr(locale);
       for (const id of Object.keys(HINTS[locale]) as HintId[]) {
         expect(hintText(hintLine(id, t)), id).toBe(HINTS[locale][id]);
@@ -103,7 +105,6 @@ describe('modèle de vue par phase', () => {
     expect(hintText(fr.hint)).toBe(HINTS.fr.use);
     expect(fr.bubble).toBe(CATALOGS.fr['level1.goal']);
     expect(fr.kpTag).toBe(`Kp = 2000${NB}N/m`);
-    expect(fr.panelOpen).toBe(false);
     expect(fr.readoutVisible).toBe(false);
     expect(fr.outcomeVisible).toBe(false);
     expect(fr.locale).toBe('fr');
@@ -120,27 +121,19 @@ describe('modèle de vue par phase', () => {
     expect(build(level, 'fr').hintId).toBe('use');
   });
 
-  it('réglage : panneau ouvert et modifiable, valeur « 2500 N/m », bulle masquée', () => {
+  it('réglage : étiquette « Kp = 2500 N/m », bulle masquée', () => {
     const level = tuning(2500);
     const fr = build(level, 'fr');
-    expect(fr.panelOpen).toBe(true);
-    expect(fr.panelLocked).toBe(false);
-    expect(fr.kp).toBe(2500);
-    expect(fr.kpValue).toBe(`2500${NB}N/m`);
-    expect(fr.kpValueText).toBe('2500 newtons par mètre');
     expect(fr.kpTag).toBe(`Kp = 2500${NB}N/m`);
     expect(fr.bubble).toBe('');
     expect(hintText(fr.hint)).toBe(HINTS.fr.tune);
-    expect(build(level, 'en').kpValueText).toBe('2500 newtons per metre');
   });
 
-  it('trajet : panneau verrouillé, temps, erreur et force formatés, saturation', () => {
+  it('trajet : temps, erreur et force formatés, saturation', () => {
     const level = tuning(2500);
     level.launch();
     advance(level, 0.1);
     const early = build(level, 'fr');
-    expect(early.panelOpen).toBe(true);
-    expect(early.panelLocked).toBe(true);
     expect(early.readoutVisible).toBe(true);
     expect(early.saturated).toBe(true); // 2500 × 3 m = 7500 N > 5000 N au départ
     expect(early.force).toBe(`Force${NB}: 5000${NB}N`);
@@ -178,7 +171,7 @@ describe('modèle de vue par phase', () => {
     expect(build(level, 'fr').legendOpenByDefault).toBe(false);
   });
 
-  it('pause pendant le trajet : phase effective « trip », panneau verrouillé, bandeau de reprise', () => {
+  it('pause pendant le trajet : phase effective « trip », bandeau de reprise', () => {
     const level = tuning(2500);
     level.launch();
     advance(level, 0.5);
@@ -187,35 +180,30 @@ describe('modèle de vue par phase', () => {
     const fr = build(level, 'fr');
     expect(fr.paused).toBe(true);
     expect(fr.phase).toBe('trip');
-    expect(fr.panelLocked).toBe(true);
     expect(hintText(fr.hint)).toBe(HINTS.fr.paused);
     expect(hintText(build(level, 'en').hint)).toBe(HINTS.en.paused);
   });
 
-  it('pause pendant le réglage : panneau ouvert mais verrouillé', () => {
+  it('pause pendant le réglage : phase effective « tuning », en pause', () => {
     const level = tuning(2500);
     level.pause();
     const vm = build(level, 'fr');
-    expect(vm.panelOpen).toBe(true);
-    expect(vm.panelLocked).toBe(true);
+    expect(vm.phase).toBe('tuning');
+    expect(vm.paused).toBe(true);
   });
 
-  it('D31-D32, avec animations : réglage ouvert tout de suite, embarquement verrouillé, issue après la sortie', () => {
+  it('D31-D32, avec animations : réglage tout de suite, embarquement verrouillé, issue après la sortie', () => {
     const level = createLevel1();
     level.setKp(2500);
     level.interact();
     // Panneau ouvert dès E, loin de la console, pendant la marche vers le poste.
     let vm = build(level, 'fr');
     expect(level.snapshot.walkerAction).toBe('toPost');
-    expect(vm.panelOpen).toBe(true);
-    expect(vm.panelLocked).toBe(false);
     expect(vm.hintId).toBe('tune');
     expect(vm.bubble).toBe('');
     level.launch();
     vm = build(level, 'fr');
     expect(vm.phase).toBe('boarding');
-    expect(vm.panelOpen).toBe(true);
-    expect(vm.panelLocked).toBe(true);
     expect(vm.readoutVisible).toBe(false);
     expect(vm.outcomeVisible).toBe(false);
     expect(hintText(vm.hint)).toBe(HINTS.fr.skip);
@@ -232,7 +220,6 @@ describe('modèle de vue par phase', () => {
     expect(vm.outcomeVisible).toBe(false);
     expect(vm.outcome).toBeNull();
     expect(vm.outcomeTitle).toBe('');
-    expect(vm.panelOpen).toBe(false);
     expect(vm.readoutVisible).toBe(true);
     expect(vm.legendOpenByDefault).toBe(true);
     expect(vm.hintId).toBe('skip');
@@ -267,7 +254,6 @@ describe('issues : titres, messages pédagogiques complets, cote et formule', ()
     expect(fr.texts.teaser).toBe(CATALOGS.fr['level1.teaser']);
     expect(fr.texts.nextLevel).toBe(CATALOGS.fr['controls.nextLevel']);
     expect(fr.texts.nextLevel).toBe('Niveau suivant');
-    expect(fr.panelOpen).toBe(false);
     expect(fr.readoutVisible).toBe(true);
     expect(fr.kpTag).toBe(`Kp = 2500${NB}N/m`);
     expect(hintText(fr.hint)).toBe(HINTS.fr.outcome);
@@ -324,7 +310,6 @@ describe('issues : titres, messages pédagogiques complets, cote et formule', ()
     expect(vm.outcomeTitle).toBe('');
     expect(vm.dimension).toBe('');
     expect(vm.phase).toBe('tuning');
-    expect(vm.kpValue).toBe(`2500${NB}N/m`);
   });
 });
 
@@ -380,7 +365,7 @@ describe('Kp toujours présent, langue et mémoïsation', () => {
     for (const locale of ['fr', 'en'] as const) {
       const texts = staticTexts(tr(locale));
       expect(texts.title).toBe('Huygens’s world');
-      expect(texts.helpLines).toHaveLength(9);
+      expect(texts.helpLines).toHaveLength(10);
       expect(texts.legendLines).toHaveLength(4);
       for (const value of Object.values(texts)) {
         if (typeof value === 'string') expect(value.length).toBeGreaterThan(0);
@@ -426,5 +411,30 @@ describe("tableau d'école ouvert (T-042)", () => {
     expect(en.boardOpen).toBe('Open the blackboard');
     expect(fr.helpLines).toContain(CATALOGS.fr['controls.help.board']);
     expect(en.helpLines).toContain(CATALOGS.en['controls.help.board']);
+  });
+});
+
+describe('pupitre de contrôle : bandeau et textes (T-049)', () => {
+  it('pupitre ouvert en lecture seule : bandeau « fermer le pupitre », après le tableau et l’aide', () => {
+    const level = createLevel1({ animations: false });
+    const builder = createViewModelBuilder(tr('fr'));
+    const vm = builder.build(level.snapshot, { helpOpen: false, pupitreLecture: true });
+    expect(vm.pupitreReadOnly).toBe(true);
+    expect(vm.hintId).toBe('pupitre');
+    expect(builder.build(level.snapshot, { helpOpen: true, pupitreLecture: true }).hintId).toBe(
+      'help',
+    );
+    expect(
+      builder.build(level.snapshot, { helpOpen: false, boardOpen: true, pupitreLecture: true })
+        .hintId,
+    ).toBe('board');
+    expect(builder.build(level.snapshot, CLOSED).pupitreReadOnly).toBe(false);
+  });
+
+  it('textes du bouton de la barre du haut : FR et EN', () => {
+    expect(staticTexts(tr('fr')).pupitreButton).toBe('Pupitre');
+    expect(staticTexts(tr('fr')).pupitreLabel).toBe('Pupitre de contrôle');
+    expect(staticTexts(tr('en')).pupitreButton).toBe('Desk');
+    expect(staticTexts(tr('en')).pupitreLabel).toBe('Control desk');
   });
 });

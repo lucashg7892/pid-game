@@ -37,7 +37,7 @@ interface Box {
 
 for (const lvl of LEVELS) {
   for (const size of VIEWPORTS) {
-    test(`R3 ${lvl.id} ${String(size.width)}×${String(size.height)} : le panneau de réglage ne bouge pas de E au départ du trajet`, async ({
+    test(`R3 ${lvl.id} ${String(size.width)}×${String(size.height)} : le pupitre ne bouge pas de E au lancement, puis se range pendant l'embarquement`, async ({
       page,
     }) => {
       const problems = await open(page, `e2e=1&anim=1&screen=${lvl.id}`, size);
@@ -45,7 +45,7 @@ for (const lvl of LEVELS) {
       const result = await page.evaluate(
         ([id, value]) => {
           const hook = window.__huygens;
-          const panel = document.querySelector('#ui .ui-panel');
+          const panel = document.querySelector('#ui .ui-pupitre');
           if (hook === undefined || !(panel instanceof HTMLElement)) throw new Error('absent');
           const boxes: Box[] = [];
           const read = (): void => {
@@ -60,21 +60,25 @@ for (const lvl of LEVELS) {
           const arrived = hook.snapshot().atPost;
           if (id === 'level2') hook.commands.setKi(value);
           else hook.commands.setKp(value);
+          read();
           hook.commands.launch();
+          hook.advance(1 / 60);
+          // Lancé : le pupitre de réglage se range pendant l'embarquement et le trajet.
+          const hiddenAtLaunch = panel.hidden;
           let boarding = 0;
           for (let i = 0; i < 600 && hook.snapshot().phase === 'boarding'; i += 1) {
             hook.advance(1 / 60);
             boarding += 1;
-            if (hook.snapshot().phase === 'boarding') read();
           }
-          return { boxes, arrived, boarding, phase: hook.snapshot().phase };
+          return { boxes, arrived, boarding, hiddenAtLaunch, phase: hook.snapshot().phase };
         },
         [lvl.id, lvl.win] as const,
       );
       expect(result.arrived).toBe(true);
       expect(result.phase).toBe('trip');
+      expect(result.hiddenAtLaunch).toBe(true);
       expect(result.boarding).toBeGreaterThan(60);
-      expect(result.boxes.length).toBeGreaterThan(150);
+      expect(result.boxes.length).toBeGreaterThan(60);
       const first = result.boxes[0];
       if (first === undefined) throw new Error('aucun échantillon');
       expect(first.width).toBeGreaterThan(0);

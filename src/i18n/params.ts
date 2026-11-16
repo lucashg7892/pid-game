@@ -36,6 +36,8 @@ export const MESSAGE_PARAMS = {
   'board.error.where': ['r'],
   'board.sat.intro': ['umax'],
   'board.value.ki': ['ki'],
+  'pupitre.annonce.issueSature': ['reglage'],
+  'pupitre.annonce.issueLibre': ['reglage'],
 } as const satisfies Partial<Record<MessageKey, readonly string[]>>;
 
 /** Clés qui attendent des paramètres. */

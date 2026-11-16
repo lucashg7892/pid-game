@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import type { LevelPhase } from '../../src/game';
 import {
   commandsBlocked,
+  cycleFocusIndex,
   helpPauseDecision,
   modalPauseDecision,
   trapFocusIndex,
@@ -74,6 +75,28 @@ describe('trapFocusIndex', () => {
 
   it('ne fait rien sans contrôle', () => {
     expect(trapFocusIndex(-1, 0, false)).toBeNull();
+  });
+});
+
+describe('cycleFocusIndex (pupitre, T-049)', () => {
+  it('avance d’un contrôle, recule avec Maj, et reboucle aux extrémités', () => {
+    expect(cycleFocusIndex(0, 4, false)).toBe(1);
+    expect(cycleFocusIndex(2, 4, false)).toBe(3);
+    expect(cycleFocusIndex(3, 4, false)).toBe(0);
+    expect(cycleFocusIndex(3, 4, true)).toBe(2);
+    expect(cycleFocusIndex(0, 4, true)).toBe(3);
+    expect(cycleFocusIndex(0, 1, false)).toBe(0);
+    expect(cycleFocusIndex(0, 1, true)).toBe(0);
+  });
+
+  it('entre par le début (par la fin avec Maj) quand le focus est hors de la liste', () => {
+    expect(cycleFocusIndex(-1, 3, false)).toBe(0);
+    expect(cycleFocusIndex(-1, 3, true)).toBe(2);
+  });
+
+  it('ne fait rien sans contrôle', () => {
+    expect(cycleFocusIndex(-1, 0, false)).toBeNull();
+    expect(cycleFocusIndex(0, 0, true)).toBeNull();
   });
 });
 

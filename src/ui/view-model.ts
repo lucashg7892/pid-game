@@ -22,6 +22,8 @@ export interface UiState {
   readonly helpOpen: boolean;
   /** Tableau d'école ouvert (absent : fermé). */
   readonly boardOpen?: boolean;
+  /** Pupitre de contrôle ouvert en lecture seule (absent : non). */
+  readonly pupitreLecture?: boolean;
 }
 
 /** Textes qui ne dépendent que de la langue. */
@@ -54,35 +56,16 @@ export interface StaticTexts {
   readonly boardTitle: string;
   /** Bouton de fermeture du tableau d'école. */
   readonly boardClose: string;
+  /** Bouton de la barre du haut qui ouvre ou ferme le pupitre de contrôle. */
+  readonly pupitreButton: string;
+  /** Nom accessible de ce bouton (titre du pupitre). */
+  readonly pupitreLabel: string;
   /** Bouton pause. */
   readonly pause: string;
   /** Bouton reprise. */
   readonly resume: string;
   /** Bouton « Menu » (retour au menu des niveaux). */
   readonly menu: string;
-  /** Nom du panneau de réglage. */
-  readonly panelLabel: string;
-  /**
-   * Titre du panneau de réglage. Les textes `kp*` du réglage sont ceux de Kp au niveau 1 et ceux
-   * de Ki au niveau 2 (les noms gardent le préfixe historique).
-   */
-  readonly kpLabel: string;
-  /** Nom du champ numérique. */
-  readonly kpField: string;
-  /** Aide de la grandeur réglée. */
-  readonly kpHelp: string;
-  /** Plage de la grandeur réglée. */
-  readonly kpRange: string;
-  /** Message de verrouillage. */
-  readonly kpLocked: string;
-  /** Nom du bouton −. */
-  readonly kpDecrease: string;
-  /** Nom du bouton +. */
-  readonly kpIncrease: string;
-  /** Bouton « Lancer ». */
-  readonly launch: string;
-  /** Bouton « Recommencer ». */
-  readonly restart: string;
   /** Bouton « Rejouer le niveau ». */
   readonly replay: string;
   /** Nom du bloc des mesures du trajet. */
@@ -135,26 +118,16 @@ export interface ViewModel {
   helpOpen: boolean;
   /** Tableau d'école ouvert. */
   boardOpen: boolean;
+  /** Pupitre de contrôle ouvert en lecture seule. */
+  pupitreReadOnly: boolean;
   /** Bandeau courant. */
   hintId: HintId;
   /** Contenu du bandeau (même objet tant que bandeau et langue ne changent pas). */
   hint: HintLine;
   /** Étiquette permanente « Kp = 2500 N/m » (niveau 1) ou « Kp = 2500 · Ki = 2000 » (niveau 2). */
   kpTag: string;
-  /** Kp fixé du niveau 2 (« Kp = 2500 N/m (fixé) ») ; vide au niveau 1, où Kp est le réglage. */
-  fixedKp: string;
   /** Bulle : objectif ou invite à la console ; vide si aucune. */
   bubble: string;
-  /** Panneau Kp visible (réglage, embarquement et trajet). */
-  panelOpen: boolean;
-  /** Panneau Kp verrouillé (embarquement, trajet, pause). */
-  panelLocked: boolean;
-  /** Valeur réglée (Kp au niveau 1, Ki au niveau 2), pour le curseur et le champ. */
-  kp: number;
-  /** Valeur affichée dans le panneau (« 2500 N/m », « 2000 N/(m·s) »). */
-  kpValue: string;
-  /** Valeur dite par les lecteurs d'écran (« 2500 newtons par mètre »). */
-  kpValueText: string;
   /** Mesures du trajet visibles (trajet, sortie et issue). */
   readoutVisible: boolean;
   /** « Temps : 1,2 s ». */
@@ -233,28 +206,21 @@ export function staticTexts(tr: Translator, levelId: LevelId = 'level1'): Static
       tr.t('controls.help.skip'),
       tr.t(ki ? 'controls.help.ki' : 'controls.help.kp'),
       tr.t('controls.help.restart'),
-      tr.t(ki ? 'controls.help.pauseKi' : 'controls.help.pause'),
+      tr.t('controls.help.pause'),
       tr.t('controls.help.mouse'),
       tr.t(ki ? 'controls.help.touchKi' : 'controls.help.touch'),
       tr.t('controls.help.board'),
+      tr.t('controls.help.pupitre'),
     ],
     helpClose: tr.t('controls.help.close'),
     boardOpen: tr.t('board.open'),
     boardTitle: tr.t('board.title'),
     boardClose: tr.t('board.close'),
+    pupitreButton: tr.t('pupitre.bouton'),
+    pupitreLabel: tr.t('pupitre.titre'),
     pause: tr.t('controls.pause'),
     resume: tr.t('controls.resume'),
     menu: tr.t('controls.menu'),
-    panelLabel: tr.t('a11y.kpPanel'),
-    kpLabel: tr.t(ki ? 'level2.ki.label' : 'level1.kp.label'),
-    kpField: tr.t(ki ? 'level2.ki.field' : 'level1.kp.field'),
-    kpHelp: tr.t(ki ? 'level2.ki.help' : 'level1.kp.help'),
-    kpRange: tr.t(ki ? 'level2.ki.range' : 'level1.kp.range'),
-    kpLocked: tr.t(ki ? 'level2.ki.locked' : 'level1.kp.locked'),
-    kpDecrease: tr.t(ki ? 'controls.kiDecrease' : 'controls.kpDecrease'),
-    kpIncrease: tr.t(ki ? 'controls.kiIncrease' : 'controls.kpIncrease'),
-    launch: tr.t('controls.launch'),
-    restart: tr.t('controls.restart'),
     replay: tr.t('level1.replay'),
     readoutLabel: tr.t('hud.readout.label'),
     saturated: tr.t('hud.saturated'),
@@ -427,16 +393,11 @@ export function createViewModelBuilder(
     paused: false,
     helpOpen: false,
     boardOpen: false,
+    pupitreReadOnly: false,
     hintId: 'use',
     hint: [],
     kpTag: '',
-    fixedKp: '',
     bubble: '',
-    panelOpen: false,
-    panelLocked: false,
-    kp: 0,
-    kpValue: '',
-    kpValueText: '',
     readoutVisible: false,
     time: '',
     error: '',
@@ -476,31 +437,24 @@ export function createViewModelBuilder(
     model.helpOpen = ui.helpOpen;
     const boardOpen = ui.boardOpen === true;
     model.boardOpen = boardOpen;
+    const pupitreReadOnly = ui.pupitreLecture === true;
+    model.pupitreReadOnly = pupitreReadOnly;
 
-    const hintId = chooseHint(s, ui.helpOpen, boardOpen);
+    const hintId = chooseHint(s, ui.helpOpen, boardOpen, pupitreReadOnly);
     if (hintId !== hintKey) {
       hintKey = hintId;
       model.hintId = hintId;
       model.hint = hintLine(hintId, tr, levelId);
     }
 
-    // Valeur réglée : Kp au niveau 1 ; Ki au niveau 2 (Kp y est fixé).
+    // Étiquette de la barre du haut : Kp au niveau 1 ; Kp (fixé) et Ki au niveau 2.
     const tuned = ki ? s.ki : s.kp;
     if (tuned !== kpKey) {
       kpKey = tuned;
       const kp = formatKp(tr, s.kp);
-      model.kp = tuned;
-      if (ki) {
-        const kiText = formatKp(tr, s.ki);
-        model.kpTag = tr.t('hud.ki.tag', { kp, ki: kiText });
-        model.fixedKp = tr.t('level2.kp.fixed', { kp });
-        model.kpValue = tr.formatQuantity(s.ki, 'N/(m·s)', { maximumFractionDigits: 0 });
-        model.kpValueText = tr.t('level2.ki.valueText', { ki: kiText });
-      } else {
-        model.kpTag = tr.t('hud.kp.value', { kp });
-        model.kpValue = tr.formatQuantity(s.kp, 'N/m', { maximumFractionDigits: 0 });
-        model.kpValueText = tr.t('level1.kp.valueText', { kp });
-      }
+      model.kpTag = ki
+        ? tr.t('hud.ki.tag', { kp, ki: formatKp(tr, s.ki) })
+        : tr.t('hud.kp.value', { kp });
     }
 
     const bubble = phase !== 'approach' ? 'none' : s.atConsole ? 'prompt' : 'goal';
@@ -513,9 +467,6 @@ export function createViewModelBuilder(
             ? tr.t('level1.console.prompt')
             : '';
     }
-
-    model.panelOpen = phase === 'tuning' || phase === 'boarding' || phase === 'trip';
-    model.panelLocked = phase !== 'tuning' || model.paused;
 
     // La sortie montre encore le trajet (mesures, légende) ; l'issue n'apparaît qu'en `outcome`.
     model.readoutVisible = phase === 'trip' || phase === 'exit' || phase === 'outcome';

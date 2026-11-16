@@ -62,6 +62,7 @@ const PREFIXES = [
   'level2.',
   'board.',
   'hud.',
+  'pupitre.',
   'controls.',
   'a11y.',
   'fallback.',

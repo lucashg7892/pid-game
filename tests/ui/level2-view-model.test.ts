@@ -36,24 +36,10 @@ describe('modèle de vue du niveau 2', () => {
   for (const locale of ['fr', 'en'] as const) {
     const cat = CATALOGS[locale];
 
-    it(`${locale} : réglage de Ki, Kp affiché comme fixé, étiquette Kp et Ki`, () => {
+    it(`${locale} : étiquette Kp et Ki, aide des commandes de Ki`, () => {
       const level = tuning2(1200);
       const vm = createViewModelBuilder(tr(locale), 'level2').build(level.snapshot, CLOSED);
-      expect(vm.kp).toBe(1200);
-      expect(vm.kpValue).toBe(`1200${NB}N/(m·s)`);
-      expect(vm.kpValueText).toBe(cat['level2.ki.valueText'].replace('{ki}', '1200'));
-      expect(vm.fixedKp).toBe(cat['level2.kp.fixed'].replace('{kp}', '2500'));
-      expect(vm.fixedKp).toContain(`2500${NB}N/m`);
       expect(vm.kpTag).toBe('Kp = 2500 · Ki = 1200');
-      expect(vm.panelOpen).toBe(true);
-      expect(vm.panelLocked).toBe(false);
-      expect(vm.texts.kpLabel).toBe(cat['level2.ki.label']);
-      expect(vm.texts.kpHelp).toBe(cat['level2.ki.help']);
-      expect(vm.texts.kpRange).toBe(cat['level2.ki.range']);
-      expect(vm.texts.kpLocked).toBe(cat['level2.ki.locked']);
-      expect(vm.texts.kpField).toBe(cat['level2.ki.field']);
-      expect(vm.texts.kpDecrease).toBe(cat['controls.kiDecrease']);
-      expect(vm.texts.kpIncrease).toBe(cat['controls.kiIncrease']);
       expect(vm.texts.helpLines).toContain(cat['controls.help.ki']);
       expect(vm.texts.helpLines).not.toContain(cat['controls.help.kp']);
     });
@@ -65,12 +51,10 @@ describe('modèle de vue du niveau 2', () => {
       expect(vm.bubble).toContain('I');
     });
 
-    it(`${locale} : le niveau 1 garde ses textes et n’affiche pas de Kp fixé`, () => {
+    it(`${locale} : le niveau 1 garde ses textes`, () => {
       const level = createLevel1({ animations: false });
       const vm = createViewModelBuilder(tr(locale)).build(level.snapshot, CLOSED);
-      expect(vm.fixedKp).toBe('');
       expect(vm.bubble).toBe(cat['level1.goal']);
-      expect(vm.texts.kpLabel).toBe(cat['level1.kp.label']);
       expect(vm.kpTag).toBe(cat['hud.kp.value'].replace('{kp}', '2000'));
     });
 
@@ -201,8 +185,8 @@ describe('modèle de vue du niveau 2', () => {
     const a = staticTexts(t);
     const b = staticTexts(t, 'level2');
     expect(b.title).toBe(a.title);
-    expect(b.launch).toBe(a.launch);
-    expect(b.kpLabel).not.toBe(a.kpLabel);
+    expect(b.pupitreButton).toBe(a.pupitreButton);
+    expect(b.helpLines).not.toEqual(a.helpLines);
   });
 
   it('mémoïsation : mêmes chaînes tant que Ki ne change pas, nouvelles quand il change', () => {
@@ -210,11 +194,9 @@ describe('modèle de vue du niveau 2', () => {
     const builder = createViewModelBuilder(tr('fr'), 'level2');
     const first = builder.build(level.snapshot, CLOSED);
     const tag = first.kpTag;
-    const value = first.kpValue;
     advance(level, 0.2);
     builder.build(level.snapshot, CLOSED);
     expect(builder.model.kpTag).toBe(tag);
-    expect(builder.model.kpValue).toBe(value);
     level.setTuning(400);
     builder.build(level.snapshot, CLOSED);
     expect(builder.model.kpTag).toBe('Kp = 2500 · Ki = 400');
@@ -224,9 +206,13 @@ describe('modèle de vue du niveau 2', () => {
     const t = tr('fr');
     const level = tuning2(300);
     const builder = createViewModelBuilder(t, 'level2');
-    expect(builder.build(level.snapshot, CLOSED).texts.kpLabel).toBe('Gain intégral Ki');
+    expect(builder.build(level.snapshot, CLOSED).texts.helpLines).toContain(
+      CATALOGS.fr['controls.help.ki'],
+    );
     t.setLocale('en');
-    expect(builder.build(level.snapshot, CLOSED).texts.kpLabel).toBe('Integral gain Ki');
+    expect(builder.build(level.snapshot, CLOSED).texts.helpLines).toContain(
+      CATALOGS.en['controls.help.ki'],
+    );
   });
 });
 

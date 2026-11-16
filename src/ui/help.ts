@@ -97,3 +97,22 @@ export function trapFocusIndex(current: number, count: number, shift: boolean): 
   }
   return null;
 }
+
+/**
+ * Indice du contrôle qui doit recevoir le focus après un Tab quand l'ordre est géré à la main (le
+ * pupitre ouvert, dont les contrôles ne suivent pas l'ordre du document) : le suivant, ou le
+ * précédent avec Maj, en bouclant ; `null` s'il n'y a aucun contrôle. Hors de la liste (indice −1),
+ * entre par le début, ou par la fin avec Maj.
+ * @param current indice du contrôle actif dans la liste, -1 s'il est hors de la liste.
+ * @param count nombre de contrôles.
+ * @param shift vrai pour Maj+Tab.
+ */
+export function cycleFocusIndex(current: number, count: number, shift: boolean): number | null {
+  if (count <= 0) {
+    return null;
+  }
+  if (current < 0) {
+    return shift ? count - 1 : 0;
+  }
+  return (current + (shift ? count - 1 : 1)) % count;
+}

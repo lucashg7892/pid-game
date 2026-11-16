@@ -54,7 +54,6 @@
 .ui button,
 .ui input,
 .ui summary,
-.ui-paper.ui-panel,
 .ui-help,
 .ui-outcome,
 .ui-readout,
@@ -102,6 +101,7 @@
 /* Barre du haut : titre et Kp à gauche, boutons à droite. */
 .ui-top {
   position: absolute;
+  z-index: 2;
   top: 0;
   right: 0;
   left: 0;
@@ -217,71 +217,129 @@
   pointer-events: none;
 }
 
-/* Panneau Kp. */
-.ui-kp-value {
+/* Pupitre de contrôle (T-049) : plan dessiné en canvas 2D, mis à l'échelle (transform) dans la
+   fenêtre entre la barre du haut (56 px) et le bandeau du bas (84 px) ; les contrôles DOM
+   (leviers transparents, champs, boutons) sont posés dessus en unités du plan. Au-dessus de la scène
+   et de ses panneaux, sous la barre du haut, l'issue repliée, l'aide et le tableau d'école. */
+.ui-pupitre {
+  position: absolute;
+  top: 56px;
+  right: 0;
+  bottom: 84px;
+  left: 0;
+  z-index: 1;
+  overflow: hidden;
+  background: rgb(247 240 222 / 97%);
+  pointer-events: auto;
+}
+
+/* Portrait étroit : la barre du haut passe sur deux lignes (RESERVE_HAUT_PORTRAIT dans plan.ts). */
+@media (orientation: portrait) and (max-width: 700px) {
+  .ui-pupitre {
+    top: 76px;
+  }
+
+  .ui-tools {
+    gap: 3px;
+  }
+
+  /* Le bouton « Pupitre » ne garde que son pictogramme (son nom accessible reste le titre du
+     pupitre) : avec lui, les quatre boutons ne tiennent plus dans 390 px. */
+  .ui-pupitre-btn {
+    min-width: 40px;
+    padding-inline: 0.3em;
+    font-size: 0;
+  }
+
+  .ui-pupitre-btn::before {
+    content: '\2699';
+    font-size: 22px;
+    line-height: 1;
+  }
+}
+
+.ui-pupitre-plan {
+  position: absolute;
+  transform-origin: 0 0;
+}
+
+.ui-pupitre-toile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+/* Levier : un curseur natif (clavier, lecteur d'écran) couché sur la fente, sans rien dessiner ;
+   la manette est dessinée dans le canvas. Le contour de focus, lui, reste bien visible. */
+.ui .ui-pupitre-levier {
+  position: absolute;
   margin: 0;
-  font-size: 1.7em;
-  font-weight: 600;
-  text-align: center;
+  padding: 0;
+  background: transparent;
+  transform: rotate(-90deg);
+  pointer-events: none;
+  appearance: none;
 }
 
-.ui-kp-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.ui-pupitre-levier::-webkit-slider-runnable-track,
+.ui-pupitre-levier::-moz-range-track {
+  background: transparent;
 }
 
-.ui-kp-range {
-  flex: 1;
-  min-width: 0;
-  min-height: 40px;
-  accent-color: #3a3a3a;
+.ui-pupitre-levier::-webkit-slider-thumb {
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  appearance: none;
 }
 
-.ui-kp-step {
-  font-family: var(--ui-num);
-  font-size: 1.2em;
+.ui-pupitre-levier::-moz-range-thumb {
+  opacity: 0;
 }
 
-.ui-kp-field {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin: 0.3em 0;
-  font-size: 0.9em;
+.ui-pupitre-zone {
+  position: absolute;
+  cursor: ns-resize;
+  touch-action: none;
 }
 
-.ui-kp-field input {
-  width: 6.5em;
-  min-height: 36px;
+.ui-pupitre-zone.is-inactive {
+  cursor: not-allowed;
+}
+
+.ui-pupitre-champ {
+  position: absolute;
+  box-sizing: border-box;
   padding: 0 0.4em;
   border: 1.5px solid var(--ui-ink);
-  border-radius: 6px;
+  border-radius: 6px 8px 6px 7px;
   background: #fffdf6;
   color: var(--ui-ink);
-  font-size: 1rem;
+  font-size: 26px;
+  text-align: right;
+}
+
+.ui-pupitre-champ:disabled {
+  border-color: var(--ui-line);
+  background: rgb(217 211 194 / 55%);
+  color: var(--ui-ink-soft);
+}
+
+.ui .ui-pupitre-lancer,
+.ui .ui-pupitre-recommencer {
+  position: absolute;
+  font-size: 28px;
+}
+
+.ui .ui-pupitre-fermer {
+  position: absolute;
+  font-size: 20px;
 }
 
 .ui-small {
   color: var(--ui-ink-soft);
   font-size: 0.85em;
-}
-
-.ui-locked {
-  color: var(--ui-red);
-}
-
-/* Réglage libre : la ligne garde sa place (le panneau ne change pas de taille au lancement). */
-.ui-locked.is-idle {
-  visibility: hidden;
-}
-
-.ui-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 0.3em;
 }
 
 /* Mesures du trajet et légende. */
@@ -412,6 +470,37 @@
   font-size: 0.9em;
 }
 
+/* Issue repliée sous le pupitre ouvert (T-049) : titre et boutons sur une ligne, le message est dans
+   l'issue elle-même, visible quand le pupitre est fermé. Au-dessus du pupitre : « Rejouer »,
+   « Niveau suivant » et « Menu » restent toujours visibles et atteignables. */
+.ui-outcome.is-docked {
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.ui-outcome.is-docked p {
+  display: none;
+}
+
+.ui-outcome.is-docked h2 {
+  margin: 0;
+}
+
+.ui-outcome.is-docked .ui-outcome-actions {
+  position: static;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.ui-outcome.is-docked .ui-btn {
+  margin-top: 0;
+}
+
 /* Pied collé en bas : si le panneau défile, les boutons restent dans la partie visible (A-02). */
 .ui-outcome-actions {
   position: sticky;
@@ -457,6 +546,7 @@
 /* Commandes tactiles : seulement sur écran tactile. */
 .ui-touch {
   position: absolute;
+  z-index: 2;
   right: 12px;
   bottom: 96px;
   left: 12px;

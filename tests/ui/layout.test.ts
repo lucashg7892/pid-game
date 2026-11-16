@@ -6,7 +6,6 @@ import { describe, expect, it } from 'vitest';
 import {
   ARRIVAL_LEDGE_HEIGHT,
   CABIN_CENTER_X,
-  CONSOLE_POST_X,
   CONSOLE_X,
   START_LEDGE_HEIGHT,
   VOID_MAX_X,
@@ -33,11 +32,13 @@ import {
   GAUGE_MIN_X,
 } from '../../src/render/pencil-style';
 import {
+  DOCK_HEIGHT,
   GAUGE_LABELS_ROOM,
   GAUGE_TITLE_BAND,
   GAUGE_TITLE_ROW,
   boxExtent,
   computeLayout,
+  dockOutcome,
   consoleRect,
   createLayout,
   intersects,
@@ -95,7 +96,7 @@ function geometry(
  */
 const WALKER_POSITIONS = [WALKER_SPAWN_X, -3, -1.75, -1.6, CONSOLE_X, -0.3, CABIN_CENTER_X];
 
-const PANELS = ['banner', 'bubble', 'panel', 'outcome', 'readout', 'help'] as const;
+const PANELS = ['banner', 'bubble', 'outcome', 'readout', 'help'] as const;
 
 const SIZES: readonly (readonly [number, number])[] = [
   [1280, 720],
@@ -149,15 +150,15 @@ describe('computeLayout', () => {
     });
   }
 
-  it('1280×720, bonhomme à la console : réglage à sa gauche, du haut jusqu’au sol', () => {
+  it('1280×720, bonhomme à la console : l’issue est à sa gauche, du haut jusqu’au sol', () => {
     const g = geometry(1280, 720, -1.6);
     const l: UiLayout = computeLayout(g, createLayout());
     expect(l.mode).toBe('sides');
     expect(walkerOnLedge(g)).toBe(true);
-    expect(l.panel.anchor).toBe('bottom');
-    expect(l.panel.edge).toBe(Math.round(g.groundY - 8));
-    expect(l.panel.left + l.panel.width).toBeLessThanOrEqual((walkerRect(g)?.left ?? 0) - 12);
-    expect(l.panel.width).toBeGreaterThanOrEqual(280);
+    expect(l.outcome.anchor).toBe('bottom');
+    expect(l.outcome.edge).toBe(Math.round(g.groundY - 8));
+    expect(l.outcome.left + l.outcome.width).toBeLessThanOrEqual((walkerRect(g)?.left ?? 0) - 12);
+    expect(l.outcome.width).toBeGreaterThanOrEqual(280);
     // Bonhomme dans la cabine : l'issue est posée à gauche de la console.
     const cabin = geometry(1280, 720, CABIN_CENTER_X);
     expect(walkerRect(cabin)).toBeNull();
@@ -169,11 +170,10 @@ describe('computeLayout', () => {
     expect(l.dimension.x).toBeGreaterThan(g.cage.right);
   });
 
-  it('390×844 : bandes ; réglage et issue sous la scène, bulle et mesures au-dessus', () => {
+  it('390×844 : bandes ; issue sous la scène, bulle et mesures au-dessus', () => {
     const g = geometry(390, 844);
     const l = computeLayout(g, createLayout());
     expect(l.mode).toBe('bands');
-    expect(boxExtent(l.panel).top).toBeGreaterThan(g.scene.bottom);
     expect(boxExtent(l.outcome).top).toBeGreaterThan(g.scene.bottom);
     expect(boxExtent(l.bubble).bottom).toBeLessThan(g.scene.top);
     expect(boxExtent(l.readout).bottom).toBeLessThan(g.scene.top);
@@ -266,47 +266,36 @@ describe('computeLayout', () => {
     expect(l.gaugeMax.x).toBeGreaterThan(g.cage.right);
   });
 
-  it('côté gauche trop étroit à gauche du bonhomme : réglage posé au-dessus de lui', () => {
+  it('côté gauche trop étroit à gauche du bonhomme : l’issue est posée au-dessus de lui', () => {
     const g = geometry(1280, 720, WALKER_SPAWN_X);
     const l = computeLayout(g, createLayout());
-    expect(l.panel.edge).toBeLessThanOrEqual(Math.round(g.walkerHead.y - 12));
-    expect(boxExtent(l.panel).bottom).toBeLessThan(g.walkerHead.y);
+    expect(l.outcome.edge).toBeLessThanOrEqual(Math.round(g.walkerHead.y - 12));
+    expect(boxExtent(l.outcome).bottom).toBeLessThan(g.walkerHead.y);
   });
 
-  it('réglage ouvert (R3) : le panneau ne dépend pas de la marche, il évite le bonhomme au poste', () => {
-    for (const [w, h, level2] of [
-      [1280, 720, false],
-      [1280, 720, true],
-      [1920, 1080, false],
-      [390, 844, false],
-      [390, 844, true],
+  it('issue repliée sous le pupitre ouvert : bande du bas, boutons visibles, jamais hors écran', () => {
+    for (const [w, h] of [
+      [1280, 720],
+      [1920, 1080],
+      [1024, 576],
+      [390, 844],
     ] as const) {
-      const reference = computeLayout(
-        geometry(w, h, CONSOLE_POST_X, level2),
-        createLayout(),
-        true,
-      ).panel;
-      for (const walkerX of WALKER_POSITIONS) {
-        const g = geometry(w, h, walkerX, level2);
-        const panel = computeLayout(g, createLayout(), true).panel;
-        expect(panel, `${String(w)}×${String(h)}, x = ${String(walkerX)}`).toEqual(reference);
-      }
-      const post = geometry(w, h, CONSOLE_POST_X, level2);
-      const extent = boxExtent(reference);
-      const walker = walkerRect(post);
-      expect(walker).not.toBeNull();
-      if (walker !== null) expect(intersects(extent, walker)).toBe(false);
-      expect(intersects(extent, consoleRect(post))).toBe(false);
+      const box = createLayout().outcome;
+      dockOutcome(box, w, h);
+      const extent = boxExtent(box);
+      expect(box.anchor, `${String(w)}×${String(h)}`).toBe('bottom');
+      expect(extent.bottom, `${String(w)}×${String(h)}`).toBe(h - 8);
+      expect(extent.bottom - extent.top).toBe(DOCK_HEIGHT);
+      expect(extent.left).toBeGreaterThanOrEqual(0);
+      expect(extent.right).toBeLessThanOrEqual(w);
+      expect(box.width).toBeGreaterThan(0);
     }
   });
 
-  it('réglage ouvert : l’obstacle est le poste, sans épingle il suit le bonhomme', () => {
-    const live = computeLayout(geometry(1280, 720, WALKER_SPAWN_X), createLayout()).panel;
-    const pinned = computeLayout(geometry(1280, 720, WALKER_SPAWN_X), createLayout(), true).panel;
-    expect(pinned).not.toEqual(live);
-    expect(pinned).toEqual(
-      computeLayout(geometry(1280, 720, CONSOLE_POST_X), createLayout(), true).panel,
-    );
+  it('issue repliée : la bande du bas est celle que le pupitre laisse libre (84 px)', () => {
+    const box = createLayout().outcome;
+    dockOutcome(box, 1280, 720);
+    expect(boxExtent(box).top).toBeGreaterThanOrEqual(720 - 84);
   });
 
   it('écran trop bas pour une bande sous la scène : bandeau en bas à gauche de la cage', () => {

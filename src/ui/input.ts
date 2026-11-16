@@ -68,6 +68,7 @@ export function bindKeyboard(level: Level, ui: Ui, target: Window): () => void {
       focus: focusTargetOf(document.activeElement),
       helpOpen: ui.helpOpen,
       boardOpen: ui.boardOpen,
+      pupitreLecture: ui.pupitreLecture,
     });
     if (intent === 'none') {
       return;
@@ -122,6 +123,12 @@ export function bindKeyboard(level: Level, ui: Ui, target: Window): () => void {
         return;
       case 'closeBoard':
         ui.setBoard(false);
+        return;
+      case 'openPupitre':
+        ui.setPupitre(true);
+        return;
+      case 'closePupitre':
+        ui.setPupitre(false);
         return;
     }
     ui.update();

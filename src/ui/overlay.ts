@@ -1,27 +1,37 @@
 /**
- * Interface DOM superposée au canvas (T-010) : barre du haut (titre, Kp et Ki, aide, langue, pause),
- * bulle, bandeau d'aide, tableau d'école (zone cliquable sur le chevalet et fenêtre modale, T-042), panneau de réglage (Kp au niveau 1, Ki au niveau 2), mesures du trajet et légende, issue, cote chiffrée, aide des
- * commandes, commandes tactiles, invite d'orientation et région `aria-live`.
+ * Interface DOM superposée au canvas (T-010) : barre du haut (titre, Kp et Ki, pupitre, aide, langue,
+ * pause), bulle, bandeau d'aide, tableau d'école (zone cliquable sur le chevalet et fenêtre modale,
+ * T-042), pupitre de contrôle (réglage de Kp ou de Ki, T-049 : `pupitre/`), mesures du trajet et
+ * légende, issue, cote chiffrée, aide des commandes, commandes tactiles, invite d'orientation et
+ * région `aria-live`.
  *
  * Le DOM est construit une fois. À chaque image, {@link Ui.update} reconstruit le modèle de vue
  * (pur, `view-model.ts`), consomme les événements du niveau (annonces), calcule la disposition
  * (pure, `layout.ts`) puis n'écrit que les nœuds dont la valeur a changé (comparaison avant
  * écriture) : rien n'est écrit, et presque rien n'est alloué, en régime établi.
  */
-import type { GameEvent, Level } from '../game';
+import type { GameEvent, Level, LevelPhase } from '../game';
 import type { Translator } from '../i18n';
 import { admitEvent, announcementFor, createLaunchGate, releaseLaunch } from './announce';
 import type { HintLine } from './hints';
 import { boardValues, buildBoardSections, renderBoard, type BoardValueNodes } from './board';
-import { commandsBlocked, modalPauseDecision, trapFocusIndex, type ModalKind } from './help';
+import {
+  commandsBlocked,
+  cycleFocusIndex,
+  modalPauseDecision,
+  trapFocusIndex,
+  type ModalKind,
+} from './help';
 import {
   BOARD_HIT_MIN,
   computeLayout,
   createLayout,
+  dockOutcome,
   isConsoleHit,
   type PanelBox,
   type UiGeometry,
 } from './layout';
+import { creerPupitre, type Pupitre } from './pupitre';
 import { createViewModelBuilder, type ViewModel } from './view-model';
 import './ui.css';
 
@@ -53,6 +63,10 @@ export interface Ui {
   readonly helpOpen: boolean;
   /** Vrai si le tableau d'école est ouvert. */
   readonly boardOpen: boolean;
+  /** Vrai si le pupitre de contrôle est visible. */
+  readonly pupitreOpen: boolean;
+  /** Vrai si le pupitre est ouvert en lecture seule (hors phase de réglage). */
+  readonly pupitreLecture: boolean;
   /**
    * Met l'interface à jour d'après le niveau ; `geometry` absente : garde la dernière.
    * @param geometry géométrie de l'écran (objets lus, jamais modifiés).
@@ -69,6 +83,14 @@ export interface Ui {
    * @param open vrai pour ouvrir.
    */
   setBoard(open: boolean): void;
+  /**
+   * Ouvre ou ferme le pupitre de contrôle, sans jamais mettre le jeu en pause. En approche,
+   * l'ouvrir ouvre le réglage (le bonhomme rejoint le poste) et le fermer en phase de réglage le
+   * referme (comme Échap avant lui) ; en trajet, embarquement, sortie, issue ou pause, il s'ouvre
+   * en lecture seule.
+   * @param open vrai pour ouvrir.
+   */
+  setPupitre(open: boolean): void;
   /**
    * Démonte l'interface : retire les écouteurs du document, du canvas et du traducteur, vide le
    * conteneur et masque le canvas aux lecteurs d'écran. Sans effet si déjà appelée.
@@ -244,11 +266,8 @@ function renderHint(container: HTMLElement, line: HintLine): void {
 export function createUi(options: UiOptions): Ui {
   const { root, level, translator: tr, canvas, onMenu, onNext } = options;
   const builder = createViewModelBuilder(tr, level.snapshot.levelId);
-  const { tuning } = level;
   const showsTeaser = level.snapshot.levelId === 'level1';
   const hasIntegral = level.snapshot.levelId === 'level2';
-  /** Valeur réglée courante (Kp au niveau 1, Ki au niveau 2). */
-  const tunedNow = (): number => (tuning.param === 'ki' ? level.snapshot.ki : level.snapshot.kp);
   const layout = createLayout();
   let geometry: Readonly<UiGeometry> | null = null;
   let helpOpen = false;
@@ -265,6 +284,13 @@ export function createUi(options: UiOptions): Ui {
   const title = new TextSlot(el('p', 'ui-title', brand));
   const kpTag = new TextSlot(el('p', 'ui-kp-tag num', brand));
   const tools = el('div', 'ui-tools', top);
+  const pupitreButton = el('button', 'ui-btn ui-pupitre-btn', tools);
+  pupitreButton.type = 'button';
+  pupitreButton.setAttribute('aria-controls', 'ui-pupitre');
+  pupitreButton.setAttribute('aria-haspopup', 'dialog');
+  const pupitreButtonText = new TextSlot(pupitreButton);
+  const pupitreButtonLabel = new AttrSlot(pupitreButton, 'aria-label');
+  const pupitreButtonExpanded = new AttrSlot(pupitreButton, 'aria-expanded');
   const helpButton = el('button', 'ui-btn ui-help-btn', tools);
   helpButton.type = 'button';
   helpButton.textContent = '?';
@@ -342,55 +368,6 @@ export function createUi(options: UiOptions): Ui {
   const bubbleNode = el('p', 'ui-paper ui-bubble', root);
   const bubble = new TextSlot(bubbleNode);
   const bubbleBox = new BoxSlot(bubbleNode);
-
-  // --- Panneau de réglage ---
-  const panel = el('form', 'ui-paper ui-panel', root);
-  panel.noValidate = true;
-  panel.setAttribute('role', 'group');
-  const panelLabel = new AttrSlot(panel, 'aria-label');
-  const panelTitleNode = el('h2', 'ui-panel-title', panel);
-  panelTitleNode.id = 'ui-kp-title';
-  const panelTitle = new TextSlot(panelTitleNode);
-  const kpValue = new TextSlot(el('p', 'ui-kp-value num', panel));
-  kpValue.node.setAttribute('aria-hidden', 'true');
-  const row = el('div', 'ui-kp-row', panel);
-  const minus = el('button', 'ui-btn ui-kp-step', row);
-  minus.type = 'button';
-  minus.textContent = '−';
-  const minusLabel = new AttrSlot(minus, 'aria-label');
-  const range = el('input', 'ui-kp-range', row);
-  range.type = 'range';
-  range.min = String(tuning.min);
-  range.max = String(tuning.max);
-  range.step = String(tuning.step);
-  range.setAttribute('aria-labelledby', 'ui-kp-title');
-  const rangeText = new AttrSlot(range, 'aria-valuetext');
-  const plus = el('button', 'ui-btn ui-kp-step', row);
-  plus.type = 'button';
-  plus.textContent = '+';
-  const plusLabel = new AttrSlot(plus, 'aria-label');
-  const field = el('label', 'ui-kp-field', panel);
-  const fieldText = new TextSlot(el('span', '', field));
-  const numberInput = el('input', 'num', field);
-  numberInput.type = 'number';
-  numberInput.min = String(tuning.min);
-  numberInput.max = String(tuning.max);
-  numberInput.step = String(tuning.step);
-  numberInput.inputMode = 'numeric';
-  const fixedNode = el('p', 'ui-small ui-fixed num', panel);
-  const fixedKp = new TextSlot(fixedNode);
-  const kpHelp = new TextSlot(el('p', 'ui-small', panel));
-  const kpRange = new TextSlot(el('p', 'ui-small', panel));
-  const lockedNode = el('p', 'ui-locked', panel);
-  const locked = new TextSlot(lockedNode);
-  const actions = el('div', 'ui-actions', panel);
-  const launch = el('button', 'ui-btn ui-primary', actions);
-  launch.type = 'button';
-  const launchText = new TextSlot(launch);
-  const panelRestart = el('button', 'ui-btn', actions);
-  panelRestart.type = 'button';
-  const panelRestartText = new TextSlot(panelRestart);
-  const panelBox = new BoxSlot(panel);
 
   // --- Mesures du trajet ---
   const readout = el('section', 'ui-paper ui-readout', root);
@@ -514,15 +491,12 @@ export function createUi(options: UiOptions): Ui {
   canvas.removeAttribute('aria-hidden');
   const canvasLabel = new AttrSlot(canvas, 'aria-label');
   let shownLocale = '';
-  let shownKp = Number.NaN;
-  let previousPhase = '';
-  let previousPaused = false;
   let previousOutcome = false;
   let gaugeTitleVisible = true;
   let integralVisible = false;
   let topPaused = false;
-  // Panneau de réglage ouvert : sa place ne suit pas la marche du bonhomme (R3).
-  let panelPinned = false;
+  // Issue repliée dans la bande du bas : le pupitre est ouvert et l'issue affichée.
+  let outcomeDocked = false;
 
   const announce = (text: string): void => {
     const line = document.createElement('p');
@@ -544,6 +518,21 @@ export function createUi(options: UiOptions): Ui {
       announce(text);
     }
   };
+
+  // Pupitre de contrôle : créé caché, les rappels ne sont appelés qu'après la construction.
+  const pupitre: Pupitre = creerPupitre({
+    racine: root,
+    level,
+    traducteur: tr,
+    annoncer: announce,
+    bloque: () => commandsBlocked(helpOpen, boardOpen),
+    apresCommande: () => {
+      update();
+    },
+    fermer: () => {
+      setPupitre(false);
+    },
+  });
 
   /** Rend le focus au document s'il est dans `container`. */
   const releaseFocus = (container: HTMLElement): void => {
@@ -632,42 +621,6 @@ export function createUi(options: UiOptions): Ui {
       renderHint(bannerLine, vm.hint);
     }
 
-    // Panneau Kp.
-    show(panel, vm.panelOpen);
-    panelPinned = vm.panelOpen;
-    panelLabel.set(t.panelLabel);
-    panelTitle.set(t.kpLabel);
-    kpValue.set(vm.kpValue);
-    minusLabel.set(t.kpDecrease);
-    plusLabel.set(t.kpIncrease);
-    fieldText.set(t.kpField);
-    rangeText.set(vm.kpValueText);
-    if (vm.kp !== shownKp) {
-      shownKp = vm.kp;
-      range.valueAsNumber = vm.kp;
-      if (document.activeElement !== numberInput) {
-        numberInput.valueAsNumber = vm.kp;
-      }
-    }
-    const editable = vm.panelOpen && !vm.panelLocked;
-    enable(range, editable);
-    enable(numberInput, editable);
-    enable(minus, editable);
-    enable(plus, editable);
-    enable(launch, editable);
-    fixedKp.set(vm.fixedKp);
-    show(fixedNode, vm.fixedKp !== '');
-    kpHelp.set(t.kpHelp);
-    kpRange.set(t.kpRange);
-    locked.set(t.kpLocked);
-    // Place réservée même sans message (invisible) : la hauteur du panneau ne change pas au lancement.
-    lockedNode.classList.toggle('is-idle', !vm.panelLocked);
-    launchText.set(t.launch);
-    show(launch, vm.phase === 'tuning');
-    panelRestartText.set(t.restart);
-    show(panelRestart, vm.phase === 'boarding' || vm.phase === 'trip');
-    enable(panelRestart, !vm.paused);
-
     // Mesures.
     show(readout, vm.readoutVisible);
     readoutLabel.set(t.readoutLabel);
@@ -727,15 +680,15 @@ export function createUi(options: UiOptions): Ui {
     touchRightLabel.set(t.moveRight);
     touchActionText.set(t.action);
 
-    // Focus : sur le curseur à l'ouverture du réglage, rendu au document à la fermeture.
-    const phase = vm.phase;
-    const tuningActive = phase === 'tuning' && !vm.paused;
-    const wasTuningActive = previousPhase === 'tuning' && !previousPaused;
-    if (tuningActive && !wasTuningActive) {
-      range.focus({ preventScroll: true });
-    } else if (!tuningActive && wasTuningActive) {
-      releaseFocus(panel);
-    }
+    // Pupitre de contrôle : bouton de la barre du haut, issue repliée sous le pupitre ouvert.
+    pupitreButtonText.set(t.pupitreButton);
+    pupitreButtonLabel.set(t.pupitreLabel);
+    pupitreButtonExpanded.set(pupitre.visible ? 'true' : 'false');
+    outcomeDocked = pupitre.visible && vm.outcomeVisible;
+    outcome.classList.toggle('is-docked', outcomeDocked);
+    show(banner, !outcomeDocked);
+
+    // Focus de l'issue.
     if (!vm.outcomeVisible) {
       releaseFocus(outcome);
     } else if (!previousOutcome) {
@@ -745,16 +698,16 @@ export function createUi(options: UiOptions): Ui {
       });
     }
     previousOutcome = vm.outcomeVisible;
-    previousPhase = phase;
-    previousPaused = vm.paused;
   };
 
   const place = (g: Readonly<UiGeometry>): void => {
-    computeLayout(g, layout, panelPinned);
+    computeLayout(g, layout);
     const h = g.height;
     bannerBox.apply(layout.banner, h);
     bubbleBox.apply(layout.bubble, h);
-    panelBox.apply(layout.panel, h);
+    if (outcomeDocked) {
+      dockOutcome(layout.outcome, g.width, h);
+    }
     outcomeBox.apply(layout.outcome, h);
     readoutBox.apply(layout.readout, h);
     helpBox.apply(layout.help, h);
@@ -802,6 +755,7 @@ export function createUi(options: UiOptions): Ui {
     if (pausedByModal && level.snapshot.phase !== 'paused') {
       pausedByModal = false;
     }
+    pupitre.update(geometry?.width ?? window.innerWidth, geometry?.height ?? window.innerHeight);
     apply(builder.build(level.snapshot, ui));
     if (geometry !== null) {
       place(geometry);
@@ -868,6 +822,35 @@ export function createUi(options: UiOptions): Ui {
       setModal(null);
     }
   };
+  /** Phase effective (en pause : celle qui reprendra) et pause. */
+  const effective = (): { phase: LevelPhase; paused: boolean } => {
+    const snap = level.snapshot;
+    const paused = snap.phase === 'paused';
+    return { phase: paused && snap.resumePhase !== null ? snap.resumePhase : snap.phase, paused };
+  };
+  /**
+   * Ouvre ou ferme le pupitre. Il ne met jamais le jeu en pause. En approche, l'ouvrir passe par
+   * `level.interact()` (phase de réglage, le pupitre s'ouvre seul) ; en phase de réglage, le fermer
+   * aussi (comme Échap avant lui) ; ailleurs, il s'ouvre et se ferme en lecture seule.
+   */
+  function setPupitre(open: boolean): void {
+    if (open === pupitre.visible) {
+      return;
+    }
+    const { phase, paused } = effective();
+    if (open) {
+      if (phase === 'approach' && !paused) {
+        level.interact();
+      } else {
+        pupitre.setLecture(true);
+      }
+    } else if (pupitre.lectureOuverte) {
+      pupitre.setLecture(false);
+    } else if (phase === 'tuning' && !paused) {
+      level.interact();
+    }
+    update();
+  }
 
   const ui: Ui = {
     get helpOpen(): boolean {
@@ -876,9 +859,16 @@ export function createUi(options: UiOptions): Ui {
     get boardOpen(): boolean {
       return boardOpen;
     },
+    get pupitreOpen(): boolean {
+      return pupitre.visible;
+    },
+    get pupitreLecture(): boolean {
+      return pupitre.lectureOuverte;
+    },
     update,
     setHelp,
     setBoard,
+    setPupitre,
     destroy,
   };
 
@@ -932,7 +922,30 @@ export function createUi(options: UiOptions): Ui {
         boardBody.scrollTo({ top: event.code === 'Home' ? 0 : boardBody.scrollHeight });
       }
     }
-    if ((!helpOpen && !boardOpen) || event.key !== 'Tab') {
+    if (event.key !== 'Tab') {
+      return;
+    }
+    if (!helpOpen && !boardOpen) {
+      // Pupitre ouvert : le focus reste sur ses contrôles (et sur les boutons de l'issue repliée,
+      // pour que « Rejouer », « Niveau suivant » et « Menu » restent atteignables au clavier).
+      if (!pupitre.visible) {
+        return;
+      }
+      const controls = [
+        ...pupitre.focalisables(),
+        ...(outcomeDocked
+          ? Array.from(outcome.querySelectorAll<HTMLElement>('button:not(:disabled)')).filter(
+              (node) => !node.hidden,
+            )
+          : []),
+      ];
+      // Les boutons de l'issue sont avant le pupitre dans le document : l'ordre est explicite.
+      const index = controls.findIndex((node) => node === document.activeElement);
+      const next = cycleFocusIndex(index, controls.length, event.shiftKey);
+      if (next !== null) {
+        event.preventDefault();
+        controls[next]?.focus({ preventScroll: true });
+      }
       return;
     }
     const modal = boardOpen ? board : help;
@@ -968,43 +981,10 @@ export function createUi(options: UiOptions): Ui {
     }
     onNext?.();
   });
-  minus.addEventListener('click', () => {
-    run(() => level.adjustTuning(-tuning.step));
-  });
-  plus.addEventListener('click', () => {
-    run(() => level.adjustTuning(tuning.step));
-  });
-  range.addEventListener('input', () => {
-    run(() => level.setTuning(range.valueAsNumber));
-  });
-  const commitNumber = (): void => {
-    if (blocked()) {
-      numberInput.valueAsNumber = tunedNow();
-      return;
+  pupitreButton.addEventListener('click', () => {
+    if (!blocked()) {
+      setPupitre(!pupitre.visible);
     }
-    const value = numberInput.valueAsNumber;
-    if (Number.isFinite(value)) {
-      level.setTuning(value);
-    }
-    numberInput.valueAsNumber = tunedNow();
-    update();
-  };
-  numberInput.addEventListener('change', commitNumber);
-  // Échap annule la saisie : le champ retrouve la valeur courante avant que le réglage se ferme.
-  numberInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      numberInput.valueAsNumber = tunedNow();
-    }
-  });
-  panel.addEventListener('submit', (event) => {
-    event.preventDefault();
-    commitNumber();
-  });
-  launch.addEventListener('click', () => {
-    run(() => level.launch());
-  });
-  panelRestart.addEventListener('click', () => {
-    run(() => level.restart());
   });
   outcomeButton.addEventListener('click', () => {
     run(() => level.restart());
@@ -1051,10 +1031,11 @@ export function createUi(options: UiOptions): Ui {
 
   // Souris : clic sur la console = interagir (en approche).
   const onCanvasClick = (event: MouseEvent): void => {
-    if (!blocked() && geometry !== null && level.snapshot.phase === 'approach') {
+    if (!blocked() && geometry !== null) {
       const rect = canvas.getBoundingClientRect();
       if (isConsoleHit(event.clientX - rect.left, event.clientY - rect.top, geometry)) {
-        run(() => level.interact());
+        // Le pupitre de la scène : en approche il ouvre le réglage ; ailleurs, sa lecture seule.
+        setPupitre(true);
       }
     }
   };
@@ -1070,6 +1051,7 @@ export function createUi(options: UiOptions): Ui {
     unsubscribeLocale();
     helpOpen = false;
     boardOpen = false;
+    pupitre.destroy();
     root.replaceChildren();
     root.classList.remove('ui');
     canvas.setAttribute('aria-hidden', 'true');

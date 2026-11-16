@@ -16,10 +16,10 @@
 import type { Level, LevelSnapshot } from '../../game';
 import type { Translator } from '../../i18n';
 import { creerColonneVide } from './colonne-vide';
-import type { ColonnePupitre, EtatPupitre } from './colonne';
+import type { ColonnePupitre, ContextePlan, EtatPupitre, MontageColonne } from './colonne';
 import { creerColonneMachine } from './machine';
 import { pupitreVisible, reglageDe, valeurDe, type ReglagePupitre } from './modele';
-import { COLONNES, placerPlan, type PlacementPlan } from './plan';
+import { COLONNES, placerPlan, type IdColonne, type PlacementPlan } from './plan';
 import {
   creerColonneReglage,
   fractionDeY,
@@ -105,13 +105,21 @@ function poser(noeud: HTMLElement, x: number, y: number, largeur: number, hauteu
   noeud.style.height = `${String(Math.round(hauteur))}px`;
 }
 
-/** Contrôles DOM d'un levier. */
+/** Contrôles DOM d'un levier, et ce qui y est écrit (le DOM n'est écrit que si une valeur change). */
 interface ControlesLevier {
   readonly geo: GeometrieLevier;
   readonly curseur: HTMLInputElement;
   readonly zone: HTMLDivElement;
   readonly champ: HTMLInputElement;
   readonly aide: HTMLElement;
+  /** Dernier état écrit : `libre` / `horsService` / valeur du levier / langue du texte lu. */
+  ecrit: {
+    libre: boolean | null;
+    horsService: boolean | null;
+    valeur: number;
+    champ: number;
+    langue: string;
+  };
 }
 
 /**
@@ -129,9 +137,13 @@ export function creerPupitre(options: OptionsPupitre): Pupitre {
   for (const c of options.colonnes ?? []) {
     colonnes.set(c.id, c);
   }
+  // La requête média est créée une fois (pas d'objet par image) ; sa valeur se relit à chaque image.
+  const requeteReduit =
+    options.mouvementReduit === undefined
+      ? window.matchMedia('(prefers-reduced-motion: reduce)')
+      : null;
   const mouvementReduit =
-    options.mouvementReduit ??
-    ((): boolean => window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    options.mouvementReduit ?? ((): boolean => requeteReduit?.matches === true);
 
   // --- DOM ---
   const section = el('section', 'ui-pupitre', racine);
@@ -174,7 +186,14 @@ export function creerPupitre(options: OptionsPupitre): Pupitre {
     const aide = el('p', 'ui-sr', plan);
     aide.id = idAide;
     curseur.setAttribute('aria-describedby', idAide);
-    return { geo: g, curseur, zone, champ, aide };
+    return {
+      geo: g,
+      curseur,
+      zone,
+      champ,
+      aide,
+      ecrit: { libre: null, horsService: null, valeur: Number.NaN, champ: Number.NaN, langue: '' },
+    };
   };
   const kp = creerControles(geo.kp, 'ui-pupitre-aide-kp');
   const ki = creerControles(geo.ki, 'ui-pupitre-aide-ki');
@@ -190,6 +209,20 @@ export function creerPupitre(options: OptionsPupitre): Pupitre {
   fermer.type = 'button';
   poser(fermer, geo.fermer.x, geo.fermer.y, geo.fermer.w, geo.fermer.h);
 
+  // Colonnes qui montent des éléments DOM dans le plan (le curseur du trajet, T-051).
+  const montages: { id: IdColonne; montage: MontageColonne }[] = [];
+  const contexte: ContextePlan = {
+    plan,
+    echelle: () => placement.echelle,
+    traducteur: tr,
+    rafraichir: apresCommande,
+  };
+  for (const c of colonnes.values()) {
+    if (c.monter !== undefined) {
+      montages.push({ id: c.id, montage: c.monter(contexte) });
+    }
+  }
+
   const ctxFond = toileFond.getContext('2d');
   const ctxVif = toileVive.getContext('2d');
 
@@ -204,6 +237,10 @@ export function creerPupitre(options: OptionsPupitre): Pupitre {
   let versionFond = 1;
   let langue = '';
   let cleReglage = '';
+  let reglageMemo: ReglagePupitre | null = null;
+  let phaseMemo: LevelSnapshot['phase'] | '' = '';
+  let pauseMemo = false;
+  let texteNoteEcrit = '';
   let ouvreur: HTMLElement | null = null;
   let issueAnnoncee = -1;
   let editableAvant = false;
@@ -276,22 +313,37 @@ export function creerPupitre(options: OptionsPupitre): Pupitre {
     valeur: number,
   ): void => {
     const libre = etatLevier === 'libre';
-    if (c.curseur.disabled === libre) {
-      c.curseur.disabled = !libre;
-    }
-    if (c.champ.disabled === libre) {
-      c.champ.disabled = !libre;
-    }
     const horsService = etatLevier === 'hors-service';
-    c.zone.classList.toggle('is-inactive', !libre);
-    c.curseur.valueAsNumber = valeur;
-    c.curseur.setAttribute('aria-valuetext', texteValeur(qui, valeur));
+    const ecrit = c.ecrit;
+    if (ecrit.libre !== libre) {
+      ecrit.libre = libre;
+      c.curseur.disabled = !libre;
+      c.champ.disabled = !libre;
+      c.zone.classList.toggle('is-inactive', !libre);
+    }
+    const changeValeur = ecrit.valeur !== valeur;
+    if (changeValeur) {
+      c.curseur.valueAsNumber = valeur;
+    }
+    if (changeValeur || ecrit.langue !== langue || ecrit.horsService !== horsService) {
+      c.curseur.setAttribute('aria-valuetext', texteValeur(qui, valeur));
+    }
     if (horsService) {
-      c.champ.value = '';
-      c.champ.placeholder = '—';
-    } else if (document.activeElement !== c.champ) {
+      if (ecrit.horsService !== true) {
+        ecrit.champ = Number.NaN;
+        c.champ.value = '';
+        c.champ.placeholder = '—';
+      }
+    } else if (
+      (ecrit.champ !== valeur || ecrit.horsService !== false) &&
+      document.activeElement !== c.champ
+    ) {
+      ecrit.champ = valeur;
       c.champ.valueAsNumber = valeur;
     }
+    ecrit.valeur = valeur;
+    ecrit.langue = langue;
+    ecrit.horsService = horsService;
   };
 
   // --- Commandes du joueur ---
@@ -490,21 +542,28 @@ export function creerPupitre(options: OptionsPupitre): Pupitre {
       editableAvant = false;
       return;
     }
-    const reglage = reglageDe(niveau, phase, enPause);
+    // Le réglage ne dépend que de la phase et de la pause : recalculé seulement si elles changent.
+    if (reglageMemo === null || phase !== phaseMemo || enPause !== pauseMemo) {
+      phaseMemo = phase;
+      pauseMemo = enPause;
+      reglageMemo = reglageDe(niveau, phase, enPause);
+      const cle = `${reglageMemo.mode}|${reglageMemo.kp}|${reglageMemo.ki}`;
+      if (cle !== cleReglage) {
+        cleReglage = cle;
+        versionFond += 1;
+      }
+    }
+    const reglage = reglageMemo;
     // Langue : textes DOM et fond.
     if (langue !== tr.locale) {
       langue = tr.locale;
       ecrireTextes();
       versionFond += 1;
     }
-    const cle = `${reglage.mode}|${reglage.kp}|${reglage.ki}`;
-    if (cle !== cleReglage) {
-      cleReglage = cle;
-      versionFond += 1;
-    }
     etatPartage.reglage = reglage;
     const texteDeNote = texteNote(tr, niveau, phase, reglage.mode);
-    if (note.textContent !== texteDeNote) {
+    if (texteNoteEcrit !== texteDeNote) {
+      texteNoteEcrit = texteDeNote;
       note.textContent = texteDeNote;
     }
     etatPartage.phase = phase;
@@ -517,15 +576,22 @@ export function creerPupitre(options: OptionsPupitre): Pupitre {
       section.hidden = false;
     }
     dimensionner(largeur, hauteur);
+    for (const m of montages) {
+      m.montage.maj(etat, COLONNES[m.id], placement.colonnes.includes(m.id));
+    }
 
     // Contrôles.
     regler(kp, 'kp', reglage.kp, s.kp);
     regler(ki, 'ki', reglage.ki, s.ki);
-    lancer.hidden = !reglage.lancerVisible;
+    if (lancer.hidden === reglage.lancerVisible) {
+      lancer.hidden = !reglage.lancerVisible;
+    }
     if (lancer.disabled === reglage.lancerActif) {
       lancer.disabled = !reglage.lancerActif;
     }
-    recommencer.hidden = !reglage.recommencerVisible;
+    if (recommencer.hidden === reglage.recommencerVisible) {
+      recommencer.hidden = !reglage.recommencerVisible;
+    }
     if (recommencer.disabled === reglage.recommencerActif) {
       recommencer.disabled = !reglage.recommencerActif;
     }
@@ -599,6 +665,9 @@ export function creerPupitre(options: OptionsPupitre): Pupitre {
     update,
     destroy(): void {
       detruit = true;
+      for (const m of montages) {
+        m.montage.detruire();
+      }
       section.remove();
     },
   };

@@ -58,6 +58,31 @@ export interface EtatPupitre {
   annoncer(texte: string): void;
 }
 
+/** Ce que le pupitre donne à une colonne qui monte des éléments DOM dans le plan. */
+export interface ContextePlan {
+  /** Élément du plan : les contrôles s'y posent en unités du plan (1 unité = 1 px CSS à l'échelle 1). */
+  readonly plan: HTMLElement;
+  /** Échelle courante du plan (px CSS par unité) : pour convertir la position d'un pointeur. */
+  readonly echelle: () => number;
+  /** Traducteur (langue courante). */
+  readonly traducteur: Translator;
+  /** Met le pupitre à jour et le redessine tout de suite (après une commande du joueur). */
+  readonly rafraichir: () => void;
+}
+
+/** Éléments DOM montés par une colonne (le pupitre les met à jour et les démonte). */
+export interface MontageColonne {
+  /**
+   * Met les éléments à jour avant le dessin de l'image : n'écrire dans le DOM que si une valeur change.
+   * @param etat état du pupitre.
+   * @param rect rectangle de la colonne dans le plan.
+   * @param montree vrai si la colonne est montrée (faux en mode étroit : cacher les éléments).
+   */
+  maj(etat: Readonly<EtatPupitre>, rect: RectPlan, montree: boolean): void;
+  /** Retire les éléments. */
+  detruire(): void;
+}
+
 /** Une colonne du pupitre. */
 export interface ColonnePupitre {
   /** Emplacement de la colonne. */
@@ -84,4 +109,10 @@ export interface ColonnePupitre {
    * @param etat état du pupitre.
    */
   resume?(etat: Readonly<EtatPupitre>): string;
+  /**
+   * Monte les éléments DOM de la colonne (optionnel : contrôles accessibles posés sur le dessin, comme
+   * le curseur du trajet). Appelé une fois à la création du pupitre.
+   * @param contexte plan, échelle, traducteur.
+   */
+  monter?(contexte: ContextePlan): MontageColonne;
 }

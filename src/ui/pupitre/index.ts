@@ -3,7 +3,7 @@
  * du centre (machine) et de droite (courbes). Voir `colonne.ts` pour le contrat des colonnes.
  */
 export { creerColonneVide } from './colonne-vide';
-export type { ColonnePupitre, EtatPupitre } from './colonne';
+export type { ColonnePupitre, ContextePlan, EtatPupitre, MontageColonne } from './colonne';
 export {
   cleEtat,
   cleTitreIssue,
@@ -77,4 +77,37 @@ export {
   type DispositionMachine,
   type GeometrieJauge,
 } from './machine-plan';
+export { creerColonnesTrajet } from './colonnes-trajet';
+export { creerColonneCourbes, type OptionsCourbes } from './courbes';
+export {
+  DUREE_MAX_S,
+  ECHELLES,
+  PAS_MAX,
+  fractionSurEchelle,
+  graduationsEchelle,
+  positionSurEchelle,
+  texteValeur,
+  type EchelleSignal,
+  type EchellesCourbes,
+  type PositionEchelle,
+} from './courbes-echelles';
+export {
+  dispositionCourbes,
+  pasDeX,
+  xDePas,
+  type BandeCourbes,
+  type DispositionCourbes,
+  type IdBande,
+} from './courbes-plan';
+export {
+  borneIndice,
+  choisirEtatMachine,
+  creerCurseur,
+  etatMachineAuPas,
+  indiceApresTouche,
+  valeursAuPas,
+  valeursVides,
+  type CurseurTrajet,
+  type ValeursCourbes,
+} from './curseur';
 export { creerPupitre, type OptionsPupitre, type Pupitre } from './pupitre';

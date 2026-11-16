@@ -138,7 +138,8 @@ export function geometrieReglage(r: Readonly<RectPlan>): GeometrieReglage {
     kp: levier(r.x, r.y, 77),
     ki: levier(r.x, r.y, 231),
     lancer: { x: r.x + 24, y: r.y + 346, w: r.w - 48, h: 46 },
-    fermer: { x: r.x + r.w - 126, y: r.y + r.h - 52, w: 110, h: 40 },
+    // En haut à droite de la plaque d'état : le titre de l'issue (une ou deux lignes) s'écrit dessous.
+    fermer: { x: r.x + r.w - 16 - 96, y: etatY + 8, w: 96, h: 40 },
   };
 }
 
@@ -359,6 +360,9 @@ export function creerColonneReglage(): ColonnePupitre {
   let cleTemps = Number.NaN;
   let langueTemps = '';
   let texteTemps = '';
+  // Titre de l'issue découpé en lignes : refait seulement quand le texte change.
+  let titreIssue = '';
+  let lignesIssue: string[] = [];
   return {
     id: 'reglage',
     dessinerFond(ctx, rectColonne, etat): void {
@@ -421,26 +425,34 @@ export function creerColonneReglage(): ColonnePupitre {
           t: tr.formatNumber(s.t, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
         });
       }
-      texte(ctx, texteTemps, e.x + 20, e.y + 42, 28, 'left', ENCRE, true);
+      texte(ctx, texteTemps, e.x + 20, e.y + 38, 26, 'left', ENCRE, true);
       texte(
         ctx,
         tr.t(cleEtat(etat.phase, etat.enPause)),
         e.x + 20,
-        e.y + 70,
+        e.y + 72,
         19,
         'left',
         ENCRE_DOUCE,
       );
       if (etat.phase === 'outcome' && s.outcome !== null) {
-        texte(
-          ctx,
-          tr.t(cleTitreIssue(etat.niveau, s.outcome)),
-          e.x + 20,
-          e.y + 98,
-          21,
-          'left',
-          s.outcome === 'win' ? ENCRE : ROUGE_TEXTE,
-        );
+        // Sous le bouton « Fermer » : jusqu'à deux lignes, rien de superposé (largeur de la plaque).
+        const titre = tr.t(cleTitreIssue(etat.niveau, s.outcome));
+        if (titre !== titreIssue) {
+          titreIssue = titre;
+          lignesIssue = lignes(ctx, titre, e.w - 40, 21);
+        }
+        lignesIssue.forEach((ligne, k) => {
+          texte(
+            ctx,
+            ligne,
+            e.x + 20,
+            e.y + 100 + k * 24,
+            21,
+            'left',
+            s.outcome === 'win' ? ENCRE : ROUGE_TEXTE,
+          );
+        });
       }
     },
   };

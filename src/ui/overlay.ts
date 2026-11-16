@@ -31,7 +31,7 @@ import {
   type PanelBox,
   type UiGeometry,
 } from './layout';
-import { creerPupitre, type Pupitre } from './pupitre';
+import { creerColonnesTrajet, creerPupitre, type Pupitre } from './pupitre';
 import { createViewModelBuilder, type ViewModel } from './view-model';
 import './ui.css';
 
@@ -525,6 +525,7 @@ export function createUi(options: UiOptions): Ui {
     level,
     traducteur: tr,
     annoncer: announce,
+    colonnes: creerColonnesTrajet(),
     bloque: () => commandsBlocked(helpOpen, boardOpen),
     apresCommande: () => {
       update();

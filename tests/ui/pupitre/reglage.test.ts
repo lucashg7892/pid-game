@@ -220,3 +220,94 @@ describe('dessin de la colonne de réglage', () => {
     }
   });
 });
+
+describe('plaque d’état : rien de superposé (correctif T-051)', () => {
+  interface Boite {
+    s: string;
+    x: number;
+    y: number;
+    taille: number;
+    align: string;
+  }
+
+  /** Contexte 2D factice qui garde la position des textes (0,45 fois le corps par caractère (large pour la police réelle)). */
+  function fauxPositions(): { ctx: CanvasRenderingContext2D; boites: Boite[] } {
+    const boites: Boite[] = [];
+    const etat: Record<string, unknown> = { font: '10px x', textAlign: 'left' };
+    const taille = (): number => Number.parseFloat(String(etat['font']));
+    const ctx = new Proxy(etat, {
+      get(cible, nom: string) {
+        if (nom === 'fillText') {
+          return (s: string, x: number, y: number): void => {
+            boites.push({ s, x, y, taille: taille(), align: String(cible['textAlign']) });
+          };
+        }
+        if (nom === 'measureText') {
+          return (s: string): { width: number } => ({ width: s.length * taille() * 0.45 });
+        }
+        if (nom in cible) return cible[nom];
+        return () => undefined;
+      },
+      set(cible, nom: string, valeur) {
+        cible[nom] = valeur;
+        return true;
+      },
+    }) as unknown as CanvasRenderingContext2D;
+    return { ctx, boites };
+  }
+
+  const issues = [
+    ['level1', ['win', 'bonk', 'noLift', 'step']],
+    ['level2', ['win', 'bonk', 'slow', 'step']],
+  ] as const;
+
+  it('le titre de l’issue (une ou deux lignes), le temps et l’état ne touchent pas « Fermer »', () => {
+    const geo = geometrieReglage(COLONNES.reglage);
+    for (const [niveau, sorties] of issues) {
+      for (const locale of ['fr', 'en'] as const) {
+        for (const outcome of sorties) {
+          const level = niveau === 'level1' ? createLevel1() : createLevel2();
+          const base = etatDe(level, locale);
+          const etat: EtatPupitre = {
+            ...base,
+            phase: 'outcome',
+            snapshot: { ...base.snapshot, outcome, t: 12.3 },
+            reglage: reglageDe(niveau, 'outcome', false),
+          };
+          const { ctx, boites } = fauxPositions();
+          creerColonneReglage().dessiner(ctx, COLONNES.reglage, etat);
+          const f = geo.fermer;
+          for (const b of boites) {
+            const largeur = b.s.length * b.taille * 0.45;
+            const gauche = b.align === 'center' ? b.x - largeur / 2 : b.x;
+            const touche =
+              gauche < f.x + f.w &&
+              gauche + largeur > f.x &&
+              b.y - b.taille < f.y + f.h &&
+              b.y + 4 > f.y;
+            expect(touche, `${locale} ${niveau} ${outcome} : « ${b.s} » touche Fermer`).toBe(false);
+            // Le texte tient dans la plaque d'état.
+            expect(gauche + largeur).toBeLessThanOrEqual(geo.etat.x + geo.etat.w - 8);
+            expect(b.y + 4).toBeLessThanOrEqual(geo.etat.y + geo.etat.h - 4);
+          }
+        }
+      }
+    }
+  });
+
+  it('une issue longue passe sur deux lignes, sans dépasser de la plaque', () => {
+    const level = createLevel1();
+    const base = etatDe(level, 'en');
+    const etat: EtatPupitre = {
+      ...base,
+      phase: 'outcome',
+      snapshot: { ...base.snapshot, outcome: 'noLift' },
+      reglage: reglageDe('level1', 'outcome', false),
+    };
+    const { ctx, boites } = fauxPositions();
+    creerColonneReglage().dessiner(ctx, COLONNES.reglage, etat);
+    const titre = boites.filter((b) => b.taille === 21);
+    expect(titre.length).toBe(2);
+    expect(titre.map((b) => b.s).join(' ')).toBe('The lift won’t leave the ground');
+  });
+});

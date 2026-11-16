@@ -40,6 +40,10 @@ export const MESSAGE_PARAMS = {
   'pupitre.annonce.issueLibre': ['reglage'],
   'pupitre.machine.cabine': ['y'],
   'pupitre.machine.resume': ['etat', 'y', 'appliquee', 'demandee'],
+  'pupitre.courbes.temps': ['t'],
+  'pupitre.courbes.curseur.valeur': ['t', 'e', 'appliquee', 'v', 'a'],
+  'pupitre.courbes.resume': ['t', 'e', 'appliquee', 'demandee', 'v', 'a'],
+  'pupitre.courbes.resumePi': ['p', 'i'],
 } as const satisfies Partial<Record<MessageKey, readonly string[]>>;
 
 /** Clés qui attendent des paramètres. */

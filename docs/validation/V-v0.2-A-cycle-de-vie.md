@@ -18,7 +18,7 @@ Commandes exécutées (codes de sortie relevés) :
 | `powershell -NoProfile -Command "npm.cmd run e2e"` | 0 | **74 passed** (55,8 s) ; 17 PNG de `docs/img/` réécrits puis restaurés par `git checkout -- docs/img` |
 | `npx vite preview --host 127.0.0.1 --port 4197 --strictPort` | arrêté | serveur des essais, arrêté par `taskkill` en fin de session |
 
-Méthode : scripts Node jetables qui importent `playwright-core` contre le build servi sur le port 4197 (copies dans `C:\Users\BANGER~1\AppData\Local\Temp\chasse-A\`, aucun fichier jetable dans le dépôt). Un script d'instrumentation commun (`harness.mjs`, injecté par `page.addInitScript`) compte :
+Méthode : scripts Node jetables qui importent `playwright-core` contre le build servi sur le port 4197 (copies dans `%TEMP%\chasse-A\`, aucun fichier jetable dans le dépôt). Un script d'instrumentation commun (`harness.mjs`, injecté par `page.addInitScript`) compte :
 
 - les écouteurs vivants sur `document`, `window` et le canvas (`EventTarget.prototype.addEventListener` / `removeEventListener` enveloppés), recoupés par CDP `DOMDebugger.getEventListeners` ;
 - les `setTimeout` en attente, les `requestAnimationFrame` en attente, les cibles observées par `ResizeObserver` ;

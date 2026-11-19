@@ -44,6 +44,7 @@ Tenu par l'orchestrateur. Les sous-agents ne modifient jamais ce fichier.
 | D36 | v0.3 lot C, scène (2026-11-15) | La jauge de force quitte la scène (elle est sur le pupitre) ; la courbe de position y reste ; rien d'autre ne bouge |
 | D37 | v0.3 lot C, tableau d'école (2026-11-15) | Le tableau gagne, sous les équations, la partie « D'où vient la force ? » de la maquette D (ressort pour P, bocal pour I au niveau 2, butée du moteur, bilan des forces de la cabine), calculée avec les valeurs de l'instant de la pause |
 | D38 | v0.3 lot C, ménage (2026-11-15) | Maquettes A, B, D et page `?proto=tous` supprimées avec leurs captures ; la maquette C reste lançable par `?proto=c` avec ses captures ; idée reportée : le treuil et l'ascenseur en fil de fer 3D de la maquette C plaisent, à réévaluer plus tard comme remplaçant possible de l'écorché de A, sans le tube vert |
+| D39 | Publication (2026-11-19) | Dépôt rendu public ; site publié sur GitHub Pages depuis `main`, à chaque push (remplace D17) ; K14 levé |
 
 ## 2. Protocole
 

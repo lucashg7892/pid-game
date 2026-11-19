@@ -22,7 +22,7 @@ Commandes exécutées (codes de sortie relevés) :
 | `npx vitest run tests/zz-chasse-b.test.ts --silent=false` | 0 | 7 tests jetables (noyau de jeu, API, découpages, déterminisme, annonces) ; fichier supprimé ensuite |
 | `npx vitest run tests/zz-chasse-b2.test.ts --silent=false` | 0 | textes de l'issue `slow` du niveau 2 en FR et EN ; fichier supprimé ensuite |
 
-Méthode : scripts Node jetables qui importent `playwright-core` contre le build servi sur le port 4196, en mode `?e2e=1` (crochet `window.__huygens`) ou en temps réel (clavier et souris seulement), et tests Vitest jetables sous `tests/zz-*.test.ts`. Copies dans `C:\Users\BANGER~1\AppData\Local\Temp\chasse-B\` : `grid.mjs` (attaque 2), `leak.mjs` (1), `numfield.mjs`, `numfield2.mjs`, `numfield3.mjs` (3), `states.mjs` (4), `a11y.mjs`, `helpkeys.mjs` (5), `lock.mjs`, `realpause.mjs` (2), `zz-chasse-b.test.ts`, `zz-chasse-b2.test.ts` (2, 3, 6). Aucun fichier jetable ne reste dans le dépôt.
+Méthode : scripts Node jetables qui importent `playwright-core` contre le build servi sur le port 4196, en mode `?e2e=1` (crochet `window.__huygens`) ou en temps réel (clavier et souris seulement), et tests Vitest jetables sous `tests/zz-*.test.ts`. Copies dans `%TEMP%\chasse-B\` : `grid.mjs` (attaque 2), `leak.mjs` (1), `numfield.mjs`, `numfield2.mjs`, `numfield3.mjs` (3), `states.mjs` (4), `a11y.mjs`, `helpkeys.mjs` (5), `lock.mjs`, `realpause.mjs` (2), `zz-chasse-b.test.ts`, `zz-chasse-b2.test.ts` (2, 3, 6). Aucun fichier jetable ne reste dans le dépôt.
 
 « Exécuté » signifie mesuré par un de ces scripts ; « lu dans le source » est signalé comme tel.
 

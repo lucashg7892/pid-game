@@ -36,6 +36,7 @@ Tenu par l'orchestrateur. Les sous-agents ne modifient jamais ce fichier.
 | D28 | Niveau 1, Kp par défaut (2026-11-13) | `KP_DEFAULT` = 2000 N/m (dans la fenêtre) ; `KI_DEFAULT` en découle (= `KP_DEFAULT`, D26) |
 | D29 | Niveau 2, tolérance (2026-11-13) | K32 corrigé : `LEVEL2_ARRIVAL_TOLERANCE` = 0,10 m (au lieu de `STEP_TOLERANCE`), pour que Ki soit nécessaire |
 | D30 | Portrait étroit (2026-11-13) | K26 reporté : le portrait étroit n'est pas prioritaire |
+| D39 | Publication (2026-11-19) | Dépôt rendu public ; site publié sur GitHub Pages depuis `main`, à chaque push (remplace D17) ; K14 levé |
 
 ## 2. Protocole
 

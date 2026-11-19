@@ -17,7 +17,7 @@ Liste tenue par l'orchestrateur. Rien ici n'est bloquant pour la v0.1.
 | K11 | 10 vulnérabilités npm modérées dans la chaîne de lint (dev seulement) | T-002 | à revoir à la montée de version |
 | K12 | Couverture Vitest de src/ui : 36,6 % (fichiers DOM couverts par l'e2e seulement) | D-010 | information |
 | K13 | Contrastes et `prefers-reduced-motion` non testés en e2e | D-010 | à vérifier |
-| K14 | GitHub Pages impossible tant que le dépôt est privé (compte gratuit) | D17 | décision utilisateur |
+| K14 | GitHub Pages impossible tant que le dépôt est privé (compte gratuit) | D17 | décision utilisateur → levé (D39, dépôt public le 2026-11-19) |
 | K15 | Références de jeu à 6 décimales : 4,4e-7 m de marge sous la tolérance de 1e-6 | T-005 (D-10) | mineur ; revérifié en T-020 : écart noyau / exact 1,1e-7 m au pire, tolérances inchangées |
 | K16 | Perte de contexte GPU non gérée (aucun écouteur `webglcontextlost` / `device.lost`) | T-012 (V-1) | majeur, non bloquant → corrigé (T-014) ; chemin WebGPU `device.lost` lu dans three mais non exercé (voir K8) |
 | K17 | Exception après le démarrage du renderer non rattrapée (pas de page de repli) | T-012 (V-2) | mineur → corrigé (T-014) |

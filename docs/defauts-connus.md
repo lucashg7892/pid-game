@@ -55,7 +55,7 @@ Gravités : « majeur » gêne le joueur sans bloquer le niveau ; « mineur » e
 
 | # | Défaut | Où ça se voit | Gravité | Piste de correction |
 |---|---|---|---|---|
-| K14 | GitHub Pages impossible tant que le dépôt est privé (compte gratuit) | aucun site publié ; lien de la page de repli inaccessible au public | décision utilisateur | les 3 étapes de [developpement.md](developpement.md#déploiement-sur-github-pages) |
+| K14 | GitHub Pages impossible tant que le dépôt est privé (compte gratuit) | aucun site publié ; lien de la page de repli inaccessible au public | décision utilisateur | les 3 étapes de [developpement.md](developpement.md#déploiement-sur-github-pages) → levé (D39, dépôt public le 2026-11-19) |
 
 ## Corrigés depuis la validation
 

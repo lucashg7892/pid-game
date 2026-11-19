@@ -8,27 +8,28 @@ Un bonhomme bâton dessiné au crayon traverse un monde de papier millimétré ;
 
 _English version below._
 
+## Jouer en ligne
+
+**<https://lucashg7892.github.io/pid-game/>**, dans un navigateur récent (Chrome, Edge ou Firefox ; WebGPU ou WebGL2).
+
 ## Comment jouer
 
-1. Marchez jusqu'à la console avec **→** (ou **D**), puis appuyez sur **E**.
-2. Réglez le gain Kp avec **+** et **−**, puis lancez l'ascenseur avec **E** ou **Entrée**.
-3. Kp trop faible : la cabine s'arrête trop bas ; trop fort : elle heurte la poutre. **R** pour réessayer, **?** pour l'aide.
+1. Sur l'écran titre, choisissez **Jouer**, puis un niveau dans le menu.
+2. Marchez jusqu'à la console avec **→** (ou **D**), puis appuyez sur **E**.
+3. Réglez le gain avec **+** et **−**, puis lancez l'ascenseur avec **E** ou **Entrée**.
+4. Gain trop faible : la cabine s'arrête trop bas ; trop fort : elle heurte la poutre. **R** pour réessayer, **?** pour l'aide.
 
 ## État actuel
 
-**Le niveau 1 est jouable** dans un navigateur récent (WebGPU ou WebGL2), en français et en anglais. La v0.1 est **validée avec réserves** le 2026-11-13 (tâches T-000 à T-012 ; rapport [docs/validation/T-012-v0.1.md](docs/validation/T-012-v0.1.md), bilan [docs/bilan-v0.1.md](docs/bilan-v0.1.md)).
+**Version 0.2.0** (2026-11-14) : écran titre, menu et deux niveaux jouables, en français et en anglais.
 
-- Validé :
-  - socle outillé : npm, TypeScript, Vite, ESLint, Prettier, dependency-cruiser, Vitest, Playwright (T-002) ;
-  - noyau de simulation `src/sim`, validé contre un oracle exact MATLAB hors du site (T-003 à T-005) ;
-  - textes FR/EN `src/i18n` : 111 clés par langue (T-006, T-010) ;
-  - logique du niveau 1 `src/game` (T-007) ;
-  - rendu au crayon `src/render` : papier millimétré, décor, bonhomme, courbe y(t), jauge de force (T-008, T-009) ;
-  - interface `src/ui` : bandeau d'aide, panneau Kp, issues, clavier, souris, tactile, accessibilité, police manuscrite (T-010) ;
-  - 426 tests unitaires et 28 tests de bout en bout verts (les seconds exécutés par l'orchestrateur, voir [docs/tests.md](docs/tests.md)) ;
-  - intégration continue `.github/workflows/ci.yml` : à chaque push sur `main` et à chaque pull request, `npm ci`, `npm run check`, puis les tests e2e dans Chromium (T-011). Au commit `88ae23c`, elle n'avait encore jamais tourné sur GitHub.
-- Publication sur GitHub Pages : prête (`.github/workflows/deploy.yml`) mais manuelle, car le dépôt est privé (décision D17). Les 3 étapes pour l'activer : [docs/developpement.md](docs/developpement.md#déploiement-sur-github-pages).
-- Limites : WebGPU réel n'est exercé par aucun test automatique (les tests tournent en WebGL2 logiciel) ; commandes tactiles non essayées sur un vrai écran tactile ; perte de contexte GPU non gérée. Liste complète : [docs/defauts-connus.md](docs/defauts-connus.md).
+- **Niveau 1 : le vide.** Contrôleur proportionnel : on règle Kp.
+- **Niveau 2 : la mémoire.** Contrôleur PI : Kp est fixé, on règle Ki.
+- Noyau de simulation validé contre un oracle exact MATLAB, hors du site, pour les contrôleurs P et PI.
+- 661 tests unitaires et 108 tests de bout en bout ; intégration continue à chaque push sur `main` ; site publié automatiquement depuis `main`.
+- Limites : WebGPU réel n'est exercé par aucun test automatique ; commandes tactiles non essayées sur un vrai écran tactile ; affichage en portrait étroit perfectible. Liste complète : [docs/defauts-connus.md](docs/defauts-connus.md).
+
+En préparation (v0.3) : pupitre de contrôle avec courbes et moteur du treuil en écorché, tableau d'école avec les équations, animations d'embarquement et de sortie, bouton « Niveau suivant ».
 
 Le détail est dans [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
@@ -80,19 +81,28 @@ _Repository `pid-game` · an educational web game about control theory and the P
 
 A pencil-drawn stick figure walks across graph paper; each obstacle is a system whose controller the player tunes. Working title "Huygens’s world", a tribute to Christiaan Huygens.
 
+## Play online
+
+**<https://lucashg7892.github.io/pid-game/>**, in a recent browser (Chrome, Edge or Firefox; WebGPU or WebGL2).
+
 ## How to play
 
-1. Walk to the console with **→** (or **D**), then press **E**.
-2. Set the gain Kp with **+** and **−**, then launch the lift with **E** or **Enter**.
-3. Kp too low: the lift stops short; too high: it hits the beam. **R** to try again, **?** for help.
+1. On the title screen, choose **Play**, then a level from the menu.
+2. Walk to the console with **→** (or **D**), then press **E**.
+3. Set the gain with **+** and **−**, then launch the lift with **E** or **Enter**.
+4. Gain too low: the lift stops short; too high: it hits the beam. **R** to try again, **?** for help.
 
 ## Current status
 
-**Level 1 is playable** in a recent browser (WebGPU or WebGL2), in French and English. Version 0.1 was **validated with reservations** on 2026-11-13 (tasks T-000 to T-012; summary in French: [docs/bilan-v0.1.md](docs/bilan-v0.1.md)).
+**Version 0.2.0** (2026-11-14): title screen, menu and two playable levels, in French and English.
 
-- Validated: tooling (T-002); simulation core `src/sim`, checked against an exact MATLAB oracle outside the site (T-003 to T-005); French/English texts `src/i18n`, 111 keys per language (T-006, T-010); level 1 logic `src/game` (T-007); pencil rendering `src/render` (T-008, T-009); user interface `src/ui` with keyboard, mouse, touch and accessibility (T-010); 426 unit tests and 28 end-to-end tests passing (the latter run by the coordinator, see [docs/tests.md](docs/tests.md)); continuous integration `.github/workflows/ci.yml` runs `npm ci`, `npm run check` and the end-to-end tests in Chromium on every push to `main` and every pull request (T-011). As of commit `88ae23c`, it had not yet run on GitHub.
-- GitHub Pages deployment: ready (`.github/workflows/deploy.yml`) but manual, because the repository is private (decision D17). To enable it: make the repository public, set Settings > Pages > Source to "GitHub Actions", then run Actions > Deploy > Run workflow.
-- Limits: real WebGPU is not exercised by any automated test (tests run on software WebGL2); touch controls not tried on a real touch screen; GPU context loss is not handled. Full list of known issues (in French): [docs/defauts-connus.md](docs/defauts-connus.md).
+- **Level 1: The Gap.** Proportional controller: you tune Kp.
+- **Level 2: Memory.** PI controller: Kp is fixed, you tune Ki.
+- Simulation core checked against an exact MATLAB oracle, outside the site, for both the P and PI controllers.
+- 661 unit tests and 108 end-to-end tests; continuous integration on every push to `main`; the site is deployed automatically from `main`.
+- Limits: real WebGPU is not exercised by any automated test; touch controls not tried on a real touch screen; narrow portrait layout could be better. Full list of known issues (in French): [docs/defauts-connus.md](docs/defauts-connus.md).
+
+Coming next (v0.3): a control desk with live charts and a cutaway of the winch motor, a classroom blackboard with the equations, boarding and exit animations, and a "Next level" button.
 
 ## Requirements
 

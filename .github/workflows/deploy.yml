@@ -1,15 +1,12 @@
 # Déploiement de dist/ sur GitHub Pages.
 #
-# Déclenchement MANUEL uniquement (onglet Actions > Deploy > Run workflow) : le dépôt est privé
-# (décision D17) et un compte GitHub gratuit ne publie pas de site Pages depuis un dépôt privé.
-# Une fois le dépôt rendu public et Pages réglé sur « GitHub Actions », pour déployer à chaque push
-# sur main, ajouter sous `on:` (au même niveau que workflow_dispatch) :
-#
-#   push:
-#     branches: [main]
+# À chaque push sur main, et à la main depuis l'onglet Actions > Deploy > Run workflow.
+# Le dépôt est public depuis le 2026-11-19 (décision D39) ; Settings > Pages > Source : « GitHub Actions ».
 name: Deploy
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:

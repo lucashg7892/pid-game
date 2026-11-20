@@ -1,6 +1,6 @@
 # Architecture
 
-À quoi sert cette page : présenter les modules du code, qui a le droit d'importer qui, le déroulement d'une image et les garde-fous automatiques. État au commit `3810193` (lot A de la v0.3, branche `v0.3-salle-de-controle`, non fusionnée ; version 0.2.0) : tous les modules sont validés, le jeu s'ouvre sur un écran titre puis un menu, et deux niveaux sont jouables dans un navigateur (le niveau 2 « La mémoire » est venu avec T-021b, sa jauge du terme intégral avec T-024).
+À quoi sert cette page : présenter les modules du code, qui a le droit d'importer qui, le déroulement d'une image et les garde-fous automatiques. État au commit `908a62e` (version 0.3.0, branche `v0.3-salle-de-controle`) : tous les modules sont validés, le jeu s'ouvre sur un écran titre puis un menu, deux niveaux sont jouables dans un navigateur, et la v0.3 a ajouté le pupitre de contrôle (`src/ui/pupitre`), le tableau d'école, le journal du trajet (`src/game/trip-log.ts`) et la maquette jetable `src/proto` (`?proto=c`).
 
 ## Modules
 
@@ -8,10 +8,11 @@
 |---|---|---|
 | `src/sim/` | noyau de simulation pur : pas fixe, déterministe, sans rendu ni DOM | **validé** (T-003, T-004, T-004b, T-005). Voir [simulation.md](simulation.md) |
 | `src/app/` | état d'application pur : machine d'écrans (titre, menu, niveau), catalogue des niveaux, niveau suivant | **validé** (T-017abc ; T-036, N2, pour `nextLevel`). Voir ci-dessous et [ADR-015](decisions/ADR-015-etat-application-machine-ecrans.md) |
-| `src/game/` | logique de niveau : sept phases (dont embarquement et sortie), victoire et échec, bonhomme, événements ; machine commune aux niveaux 1 et 2 | **validé** (T-007 ; T-020 pour les valeurs du niveau 1 ; T-021b pour le niveau 2 ; T-037, N3, pour le poste, l'embarquement et la sortie). Voir [jeu.md](jeu.md) |
+| `src/game/` | logique de niveau : sept phases (dont embarquement et sortie), victoire et échec, bonhomme, événements, journal du trajet ; machine commune aux niveaux 1 et 2 | **validé** (T-007 ; T-020 pour les valeurs du niveau 1 ; T-021b pour le niveau 2 ; T-037, N3, pour le poste, l'embarquement et la sortie ; T-041 et T-048, N3, pour les signaux et le journal du trajet). Voir [jeu.md](jeu.md) |
 | `src/i18n/` | textes FR/EN, interpolation, formatage, détection de langue | **validé** (T-006, clés ajoutées en T-010). Voir [i18n-accessibilite.md](i18n-accessibilite.md) |
 | `src/render/` | rendu three.js (`three/webgpu`, repli WebGL2) : papier, traits de crayon, bonhomme, courbe, jauge | **validé** (T-008, T-009 ; échecs en cours de route : T-014). Voir [rendu.md](rendu.md) |
-| `src/ui/` | interface DOM accessible : bandeau d'aide, panneau de réglage, mesures, issues, touches, annonces ; écrans titre et menu | **validé** (T-010 ; T-017d pour les écrans). Voir [interface.md](interface.md) |
+| `src/ui/` | interface DOM accessible : bandeau d'aide, pupitre de contrôle (canvas 2D en surimpression, `src/ui/pupitre`), tableau d'école, mesures, issues, touches, annonces ; écrans titre et menu | **validé** (T-010 ; T-017d pour les écrans ; T-042 et T-053 pour le tableau ; T-049 à T-051 pour le pupitre, qui remplace le panneau de réglage). Voir [interface.md](interface.md), [pupitre.md](pupitre.md), [tableau-ecole.md](tableau-ecole.md) |
+| `src/proto/` | maquettes jetables du pupitre (lot B) : seule la maquette C reste, lançable par `?proto=c` ; trajets de référence purs dans `src/proto/common` | **jetable** (T-043 à T-047, ménage T-054, D38). Hors du jeu : voir les règles `proto-isolated` et `proto-common-pure` ci-dessous et [pupitre.md](pupitre.md#maquette-conservée-protoc) |
 | `src/main.ts` | point de composition : seul fichier qui connaît tous les modules ; monte et démonte les écrans | **validé** (T-010, T-017e), voir ci-dessous |
 
 Fichiers :
@@ -23,12 +24,16 @@ src/i18n/    index.ts  catalogs.ts  params.ts  interpolate.ts  format.ts  detect
              locales/fr.json  locales/en.json
 src/app/     index.ts  screens.ts  levels.ts
 src/game/    index.ts  constants.ts  kp.ts  outcome.ts  walker.ts  events.ts  elevator-level.ts
-             level.ts  level2.ts
+             level.ts  level2.ts  trip-log.ts
 src/render/  index.ts  bootstrap.ts  session.ts  stage.ts  camera.ts  options.ts  paper.ts
              pencil-style.ts  pencil-material.ts  stroke-batch.ts  noise.ts  patterns.ts
              walker-pose.ts  curve.ts  gauge.ts  level-display.ts  level-painter.ts  level-view.ts
 src/ui/      index.ts  overlay.ts  view-model.ts  layout.ts  hints.ts  keys.ts  input.ts
              announce.ts  help.ts  screens.ts  screens-model.ts  screen-keys.ts  ui.css  screens.css
+             board.ts  board-math.ts  board-forces.ts  board-forces-view.ts
+             pupitre/ (21 fichiers : pupitre.ts, plan.ts, modele.ts, colonne.ts, reglage.ts, machine*.ts,
+             courbes*.ts, curseur.ts, colonnes-trajet.ts, crayon.ts, index.ts…)
+src/proto/   index.ts  contrat.ts  coque.ts  c/ (maquette C)  common/ (trajets de référence, lecteur, types)
 src/main.ts
 public/      favicon.svg  fonts/ (Patrick Hand, OFL.txt)
 ```
@@ -44,6 +49,8 @@ public/      favicon.svg  fonts/ (Patrick Hand, OFL.txt)
 4. **Animations du niveau** (T-037, T-038) : `wantedAnimations()` vaut `animationsSetting && !session.reducedMotion` ; `animationsSetting` est vrai en jeu normal et, en mode `?e2e=1`, seulement avec `&anim=1`. La valeur est donnée à chaque niveau créé, puis, à chaque image dans `onFrameEnd`, `level.setAnimations(...)` n'est rappelé que si elle a changé (préférence de mouvement réduit suivie en cours de partie).
 5. Géométrie de l'écran pour l'interface (`UiGeometry`) : calculée à partir du cadrage du rendu, recalculée sur `resize` **et** par un `ResizeObserver` sur le canvas (K18, corrigé par T-017e), avec les ancres de la session (`session.anchors()`, dont `gaugeMax` et `gaugeWeight` et, depuis T-024, `iGauge` et `iGaugeVisible` pour la jauge du terme intégral du niveau 2 ; `main.ts` lit `iGaugeVisible` par un accesseur) : l'interface reçoit des nombres, sans importer le rendu.
 6. Écrit dans `document.body.dataset` le backend (`backend`), et, après la première image, `drawCalls` et `triangles`.
+7. **Maquettes** (lot B de la v0.3) : si l'URL contient `?proto=…`, `main.ts` charge `src/proto` par import dynamique (`lancerProto`) et monte la maquette à la place du jeu ; sans ce paramètre, rien de `src/proto` n'entre dans le chargement. Seule `?proto=c` existe depuis T-054.
+8. **Ancres du chevalet** : la géométrie transmise à l'interface contient `boardTopLeft` et `boardBottomRight` (T-042), pour la zone cliquable du tableau d'école.
 
 **Crochet de test** : seulement avec `?e2e=1` dans l'URL, `window.__huygens` expose la machine d'application (`app` : `state`, `play`, `openLevel`, `back`, `leaveLevel`, `nextLevel`), les commandes du niveau courant (`commands`, dont `setKp` et `setKi` : chacune renvoie `'ignored'` si le niveau ne règle pas cette grandeur, ou hors niveau ; depuis T-037, `skipAnimation` et `setAnimations(enabled)`), une copie de l'instantané, une avance déterministe du temps (`advance(secondes)`, par images fixes de 1/60 s), les compteurs de rendu, `detachLevel()` et `attachLevel()` (essai du cycle de vie de la vue) et `crashNextFrame()`, qui provoque une exception à l'image suivante (essai de la page de repli d'erreur). Dans ce mode, le temps réel ne fait plus avancer le niveau. Le paramètre `&screen=title|menu|level1|level2` choisit l'écran de départ (défaut `level1` : les e2e d'avant T-017 restent valables sans réécriture) ; il est ignoré sans `?e2e=1`. Dans ce mode, les animations du niveau sont **désactivées** (les e2e écrits avant elles restent valables) sauf avec `&anim=1`. Sans `?e2e=1`, `window.__huygens` n'existe pas (test e2e (h) de `level.spec.ts`) et le jeu s'ouvre sur le titre : les e2e qui n'utilisent pas `e2e=1` (par exemple `ui.spec.ts`) cliquent désormais « Jouer » puis le premier niveau.
 
@@ -99,7 +106,7 @@ Tableau tiré de `.dependency-cruiser.cjs` (section `forbidden`). « oui » = au
 | `src/ui/` | non | oui | oui | oui | non | oui | non | oui |
 | `src/main.ts` | oui | oui | oui | oui | oui | oui | non | oui |
 
-Règles en vigueur (9 depuis T-017a) :
+Règles en vigueur (11 au commit `908a62e` ; 9 depuis T-017a, plus `proto-isolated` et `proto-common-pure` du lot B) :
 
 | Règle | Ce qu'elle interdit |
 |---|---|
@@ -109,7 +116,9 @@ Règles en vigueur (9 depuis T-017a) :
 | `game-no-render` | tout import depuis `src/game/` vers autre chose que `src/game/` ou `src/sim/` |
 | `render-deps` | `src/render/` → `src/ui/`, `src/i18n/` ou `src/app/` (étendue à `app` par T-017a) |
 | `ui-deps` | `src/ui/` → `src/sim/` ou `src/render/` |
-| `three-only-in-render` | import de `three` hors de `src/render/` |
+| `proto-isolated` | tout import de `src/proto/` depuis `src/sim`, `game`, `i18n`, `render`, `ui` ou `app` : le jeu n'importe pas les maquettes (seuls `src/main.ts`, `src/proto` et `tests/` le peuvent) |
+| `proto-common-pure` | tout import depuis `src/proto/common/` vers autre chose que `src/proto/common/` (ni rendu, ni ui, ni paquet externe ; le DOM est vérifié par `tests/proto/pur.test.ts`) |
+| `three-only-in-render` | import de `three` hors de `src/render/` et de `src/proto/` (élargie par T-043 : la maquette C utilise three pour son post-traitement) |
 | `no-circular` | toute dépendance circulaire |
 | `not-to-unresolvable` | tout import que l'outil ne sait pas résoudre |
 
@@ -130,7 +139,7 @@ flowchart LR
   game --> sim
 ```
 
-Flèche = « peut importer ». `sim`, `i18n` et `app` n'importent rien hors d'eux-mêmes.
+Flèche = « peut importer ». `sim`, `i18n` et `app` n'importent rien hors d'eux-mêmes. `src/proto` (hors du schéma) est importé par `src/main.ts` seulement et peut importer `three` ; son sous-dossier `common/` est pur.
 
 ### Exemption de `src/main.ts` levée (réserve E2)
 
@@ -164,7 +173,7 @@ x 2 dependency violations (2 errors, 0 warnings). 6 modules, 4 dependencies crui
 
 (Chemin vers `node_modules` raccourci : la copie pointait vers le `node_modules` du projet.)
 
-Sur le dépôt réel, au commit `3810193` (mêmes 67 modules à `02119f7`, `a308ada`, `08908b6` et `119519b` ; 179 dépendances à `02119f7`, 178 à `a308ada` : T-026 à T-033 n'ont ajouté aucun fichier de `src/`, et la seule nouvelle importation entre fichiers de `src/` est celle de `help.ts` par `keys.ts` ; `npm.cmd run lint:arch`, arbre propre, relevé par le rédacteur) :
+Sur le dépôt réel, au commit `908a62e` : 108 modules et 309 dépendances (relevé du rédacteur D-020, `npm.cmd run lint:arch`, code de sortie 0, aucune violation) ; au commit `3810193` (mêmes 67 modules à `02119f7`, `a308ada`, `08908b6` et `119519b` ; 179 dépendances à `02119f7`, 178 à `a308ada` : T-026 à T-033 n'ont ajouté aucun fichier de `src/`, et la seule nouvelle importation entre fichiers de `src/` est celle de `help.ts` par `keys.ts` ; `npm.cmd run lint:arch`, arbre propre, relevé par le rédacteur) :
 
 ```text
 ✔ no dependency violations found (67 modules, 180 dependencies cruised)
@@ -210,7 +219,7 @@ Justification de ces choix : [ADR-003](decisions/ADR-003-noyau-pur.md).
 
 La configuration fait foi. Écarts relevés :
 
-- La spec cite 4 règles dependency-cruiser ; la configuration en a 9 (ajout de `i18n-is-pure`, `render-deps`, `ui-deps`, `not-to-unresolvable`, et `app-is-pure` par T-017a).
+- La spec cite 4 règles dependency-cruiser ; la configuration en a 11 (ajout de `i18n-is-pure`, `render-deps`, `ui-deps`, `not-to-unresolvable`, `app-is-pure` par T-017a, puis `proto-isolated` et `proto-common-pure` par le lot B).
 - La spec dit `ui → game, i18n` ; la configuration autorise aussi `ui` à importer des paquets npm autres que `three`.
 - La spec dit « tout import de `three` hors `render/` » est interdit : c'est le cas depuis T-008 ; l'exemption de `src/main.ts` (réserve E2) est levée.
 

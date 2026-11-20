@@ -1,6 +1,6 @@
 # Noyau de simulation (`src/sim`)
 
-À quoi sert cette page : expliquer comment le noyau calcule un pas de simulation, ce qu'exporte `src/sim/index.ts` et quelles règles garantissent le déterminisme. Elle décrit le noyau validé (T-003, T-004, T-004b), complété par le contrôleur PI de T-021a (état du commit `a308ada` ; `src/sim` n'a pas changé depuis `119519b`). La physique de l'ascenseur est dans [physique/ascenseur.md](physique/ascenseur.md).
+À quoi sert cette page : expliquer comment le noyau calcule un pas de simulation, ce qu'exporte `src/sim/index.ts` et quelles règles garantissent le déterminisme. Elle décrit le noyau validé (T-003, T-004, T-004b), complété par le contrôleur PI de T-021a. État du commit `908a62e` : depuis `119519b`, `src/sim` n'a changé que par l'ajout de `elevatorAcceleration` (T-041, voir ci-dessous) ; le reste de la page décrit un code identique à celui d'`a308ada`. La physique de l'ascenseur est dans [physique/ascenseur.md](physique/ascenseur.md).
 
 ## Rôle du noyau
 
@@ -75,6 +75,7 @@ Liste complète, comptée sur `src/sim/index.ts` au commit `119519b` : 23 valeur
 | `createSignalRecorder` | `(capacity) → CircularSignalRecorder` | enregistreur circulaire préalloué | `RangeError` si `capacity` n'est pas un entier ≥ 1 ; `forEach` lève `RangeError` sur un nom de signal inconnu |
 | `createProportionalController` | `(kp) → ProportionalController` | contrôleur u = Kp·(r − y), sans état | `RangeError` si `kp` est NaN, infini ou négatif |
 | `createProportionalIntegralController` | `(kp, ki) → ProportionalIntegralController` | contrôleur PI u = Kp·e + I, intégrale « rectangle à gauche » en newtons, sans anti-windup (voir plus bas) | `RangeError` si `kp` ou `ki` est NaN, infini ou négatif |
+| `elevatorAcceleration` | `(y, v, force, params = ELEVATOR_PARAMS) → number` | accélération ÿ = (u − m·g − c·ẏ)/m du modèle (T-041) : mêmes opérations que la dérivée de `createElevator`, identique bit à bit hors contact ; 0 si la cabine est posée (y ≤ 0, ẏ ≤ 0, force nette < 0) ; NaN propagé ; ne revalide pas `params` | aucune |
 | `createElevator` | `(params = ELEVATOR_PARAMS) → PlantModel` | modèle de l'ascenseur | `RangeError` si `mass` n'est pas finie et > 0, si `gravity` n'est pas finie, ou si `damping` n'est pas fini et ≥ 0 |
 | `createElevatorLoop` | `(options: ElevatorLoopOptions) → SteppableClosedLoop` | assemble la boucle du niveau 1 : ascenseur, P, saturation ±Umax, RK4, consigne constante, cabine au sol | `RangeError` si la consigne n'est pas finie, plus toutes les erreurs des fabriques appelées (Kp, Umax négatif ou NaN, dt, paramètres physiques) |
 | `createElevatorPiLoop` | `(options: ElevatorPiLoopOptions) → ElevatorPiLoop` | même assemblage que `createElevatorLoop`, avec le contrôleur PI ; expose `loop.controller` (`integral`, `proportionalTerm`) en lecture | `RangeError` si la consigne n'est pas finie, plus celles de `createElevatorLoop` et du PI (Kp, Ki) |

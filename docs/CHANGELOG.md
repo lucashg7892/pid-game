@@ -6,8 +6,24 @@
 
 Sortie de `git log --oneline 88ae23c` (18 commits) pour les lignes jusqu'à `88ae23c`. Les quatre lignes de `13e8b7e` à `a165a14` viennent de `git log --oneline 88ae23c..13e8b7e` (branche `migration`) ; les douze lignes de `119519b` à `a001622` viennent de `git log --oneline a001622..119519b`, plus `a001622` lui-même ; les cinq lignes de `a5b4bec` à `a308ada` viennent de `git log --oneline a5b4bec..a308ada`, plus `a5b4bec` lui-même (commit de D-016) ; les onze lignes du haut (de `f2680d1` à `02119f7`) viennent de `git log --oneline f2680d1..02119f7`, plus `f2680d1` lui-même (commit de D-017). Les sept lignes du haut (de `1bba33d` à `3810193`) viennent de `git log --oneline 02119f7..3810193` (branche `v0.3-salle-de-controle`, non fusionnée) ; le commit de D-019 n'y figure pas : il est fait après la rédaction de cette page. Les commits de documentation et de protocole qui s'intercalent entre `88ae23c` et `13e8b7e` (T-013, P-001 à P-004) n'y figurent pas.
 
+Les quatorze lignes de `908a62e` à `ec7d0d7` viennent de `git log --oneline 3810193..908a62e` (D-020, relevé le 2026-11-19).
+
 | Commit | Contenu |
 |---|---|
+| `908a62e` | Version 0.3.0 (`package.json` et racine du lockfile) |
+| `7cbdf19` | T-054 (N1) : ménage des maquettes A, B, D et de `?proto=tous`, idée du treuil 3D de C reportée (D38) |
+| `b4d8f98` | T-053 (N2) : tableau d'école, « D'où vient la force ? » (D37) |
+| `02ce6ae` | T-052 (N2) : la jauge de force quitte la scène (elle est sur le pupitre), D36 |
+| `467c893` | Fusion de `main` (P-015, publication) dans `v0.3-salle-de-controle` |
+| `ac929f7` | P-015 (N1) : publication, README à jour (v0.2, lien du jeu), déploiement Pages à chaque push sur `main`, chemins personnels retirés des rapports, D39 |
+| `adf9870` | T-051 (N2) : pupitre, enregistreurs à papier et curseur de relecture ; correctifs titre d'issue et écritures DOM |
+| `8985235` | T-050 (N2) : pupitre, colonne centrale (écorché du moteur du treuil, voyants, jauge de force) |
+| `bf9066b` | T-049 (N2) : pupitre de contrôle, ossature et colonne de réglage (remplace le panneau) |
+| `bb1d8bf` | T-048 (N3) : journal du trajet pour le pupitre (`TripLog`), trajet inchangé bit à bit |
+| `835a8eb` | P-014 (N1) : décisions D35 à D38 au registre (v0.3 lot C : pupitre de contrôle, scène, tableau d'école, ménage) |
+| `032690f` | Lot B v0.3, maquettes du pupitre : quatre maquettes jetables (A analogique, B instruments, C tube cathodique, D planche), coque, routeur `?proto=`, page `?proto=tous`, captures |
+| `8097125` | Lot B v0.3, étapes 0 et 1 : signaux du snapshot et trajets de référence (T-041, N3), tableau d'école (T-042, N2) |
+| `ec7d0d7` | D-019 (N1) : documentation du lot A de la v0.3 (poste, embarquement, sortie, niveau suivant), compte rendu du lot |
 | `3810193` | T-040 (N1) : captures du lot A refaites (K49), 12 PNG seulement |
 | `6443461` | T-039 (N2) : panneau de réglage stable pendant la marche au poste, annonce de lancement au départ réel, Action sans effet à l'issue |
 | `652556f` | T-038 (N2) : rendu des poses et de la hauteur des pieds (poste, embarquement, sortie), prefers-reduced-motion branché sur les animations, captures |
@@ -73,7 +89,12 @@ Les neuf premiers commits ont été créés après coup, à la suite, à partir 
 
 ## Versions
 
-- **v0.3 lot A « salle de contrôle » (branche `v0.3-salle-de-controle`, non fusionnée), état du commit `3810193` (2026-11-15)**. **La v0.3 n'est pas publiée** : le champ `version` de `package.json` vaut toujours `0.2.0` et rien n'a été fusionné dans `main` ni poussé. Le lot A comprend cinq tâches (T-036 à T-040, plus P-012 pour les décisions D31 à D33 du registre) ; une seule, T-037 (N3), a eu un validateur indépendant ; il n'y a **pas de rapport de validation global du lot A**. Contenu :
+- **v0.3.0 « salle de contrôle » — version déclarée par `package.json` (`908a62e`, 2026-11-19)**. `package.json` et la racine de `package-lock.json` valent `0.3.0` depuis `908a62e`. La branche `v0.3-salle-de-controle` n'est **pas fusionnée dans `main`** au moment de D-020 (`git merge-base --is-ancestor 908a62e main` : non ; `main` est à `ac929f7`) : le site publié par GitHub Pages à chaque push sur `main` (D39) montre donc encore la v0.2 tant que la fusion n'est pas faite. **Aucun rapport de validation global de la v0.3** : seules T-037 (lot A), T-041 et T-048 (N3) ont eu un validateur indépendant ; les autres tâches sont vérifiées par l'orchestrateur. Contenu :
+  - **Lot A** (T-036 à T-040) : poste au pupitre, embarquement et sortie, bouton « Niveau suivant », rendu des poses (voir l'entrée D-019).
+  - **Lot B** (`8097125`, `032690f`) : signaux du dernier pas dans l'instantané et `elevatorAcceleration` dans le noyau (T-041, N3), tableau d'école (T-042), quatre maquettes jetables du pupitre (T-043 à T-047).
+  - **Lot C** : journal du trajet `TripLog` (T-048, N3), **pupitre de contrôle** à trois colonnes — réglage, écorché du moteur avec voyants et jauge de force, enregistreurs à papier avec curseur de relecture — qui remplace le panneau de réglage (T-049 à T-051, D35 ; page [pupitre.md](pupitre.md)), jauge de force retirée de la scène (T-052, D36), partie « D'où vient la force ? » du tableau d'école (T-053, D37 ; page [tableau-ecole.md](tableau-ecole.md)), ménage des maquettes A, B, D et de `?proto=tous` (T-054, D38).
+  - **Défauts** : K33 et K50 (panneau remplacé), K36 et K37 (étiquettes de la jauge de force retirées) corrigés ; K51 à K54 consignés. Voir [defauts-connus.md](defauts-connus.md).
+- **v0.3 lot A « salle de contrôle » (branche `v0.3-salle-de-controle`), état du commit `3810193` (2026-11-15)** ; la version 0.3.0 est décrite ci-dessus. À l'époque : **la v0.3 n'est pas publiée** : le champ `version` de `package.json` vaut toujours `0.2.0` et rien n'a été fusionné dans `main` ni poussé. Le lot A comprend cinq tâches (T-036 à T-040, plus P-012 pour les décisions D31 à D33 du registre) ; une seule, T-037 (N3), a eu un validateur indépendant ; il n'y a **pas de rapport de validation global du lot A**. Contenu :
   - **Poste au pupitre** (T-037, D31) : E ouvre le réglage de n'importe où sur le quai, le panneau s'ouvre tout de suite, le bonhomme rejoint à 1,5 m/s le poste `CONSOLE_POST_X` = −1,55 m, orienté vers le pupitre.
   - **Embarquement et sortie** (T-037, D32, K4 corrigé) : phases `boarding` (284 pas depuis le poste) et `exit` (208 pas dont 16 pour le pas de 0,2 m, victoire seulement), `skipAnimation()`, option `animations` et `setAnimations`, trajet identique bit à bit avec et sans animations (197 réglages).
   - **Niveau suivant** (T-036, D33) : bouton « Niveau suivant » sur l'écran de réussite du niveau 1, commande `nextLevel()` de la machine d'écrans.
@@ -91,6 +112,52 @@ Les neuf premiers commits ont été créés après coup, à la suite, à partir 
   - **Défauts corrigés depuis la v0.1** (`orchestration/DEFAUTS-CONNUS.md`) : K1, K2, K3 (P-005), K6 (T-020 puis T-022), K16, K17 (T-014), K18, K23, K24 (T-017), K19, K21 (T-015), K20 (T-016), K28 (T-023), K30 (T-024), K32 (T-022), K35 (T-025, puis T-033), K22 (version 0.2.0 ; `prefers-reduced-motion` suivi par T-030), K10 (T-031), K27 (T-032). K25 (portrait 390 px, mesures rognées) n'est pas corrigé.
   - **Défauts restants à `02119f7`** : K4, K5, K7 à K9, K11 à K15, K25, K26, K29, K31, K33, K34, K36 à K46 (K4 est corrigé depuis par le lot A de la v0.3) ; voir [defauts-connus.md](defauts-connus.md).
 - **v0.1 — validée avec réserves le 2026-11-13** (rapport [validation/T-012-v0.1.md](validation/T-012-v0.1.md), bilan [bilan-v0.1.md](bilan-v0.1.md)). Le champ `version` de `package.json` valait `0.0.0` au commit de la validation (K22) ; il valait `0.1.0` depuis P-005 (`a165a14`), il vaut `0.2.0` depuis P-010 (`a308ada`).
+
+## D-020 — Version 0.3.0 : documentation des commits `ec7d0d7` à `908a62e` (2026-11-19)
+
+Documentation de quatorze commits (liste : `git log --oneline 3810193..908a62e`), de `ec7d0d7` (D-019) à `908a62e` (version 0.3.0), sur l'état figé `908a62e` (branche `v0.3-salle-de-controle`, arbre propre au départ). Aucun code, aucune configuration, aucune PNG, ni `docs/specs/T-001-tranche-verticale.md`, `docs/validation/` et `orchestration/` n'ont été modifiés. D-019 n'avait documenté que le lot A : les lots B et C (signaux, tableau d'école, maquettes, journal du trajet, pupitre, scène, ménage) n'étaient décrits nulle part avant cette passe.
+
+Tâches documentées, avec leur commit :
+
+- **T-041** (`8097125`, N3, validateur Opus, log `T-041.md` ; réserves R1 à R3 levées par T-041b) : signaux du dernier pas dans `LevelSnapshot` (`stepY`, `stepVelocity`, `stepAcceleration`, `stepError`, `uCmd`, `pTerm`, `iTermUsed`), `elevatorAcceleration` dans `src/sim`, trois trajets de référence dans `src/proto/common`. Trajet et issue identiques bit à bit (394 trajets, d'après le log du lot B) ; MATLAB `t005` et `t018` verts (même source). Page : [pupitre.md](pupitre.md#journal-du-trajet-triplog-t-048-et-signaux-du-dernier-pas-t-041).
+- **T-042** (`8097125`, N2) : tableau d'école (chevalet à −3,5 m, touche T, fenêtre à la craie en MATHML natif, pause comme l'aide). Défauts K52 et K53. Page : [tableau-ecole.md](tableau-ecole.md).
+- **T-043 à T-047** (`032690f`, jetables) : coque, routeur `?proto=`, maquettes A, B, C, D. Règles `proto-isolated`, `proto-common-pure` et `three-only-in-render` élargie à `src/proto`.
+- **P-014** (`835a8eb`, N1) : décisions D35 à D38 au registre.
+- **T-048** (`bb1d8bf`, N3) : `level.tripLog` (`src/game/trip-log.ts`), colonnes typées préallouées, trajet inchangé bit à bit.
+- **T-049, T-050, T-051** (`bf9066b`, `8985235`, `adf9870`, N2) : pupitre de contrôle en canvas 2D (`src/ui/pupitre`) : ossature et colonne de réglage ; écorché du moteur, voyants, jauge de force ; enregistreurs à papier et curseur de relecture. Touche E et bouton « Pupitre », lecture seule sans pause. Page : [pupitre.md](pupitre.md).
+- **P-015** (`ac929f7`, N1, puis la fusion `467c893`) : publication (D39) : dépôt public, déploiement Pages à chaque push sur `main`. Les pages `developpement.md` et `architecture.md` le disaient déjà.
+- **T-052** (`02ce6ae`, N2) : D36, jauge de force retirée de la scène, lot `red` supprimé, `skipStrokes`, clés `hud.legend.force`, `hud.force.value`, `hud.gauge.title`, `a11y.forceGauge` supprimées.
+- **T-053** (`b4d8f98`, N2) : D37, « D'où vient la force ? » (`board-forces.ts`, `board-forces-view.ts`), captures `t053-*`.
+- **T-054** (`7cbdf19`, N1) : D38, maquettes A, B, D et `?proto=tous` supprimées avec leurs captures, `?proto=c` conservée, K54.
+- **Version 0.3.0** (`908a62e`) : `package.json` et racine du lockfile.
+
+Chiffres relevés au commit `908a62e` (code de sortie 0 pour chaque commande exécutée par le rédacteur) :
+
+| Mesure | Valeur | Avant (`3810193`) |
+|---|---|---|
+| `npm.cmd run test` | 65 fichiers dont 1 ignoré, 1 044 tests dont 1 ignoré (1 043 passés) | 50 fichiers, 731 tests |
+| `npx.cmd playwright test --list` | 210 tests dans 18 fichiers (non exécutés par le rédacteur) | 146 dans 14 fichiers |
+| `npm.cmd run lint:arch` | 108 modules, 309 dépendances, 0 violation | 67 modules, 180 dépendances |
+| clés de texte par langue (script) | 277 (FR et EN) | 164 |
+| `npm.cmd run test:cov` | `src/sim` 100 % (197/197 instructions, 108/108 branches, 39/39 fonctions, 182/182 lignes) | 192/192, 102/102, 38/38, 178/178 |
+| `src/game` (commande à part) | 100 % (511/511, 200/200, 82/82, 487/487) | 447/447, 184/184, 78/78, 423/423 |
+| `src/app` (commande à part) | 92,53 % des instructions, 82,75 % des branches (seuils non tenus, comme avant) | idem |
+| `npm.cmd run build` | JavaScript 1 004,25 kB (284,22 kB gzip) ; CSS 12,53 kB (3,66 kB gzip) ; paquets de maquette à la demande : `proto` 151,78 kB, `c` 388,99 kB | 915,57 kB (255,49 kB gzip), CSS 7,78 kB |
+
+Détail des 313 tests unitaires de plus : voir [tests.md](tests.md#inventaire). `npm.cmd run lint` (ESLint, Prettier, dependency-cruiser) et `npm.cmd run typecheck` : code de sortie 0 chacune, après les modifications de cette passe (Prettier ne couvre pas `docs/`, ignoré par `.prettierignore` ; il couvre le `README.md` racine). Les liens relatifs de toutes les pages de `docs/` et du `README.md` ont été vérifiés par un script jetable (fichiers existants, ancres des pages touchées) : 0 problème.
+
+**Ce qui n'est PAS prouvé, ou reste ouvert** :
+
+- **La v0.3 n'est pas fusionnée dans `main`** : le lien de jeu du README mène à la version publiée depuis `main` (v0.2) tant que la branche n'est pas fusionnée.
+- **Pas de rapport de validation global de la v0.3.** Les e2e (210) sont comptés, pas exécutés par le rédacteur ; leur résultat vient de l'orchestrateur.
+- **Rendu sur un vrai GPU, écran tactile réel, lecteur d'écran** : non essayés ; coûts du pupitre mesurés par les tests e2e (`(g)` de `pupitre-machine.spec.ts`, `(h)` de `pupitre-courbes.spec.ts`) non recopiés ici faute de relevé par le rédacteur.
+- **Trois captures périmées** (registre, ligne T-052) : `t010-02-panneau`, `t021-niveau2-reglage`, `t038-poste-niveau1` montrent encore le panneau de la v0.2. D'autres légendes de pages (`interface.md`) décrivent le jeu d'avant T-052.
+- **Triangles des lots** (`rendu.md`) non remesurés depuis T-052.
+- **K52 et K53** ouverts ; K54 est une idée reportée.
+- **Écart relevé dans `orchestration/DEFAUTS-CONNUS.md`** (lu seulement) : K33, K36, K37 et K50 y sont encore ouverts alors que le code les a rendus caducs ; `defauts-connus.md` suit le code (voir ses lignes « Lots B et C »).
+
+- **Pages mises à jour** : `pupitre.md` et `tableau-ecole.md` (créées), `interface.md`, `rendu.md`, `jeu.md`, `architecture.md`, `simulation.md`, `physique/ascenseur.md` (mention de `elevatorAcceleration`), `i18n-accessibilite.md` (277 clés), `tests.md`, `developpement.md`, `tutoriel-lancer-en-local.md`, `defauts-connus.md` (K51 à K54, K33, K36, K37 et K50 corrigés), `README.md` (index) et ce journal ; le `README.md` racine (FR et EN).
+- **ADR** : [ADR-017](decisions/ADR-017-pupitre-canvas-2d.md) (pupitre en canvas 2D en surimpression, décision D35).
 
 ## D-019 — Lot A de la v0.3 « salle de contrôle » : documentation des commits `b7942b2` à `3810193` (2026-11-15)
 

@@ -1,6 +1,6 @@
 # Logique des niveaux (`src/game`)
 
-À quoi sert cette page : expliquer comment les niveaux de l'ascenseur décident de ce qui se passe : phases, commandes du joueur, règles de victoire et d'échec, données transmises au rendu et à l'interface. Le niveau 1 « Le vide » (contrôleur P, Kp réglé) a été validé en T-007 (commit `6259ccc`) ; T-020 a fixé ses valeurs de jeu et T-021b a extrait sa machine à états dans un noyau commun, qui sert aussi au niveau 2 « La mémoire » (contrôleur PI, Kp fixé, Ki réglé). Cette page décrit l'état du commit `3810193`, lot A de la v0.3 « salle de contrôle » (branche `v0.3-salle-de-controle`, non fusionnée ; `package.json` reste en 0.2.0) : T-037 a ajouté à la machine le poste au pupitre, l'embarquement et la sortie du bonhomme (phases `boarding` et `exit`, décisions D31 et D32), T-036 le passage au niveau suivant (côté `src/app`, voir [ADR-015](decisions/ADR-015-etat-application-machine-ecrans.md)). Les valeurs de jeu et les règles d'issue sont celles de T-022 (trajet de 10 s, Kp par défaut 2000, tolérance du niveau 2 à 0,10 m) : T-037 n'en a changé aucune et n'a pas touché `src/sim`. Ce que le joueur voit et les touches sont dans [interface.md](interface.md) ; le dessin dans [rendu.md](rendu.md). La simulation sous-jacente est dans [simulation.md](simulation.md), la physique dans [physique/ascenseur.md](physique/ascenseur.md).
+À quoi sert cette page : expliquer comment les niveaux de l'ascenseur décident de ce qui se passe : phases, commandes du joueur, règles de victoire et d'échec, données transmises au rendu et à l'interface. Le niveau 1 « Le vide » (contrôleur P, Kp réglé) a été validé en T-007 (commit `6259ccc`) ; T-020 a fixé ses valeurs de jeu et T-021b a extrait sa machine à états dans un noyau commun, qui sert aussi au niveau 2 « La mémoire » (contrôleur PI, Kp fixé, Ki réglé). Cette page décrit l'état du commit `908a62e` (v0.3.0, branche `v0.3-salle-de-controle`) ; le lot A de la v0.3 « salle de contrôle » (commit `3810193`) a ajouté : T-037 a ajouté à la machine le poste au pupitre, l'embarquement et la sortie du bonhomme (phases `boarding` et `exit`, décisions D31 et D32), T-036 le passage au niveau suivant (côté `src/app`, voir [ADR-015](decisions/ADR-015-etat-application-machine-ecrans.md)). Les valeurs de jeu et les règles d'issue sont celles de T-022 (trajet de 10 s, Kp par défaut 2000, tolérance du niveau 2 à 0,10 m) : T-037 n'en a changé aucune. Le lot B (T-041, T-048) a ajouté à l'instantané les signaux du dernier pas et le journal du trajet `level.tripLog` pour le pupitre (voir [pupitre.md](pupitre.md#journal-du-trajet-triplog-t-048-et-signaux-du-dernier-pas-t-041)), sans changer le trajet ni les issues (bit à bit) ; il a aussi ajouté `elevatorAcceleration` à `src/sim` ; le type `TripLoop` demande désormais `proportionalTerm` au contrôleur (que le PI exposait déjà). Ce que le joueur voit et les touches sont dans [interface.md](interface.md) ; le dessin dans [rendu.md](rendu.md). La simulation sous-jacente est dans [simulation.md](simulation.md), la physique dans [physique/ascenseur.md](physique/ascenseur.md).
 
 ## Rôle de `src/game`
 
@@ -10,7 +10,7 @@
 - gère le réglage (Kp au niveau 1, Ki au niveau 2) et son verrouillage ;
 - lance le trajet et fait avancer la boucle de l'ascenseur du noyau ;
 - juge l'issue (victoire, choc, marche trop haute, cabine au sol, et au niveau 2 « trop lent ») ;
-- publie un instantané (`LevelSnapshot`) et des événements pour le rendu et l'interface.
+- publie un instantané (`LevelSnapshot`), des événements et, depuis T-048, le journal des signaux de chaque pas du trajet (`level.tripLog`) pour le rendu et l'interface.
 
 Le module est pur et déterministe. Il n'importe que `src/sim` (règle `game-no-render` de dependency-cruiser), n'utilise pas le DOM (`tsconfig.sim.json`), ni l'aléa, ni l'horloge murale. Pour ce dernier point, la règle ESLint du noyau ne couvre pas `src/game` ; c'est un test (`tests/game/units.test.ts`) qui lit les sources et refuse `Math.random`, `Date`, `performance`, `window` et `document`. Les textes et le formatage des nombres ne sont pas ici : ils viennent de `src/i18n`, côté interface.
 
@@ -23,6 +23,7 @@ Le module est pur et déterministe. Il n'importe que `src/sim` (règle `game-no-
 | `outcome.ts` | arbitres des issues (`createOutcomeJudge`, `createOutcomeJudge2`, `classifyTimeout`, `classifyTimeout2`) |
 | `walker.ts` | marche du bonhomme : libre sur le quai de départ, automatique vers une cible (`stepToward`) |
 | `events.ts` | file d'événements circulaire |
+| `trip-log.ts` | `createTripLog` : journal des signaux de chaque pas du trajet, tableaux typés préalloués (T-048) |
 | `elevator-level.ts` | machine à états commune aux deux niveaux (`createElevatorLevel`), extraite de `level.ts` en T-021b ; sept phases depuis T-037 |
 | `level.ts` | niveau 1 : mince enveloppe de la machine commune (`createLevel1`) |
 | `level2.ts` | niveau 2 : enveloppe avec le contrôleur PI (`createLevel2`) |
@@ -61,7 +62,7 @@ La dernière flèche représente le retour vers la phase d'avant la pause, quell
 | Phase | Ce qui se passe à chaque pas | Réglage (Kp, ou Ki au niveau 2) |
 |---|---|---|
 | `approach` | le bonhomme marche selon son intention | modifiable |
-| `tuning` | panneau de réglage ouvert ; le bonhomme marche vers son poste (`walkerAction` = `toPost`), puis y reste (`atPost`) | modifiable, aussi pendant la marche vers le poste |
+| `tuning` | pupitre de réglage ouvert (il remplace le panneau depuis T-049, voir [pupitre.md](pupitre.md)) ; le bonhomme marche vers son poste (`walkerAction` = `toPost`), puis y reste (`atPost`) | modifiable, aussi pendant la marche vers le poste |
 | `boarding` | le bonhomme marche du poste au centre de la cabine (`boarding`) ; physique arrêtée, consigne à 0, k = 0 | verrouillé |
 | `trip` | un pas de simulation de l'ascenseur, puis jugement de l'issue | verrouillé |
 | `exit` | après une victoire seulement : la cabine reste figée, l'issue est jugée mais pas encore affichée, le bonhomme sort (`exiting`, `stepping`) | verrouillé |
@@ -252,8 +253,15 @@ Lecture :
 | `ki` | number | N/(m·s) | gain intégral courant : 0 au niveau 1, réglé au niveau 2 |
 | `iTerm` | number | N | terme intégral I lu sur le contrôleur après le dernier pas ; 0 au niveau 1 et avant le premier lancement. Il garde sa valeur à l'issue (la jauge de I et la ligne « Terme I » la montrent encore) et retombe à 0 au recommencement (`restart`) ; commentaire du code corrigé par la chasse aux bugs (B-09, P-011). Affiché depuis T-024 par la jauge du terme intégral du niveau 2 (voir [rendu.md](rendu.md#jauge-du-terme-intégral-niveau-2) et [interface.md](interface.md)) |
 | `r` | number | m | consigne : 0 avant le départ du trajet (embarquement compris), 3 pendant le trajet, la sortie et l'issue |
-| `e` | number | m | erreur r − `cabinY` |
-| `uSat` | number | N | force appliquée au dernier pas, après saturation ; 0 hors trajet |
+| `e` | number | m | erreur r − `cabinY`, état après le dernier pas (son homologue « avant le pas » est `stepError`) |
+| `stepY` | number | m | T-041 : hauteur de la cabine à l'instant où la commande du dernier pas a été calculée, (k − 1)·dt (convention `LoopSample`, état **avant** le pas) ; 0 avant le premier lancement, pendant l'embarquement et après `restart`, puis garde la valeur du dernier pas à l'issue |
+| `stepVelocity` | number | m/s | T-041 : vitesse ẏ à ce même instant |
+| `stepAcceleration` | number | m/s² | T-041 : accélération donnée par le modèle (`elevatorAcceleration`) sous `uSat`, jamais une différence entre deux pas ; 0 si la cabine est posée et la force nette vers le bas |
+| `stepError` | number | m | T-041 : erreur e = r − `stepY` vue par le contrôleur |
+| `uCmd` | number | N | T-041 : force demandée, avant saturation ; `uCmd` = `pTerm` + `iTermUsed` |
+| `pTerm` | number | N | T-041 : terme proportionnel Kp·`stepError` |
+| `iTermUsed` | number | N | T-041 : terme intégral utilisé pour calculer `uCmd` (l'intégrale avant sa mise à jour par ce pas) ; 0 au niveau 1 ; à distinguer de `iTerm`, l'intégrale après le pas |
+| `uSat` | number | N | force appliquée au dernier pas, après saturation ; 0 hors trajet (même instant que les champs `step*`) |
 | `saturated` | boolean | — | vrai si la force du dernier pas a été écrêtée |
 | `k` | number | pas | nombre de pas exécutés depuis le lancement ; 0 hors trajet |
 | `t` | number | s | temps du trajet, k·dt |
@@ -393,7 +401,7 @@ function frame(dtSeconds: number): void {
 
 ## Exports de `src/game/index.ts`
 
-Liste complète au commit `3810193`, comptée par script sur `src/game/index.ts` et `constants.ts` : 58 valeurs et 22 types (51 et 21 au commit `08908b6`, 39 et 13 au commit `7bcd9ce`). `index.ts` réexporte toutes les constantes de `constants.ts` (`export *`, 41 dont 4 ajoutées par T-037) ; leurs valeurs sont dans le tableau de la géométrie ci-dessus, sauf `EVENT_QUEUE_CAPACITY`, qui vient de `events.ts`. Il réexporte aussi `ELEVATOR_MAX_FORCE` du noyau (graduation « max » de la jauge, affichage seulement).
+Liste au commit `908a62e` : 59 valeurs et 24 types (58 et 22 au commit `3810193`, comptés par script sur `src/game/index.ts` et `constants.ts` ; le lot B ajoute la valeur `ELEVATOR_PARAMS` et les types `TripLog` et `TripLogColumn`, d'après le diff de `index.ts` ; 51 et 21 au commit `08908b6`, 39 et 13 au commit `7bcd9ce`). `index.ts` réexporte toutes les constantes de `constants.ts` (`export *`, 41 dont 4 ajoutées par T-037) ; leurs valeurs sont dans le tableau de la géométrie ci-dessus, sauf `EVENT_QUEUE_CAPACITY`, qui vient de `events.ts`. Il réexporte aussi `ELEVATOR_MAX_FORCE` et `ELEVATOR_PARAMS` du noyau (graduation « max » de la jauge du niveau 2, tableau d'école ; affichage seulement).
 
 ### Constantes
 
@@ -422,7 +430,8 @@ Liste complète au commit `3810193`, comptée par script sur `src/game/index.ts`
 
 | Nom | Contenu |
 |---|---|
-| `Level` | niveau commun : `tuning`, `snapshot`, `signals`, `update`, `moveLeft`, `moveRight`, `stop`, `interact`, `setTuning`, `adjustTuning`, `launch`, `restart`, `skipAnimation`, `setAnimations`, `pause`, `resume`, `drainEvents` |
+| `TripLog`, `TripLogColumn` | journal du trajet (T-048) : `capacity`, `count`, `dt`, colonnes `y`, `v`, `a`, `e`, `uCmd`, `uSat`, `p`, `i`, `saturated` ; voir [pupitre.md](pupitre.md) |
+| `Level` | niveau commun : `tuning`, `snapshot`, `signals`, `tripLog`, `update`, `moveLeft`, `moveRight`, `stop`, `interact`, `setTuning`, `adjustTuning`, `launch`, `restart`, `skipAnimation`, `setAnimations`, `pause`, `resume`, `drainEvents` |
 | `Level1`, `Level1Options` | `Level` plus `setKp`, `adjustKp` ; options `createLoop?`, `initialKp?`, `animations?` |
 | `Level2`, `Level2Options` | `Level` plus `setKi`, `adjustKi` ; options `createLoop?`, `initialKi?`, `animations?` |
 | `ElevatorLevelConfig` | configuration de `createElevatorLevel` : `id`, `tuning`, `initial`, `kpOf`, `kiOf`, `createLoop`, `createJudge`, `animations?` |
@@ -445,4 +454,4 @@ Liste complète au commit `3810193`, comptée par script sur `src/game/index.ts`
 
 ## Tests
 
-179 tests dans `tests/game/` (8 fichiers, dont `animations.test.ts`, 53 tests, et `level2.test.ts`, 51 tests), relevés par `npm.cmd test` au commit `3810193` ; inventaire dans [tests.md](tests.md#logique-de-jeu-testsgame). Justification des choix : [ADR-009](decisions/ADR-009-machine-a-etats.md) ; contrôleur PI et niveau 2 : [ADR-016](decisions/ADR-016-controleur-pi-sans-anti-windup.md).
+310 tests dans `tests/game/` (10 fichiers, dont `animations.test.ts`, 53 tests, `level2.test.ts`, 51, `signals.test.ts`, 64, et `trip-log.test.ts`, 66), relevés par `npm.cmd test` au commit `908a62e` ; inventaire dans [tests.md](tests.md#logique-de-jeu-testsgame). Justification des choix : [ADR-009](decisions/ADR-009-machine-a-etats.md) ; contrôleur PI et niveau 2 : [ADR-016](decisions/ADR-016-controleur-pi-sans-anti-windup.md).

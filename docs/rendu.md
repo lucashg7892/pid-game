@@ -1,6 +1,6 @@
 # Rendu au crayon (`src/render`)
 
-À quoi sert cette page : expliquer comment le jeu dessine la scène : démarrage du moteur graphique, cadrage, papier millimétré, traits de crayon, bonhomme, courbe et jauge, budget de dessin. Elle décrit le commit `3810193`, lot A de la v0.3 (branche `v0.3-salle-de-controle`, non fusionnée) : T-038 y a branché le dessin du bonhomme sur sa position et sa hauteur réelles et sur ses poses (poste, embarquement, sortie), et `prefers-reduced-motion` sur les animations de la logique ; la scène elle-même est inchangée. Le reste vient de l'état `02119f7` (rendu validé en T-008 et T-009 ; échecs en cours de route ajoutés par T-014 ; cadrage fixé et ancres de la jauge par T-019 et T-020 ; session de rendu réutilisable entre les écrans par T-017 ; trajet de 10 s et courbe sur 1201 points par T-022 ; jauge du terme intégral au niveau 2 par T-024 ; ancres de l'image affichée, ancres du niveau entrant et suivi de « mouvement réduit » par T-030 et T-031, issus de la chasse aux bugs de la v0.2). Les textes posés par-dessus la scène sont dans [interface.md](interface.md).
+À quoi sert cette page : expliquer comment le jeu dessine la scène : démarrage du moteur graphique, cadrage, papier millimétré, traits de crayon, bonhomme, courbe et jauge, budget de dessin. Elle décrit le commit `908a62e` (v0.3.0, branche `v0.3-salle-de-controle`). Lot A (`3810193`) : T-038 y a branché le dessin du bonhomme sur sa position et sa hauteur réelles et sur ses poses (poste, embarquement, sortie), et `prefers-reduced-motion` sur les animations de la logique. Lot C : T-052 (D36) retire la jauge de force de la scène (elle est sur le pupitre, dessiné en canvas 2D par `src/ui`, pas par ce module : voir [pupitre.md](pupitre.md)) ; T-042 et T-053 ont ajouté le chevalet du tableau d'école au décor ([tableau-ecole.md](tableau-ecole.md)). Le reste vient de l'état `02119f7` (rendu validé en T-008 et T-009 ; échecs en cours de route ajoutés par T-014 ; cadrage fixé et ancres de la jauge par T-019 et T-020 ; session de rendu réutilisable entre les écrans par T-017 ; trajet de 10 s et courbe sur 1201 points par T-022 ; jauge du terme intégral au niveau 2 par T-024 ; ancres de l'image affichée, ancres du niveau entrant et suivi de « mouvement réduit » par T-030 et T-031, issus de la chasse aux bugs de la v0.2). Les textes posés par-dessus la scène sont dans [interface.md](interface.md).
 
 ![Le niveau 1 en cours de trajet, 1280 × 720 (capture e2e de T-010)](img/t010-03-trajet.png)
 
@@ -34,9 +34,9 @@ Sur les 19 fichiers du module (inchangés en nombre depuis `13e8b7e`), 13 n'impo
 | `patterns.ts` | non | hachures (`hatchPolygon`) et pointillés (`dashLine`) |
 | `walker-pose.ts` | non | articulations du bonhomme pour chaque attitude |
 | `curve.ts` | non | échelle de temps de la courbe y(t), tampon de points |
-| `gauge.ts` | non | graduations et remplissage de la jauge de force |
+| `gauge.ts` | non | graduations et remplissage des jauges (depuis T-052, seulement la jauge du terme intégral) |
 | `level-display.ts` | non | phase effective, interpolation, attitude, ancres écran pour l'interface |
-| `level-painter.ts` | non | `LevelPainter` : remplit les 5 lots de traits à chaque image |
+| `level-painter.ts` | non | `LevelPainter` : remplit les 4 lots de traits à chaque image |
 | `failure.ts` | non | `createFailureGuard` : un seul signalement d'échec, plus aucun appel gardé ensuite |
 | `session.ts` | non (passe par les fichiers three) | `startRendering` : assemble tout, boucle d'images, branche `renderer.onDeviceLost` et le garde-fou ; `attachLevel` et `detachLevel` (T-017) |
 | `bootstrap.ts` | oui | `bootRenderer`, boucle `setAnimationLoop`, suivi de taille, suivi du mouvement réduit |
@@ -149,30 +149,29 @@ Tout le niveau (décor, cabine, bonhomme, courbe, jauge) est fait de traits. Cha
 
 ## Lots et budget de dessin
 
-Le peintre (`level-painter.ts`) répartit les traits en 5 lots, un par matériau et par fréquence de mise à jour. Chaque lot non vide coûte un appel de dessin.
+Le peintre (`level-painter.ts`) répartit les traits en 4 lots (5 jusqu'à T-052, qui a retiré le lot `red`), un par matériau et par fréquence de mise à jour. Chaque lot non vide coûte un appel de dessin.
 
 | Lot | Contenu | Mis à jour | Capacité (sommets) |
 |---|---|---|---|
-| `decor` | quais, cage, poutre, poulies, moteur, cadre de la jauge de force (et, au niveau 2, de la jauge I), pupitre, axe des temps | quand la graine du boiling ou la taille d'un pixel change | 12 000 |
+| `decor` | quais, cage, poutre, poulies, moteur, pupitre de la scène, axe des temps, chevalet (et, au niveau 2, cadre de la jauge I) | quand la graine du boiling ou la taille d'un pixel change | 12 000 |
 | `error` | hachures de l'erreur e entre la courbe et la consigne | à chaque image (trajet) | 8 000 |
 | `curve` | courbe y(t), graduations de seconde | à chaque image (trajet) | 12 000 |
-| `actors` | cabine, câbles, levier, consigne pointillée, bonhomme, cote, jauge (et, au niveau 2, remplissage de la jauge I) | à chaque image | 4 000 |
-| `red` | jauge saturée, au crayon rouge | à chaque image | 1 200 |
+| `actors` | cabine, câbles, levier, consigne pointillée, bonhomme, cote (et, au niveau 2, remplissage de la jauge I) | à chaque image | 4 000 |
 
-Total préalloué : 37 200 sommets, soit 12 400 triangles au plus, sous le budget de 30 000 triangles de la spec §7 même lots pleins.
+Total préalloué : 36 000 sommets, soit 12 000 triangles au plus (37 200 et 12 400 avec le lot `red` de 1 200 sommets, jusqu'à T-052), sous le budget de 30 000 triangles de la spec §7 même lots pleins.
 
 **Appels de dessin.**
 
 | Situation | Appels | Détail |
 |---|---|---|
-| état initial | **4** (testé, e2e) | papier 1 + `decor` 1 + `actors` 1 + passe de sortie 1 ; `error`, `curve` et `red` vides, donc masqués |
-| maximum | **7** | papier 1 + 5 lots + passe de sortie 1 |
+| état initial | **4** (testé, e2e) | papier 1 + `decor` 1 + `actors` 1 + passe de sortie 1 ; `error` et `curve` vides, donc masqués |
+| maximum | **6** | papier 1 + 4 lots + passe de sortie 1 (7 avec le lot `red`, jusqu'à T-052) |
 
 La passe de sortie est ajoutée par WebGPURenderer : un triangle plein écran convertit la cible de travail linéaire vers l'espace sRGB du canvas (`stage.ts`, log T-008).
 
 **Pourquoi `forceSinglePass`.** Les matériaux du crayon sont transparents et `DoubleSide` (rubans d'orientation quelconque). Sans `forceSinglePass = true`, three dessine un tel objet deux fois (faces arrière puis faces avant) : T-009 mesurait 6 appels à l'état initial au lieu de 4 (log T-009, `Renderer.js` l. 3986 de three).
 
-**Triangles**, comptés sous Node par le rédacteur avec `LevelPainter` au commit `119519b` (1280 × 720, images de 1/60 s, script jetable hors dépôt ; 2 640 et 3 506 au total avant T-020, la poutre ayant changé de hauteur) ; s'y ajoutent 2 triangles de papier et 1 de la passe de sortie :
+**Triangles** (avant T-052, jauge de force et lot `red` compris ; non remesurés depuis), comptés sous Node par le rédacteur avec `LevelPainter` au commit `119519b` (1280 × 720, images de 1/60 s, script jetable hors dépôt ; 2 640 et 3 506 au total avant T-020, la poutre ayant changé de hauteur) ; s'y ajoutent 2 triangles de papier et 1 de la passe de sortie :
 
 | Situation | `decor` | `error` | `curve` | `actors` | `red` | Total des lots |
 |---|---|---|---|---|---|---|
@@ -185,7 +184,7 @@ Les tests e2e vérifient seulement « plus de 1 000 triangles et au plus 30 000 
 
 ## Décor
 
-Vue de face : quai de départ hachuré à gauche, cage d'ascenseur avec poulies et tambour du moteur, quai d'arrivée hachuré à 3 m, jauge de force à droite de la cage, console à levier sur le quai de départ. Le levier de la console s'incline avec Kp (0,7 rad de part et d'autre de la verticale, de 0 au maximum).
+Vue de face : quai de départ hachuré à gauche, cage d'ascenseur avec poulies et tambour du moteur, quai d'arrivée hachuré à 3 m, console à levier sur le quai de départ, chevalet du tableau d'école sur le quai (T-042 ; `EASEL_CENTER_X` = −3,5 m ; jauge du terme intégral à droite de la cage au niveau 2 seulement). La jauge de force à droite de la cage a été retirée par T-052. Le levier de la console s'incline avec Kp (0,7 rad de part et d'autre de la verticale, de 0 au maximum).
 
 La poutre est dessinée en **deux corbeaux** hachurés de 0,42 m de long, fixés aux montants de la cage, à `BEAM_HEIGHT` = 3,3626 m (3,30 m avant T-020 ; le peintre lit la constante de `src/game`). Le choc reste jugé sur toute la largeur (règle `y > 3,3626 m` de `src/game`). La spec décrivait une poutre « au-dessus de la cabine » ; choix accepté en T-009.
 
@@ -242,19 +241,19 @@ Cinématique : jambes en cinématique inverse (hanche et pied imposés, genou ca
 
 **Mouvement réduit (T-038, R2 de T-037).** `main.ts` calcule les animations voulues par `animationsSetting && !session.reducedMotion` : à la création du niveau (option `animations` de `createLevel1` et `createLevel2`) et, à chaque image dans `onFrameEnd`, par `level.setAnimations(...)` rappelé seulement quand la valeur change. La préférence est suivie en cours de partie (voir plus haut). Avec « mouvement réduit », pas de marche vers le poste, pas d'embarquement et pas de sortie : le bonhomme est au poste aussitôt, le trajet part au lancement, et à la victoire il **reste dans la cabine** (issue au pas de victoire) ; c'est un choix de design signalé par le réalisateur, que le registre ne tranche pas. Tests : e2e `reduced-motion.spec.ts` (2 tests ajoutés : poste immédiat, trajet sans embarquement et issue sans sortie ; changement de préférence en cours de partie). Non essayé : un vrai appareil ou système avec « réduire les animations », le tactile réel.
 
-## Jauge de force
+## Jauge de force : retirée de la scène (D36, T-052)
 
-À droite de la cage : échelle de 0 N (en bas) à 5000 N (en haut), graduations tous les 500 N (principales tous les 1000 N), repère du poids m·g = 490,5 N. Le remplissage hachuré montre |uSat| : la force peut être négative quand le moteur freine un dépassement, la jauge en montre l'intensité. Quand la commande est écrêtée, le remplissage passe au crayon rouge.
+Jusqu'à la v0.2, une jauge de force se dressait à droite de la cage (échelle de 0 à 5000 N, repère du poids m·g, remplissage hachuré à |uSat|, rouge à la saturation, étiquettes de T-019). **La v0.3 la retire de la scène** : la force se lit sur le pupitre de contrôle, colonne de la machine ([pupitre.md](pupitre.md#colonne-du-centre-la-machine)). T-052 a supprimé son cadre, ses graduations, son repère du poids, le fil vers le moteur, son remplissage, le lot `red` (crayon rouge) et ses étiquettes DOM ; le crayon rouge n'est plus utilisé dans la scène (`RED_PENCIL_COLOR` reste dans `pencil-style.ts` pour la maquette `?proto=c`). Restent : la courbe de position sur le mur, la jauge du terme intégral au niveau 2 (section suivante) et la mise en page, qui garde les abscisses `GAUGE_MIN_X` et `GAUGE_MAX_X` de l'ancienne jauge comme référence (ancres `forceGauge`, `gaugeMax`, `gaugeWeight`). `gauge.ts` ne sert plus que l'échelle de la jauge I (0 N en bas, 5000 N en haut).
 
-**Étiquettes permanentes (T-019).** Trois textes DOM, de l'interface (`src/ui`), sont posés à côté de la jauge dès l'approche : la légende « Force du moteur » au-dessus du cadre, « 5000 N max » au niveau du haut de l'échelle et « poids » au niveau du repère m·g (clés `hud.gauge.title`, `hud.gauge.max`, `hud.gauge.weight`). Dès le lancement du trajet, la légende cède la place à « Force : … N ». Ces étiquettes sont `aria-hidden` : le panneau des mesures et le nom de la jauge disent la même chose aux lecteurs d'écran. Le rendu ne calcule que les deux ancres d'écran correspondantes (voir ci-dessous) ; le détail est dans [interface.md](interface.md#étiquettes-de-la-jauge-de-force-t-019).
+**Graine du tremblé.** Pour que la console, l'axe des temps et le chevalet gardent le tremblé qu'ils avaient, le peintre saute les numéros de trait de la jauge disparue : `StrokeBatch.skipStrokes(count)` avance le compteur de graines sans rien dessiner, avec `FORCE_GAUGE_STROKES` = `GAUGE_FRAME_STROKES` (22) + 1 (le fil du moteur) = 23 traits (`level-painter.ts`). Mesure du log de T-052 (registre) : hors jauge, 0 pixel de différence sur les captures déterministes. `StrokeBatch.strokeCount` donne le nombre de traits commencés depuis le dernier `reset`.
 
-![Approche, 1280 × 720 : bulle d'ouverture réécrite et étiquettes de la jauge (capture de T-019, refaite au commit `a308ada` : l'étiquette de Kp affiche 2000 N/m)](img/t019-approche-fr.png)
+![Approche, 1280 × 720 : bulle d'ouverture réécrite (capture de T-019, refaite au commit `a308ada` : l'étiquette de Kp affiche 2000 N/m ; elle montre encore l'ancienne jauge de force)](img/t019-approche-fr.png)
 
 ## Jauge du terme intégral (niveau 2)
 
-T-024 (K30) ajoute au niveau 2 une seconde jauge, à droite de la jauge de force et du petit poids de son repère. Elle est dessinée par `LevelPainter` (`level-painter.ts`), qui factorise le dessin de la première :
+T-024 (K30) ajoute au niveau 2 une seconde jauge, posée à droite de la jauge de force et du petit poids de son repère ; depuis T-052 (la jauge de force a disparu), c'est la seule jauge de la scène. Elle est dessinée par `LevelPainter` (`level-painter.ts`), qui factorise le dessin de la première :
 
-- **Cadre et graduations** : `gaugeFrame(minX, maxX)` dessine, dans le lot `decor`, le cadre de 0 à 5000 N, les graduations tous les 500 N, le repère m·g en pointillés et le petit poids ; la jauge de force l'appelle avec `GAUGE_MIN_X` et `GAUGE_MAX_X`, la jauge I avec `GAUGE_I_MIN_X` = 6 m et `GAUGE_I_MAX_X` = 6,42 m (`pencil-style.ts`). Même échelle et mêmes ordonnées que la jauge de force. Le cadre de la jauge I est dessiné **en dernier** du décor, pour que le décor du niveau 1 reste identique (graines des traits précédents stables) ; le décor est redessiné quand le niveau change (`decorIntegral`).
+- **Cadre et graduations** : `gaugeFrame(minX, maxX)` dessine, dans le lot `decor`, le cadre de 0 à 5000 N, les graduations tous les 500 N, le repère m·g en pointillés et le petit poids ; la jauge de force l'appelait avec `GAUGE_MIN_X` et `GAUGE_MAX_X` (supprimée par T-052), la jauge I avec `GAUGE_I_MIN_X` = 6 m et `GAUGE_I_MAX_X` = 6,42 m (`pencil-style.ts`). Même échelle et mêmes ordonnées que la jauge de force. Le cadre de la jauge I est dessiné **en dernier** du décor, pour que le décor du niveau 1 reste identique (graines des traits précédents stables) ; le décor est redessiné quand le niveau change (`decorIntegral`).
 - **Remplissage** : `fillGauge(batch, minX, maxX, niveau)`, partagé avec la jauge de force, hachure à |I| (`forceToGaugeY(s.iTerm)` : la fonction prend la valeur absolue et borne à la pleine échelle) pendant le trajet et à l'issue, dans le lot `actors`, **jamais en rouge** (le terme I n'est pas saturé). Choix du réalisateur : montrer l'intensité, comme la jauge de force.
 - **Étiquettes** : « Terme intégral I » puis « I : … N », « 5000 N max » et « poids » sont des textes DOM de `src/ui` ([interface.md](interface.md#jauge-du-terme-intégral-i-niveau-2-t-024)). Au niveau 2, « 5000 N max » et « poids » passent à droite de la jauge I : `GAUGE_I_LABEL_X` = `GAUGE_I_MAX_X` + 0,2 m, au lieu de `GAUGE_LABEL_X`.
 - **Budget** : la jauge I ajoute des traits au lot `decor` et au lot `actors` du niveau 2 ; le niveau 1 n'en reçoit aucun (test `tests/render/integral-gauge.test.ts`, 6 tests : cadre au niveau 2 seulement, remplissage qui suit |I|, aucun trait dans la bande au niveau 1, valeur absolue). Les nombres de triangles du tableau ci-dessus (niveau 1) n'ont pas été remesurés pour le niveau 2 ; le test de budget e2e existant s'applique.
@@ -269,12 +268,12 @@ T-024 (K30) ajoute au niveau 2 une seconde jauge, à droite de la jauge de force
 
 | Grandeur | Valeur | Source |
 |---|---|---|
-| JavaScript du build | 915,57 kB, **255,49 kB gzip** (un seul fichier) ; 911,31 kB et 254,02 kB à `02119f7` ; 909,76 kB et 253,52 kB à `a308ada` ; 907,79 kB et 252,84 kB à `08908b6` ; 907,32 kB et 252,72 kB à `119519b` ; 885,25 kB et 246,57 kB à `566a8a3` | `npm.cmd run build` au commit `3810193` (rédacteur, D-019, code de sortie 0 ; les autres valeurs sont celles des commits cités) |
-| CSS du build | 7,78 kB, 2,53 kB gzip ; 7,70 kB et 2,50 kB à `02119f7` ; 7,51 kB et 2,45 kB à `a308ada` ; 7,30 kB et 2,42 kB à `08908b6` ; 5,86 kB et 2,09 kB à `566a8a3` | idem |
+| JavaScript du build | 1 004,25 kB, **284,22 kB gzip** (fichier principal, `npm.cmd run build` au commit `908a62e` par le rédacteur D-020, code de sortie 0 ; la maquette `?proto=c` est chargée à la demande en deux paquets séparés, `proto` 151,78 kB / 41,38 kB gzip et `c` 388,99 kB / 98,54 kB gzip) ; 915,57 kB et 255,49 kB à `3810193` ; 911,31 kB et 254,02 kB à `02119f7` ; 909,76 kB et 253,52 kB à `a308ada` ; 907,79 kB et 252,84 kB à `08908b6` ; 907,32 kB et 252,72 kB à `119519b` ; 885,25 kB et 246,57 kB à `566a8a3` | `npm.cmd run build` au commit `3810193` (rédacteur, D-019, code de sortie 0 ; les autres valeurs sont celles des commits cités) |
+| CSS du build | 12,53 kB, 3,66 kB gzip (`908a62e`) ; 7,78 kB et 2,53 kB à `3810193` ; 7,70 kB et 2,50 kB à `02119f7` ; 7,51 kB et 2,45 kB à `a308ada` ; 7,30 kB et 2,42 kB à `08908b6` ; 5,86 kB et 2,09 kB à `566a8a3` | idem |
 | budget JS initial | 400 ko gzip | spec T-001 §7 |
 | polices | 23 944 + 20 112 octets (woff2) | `public/fonts/` |
-| appels de dessin | 4 à l'état initial (e2e), 7 au plus | `render.spec.ts`, `level-view.ts` |
-| triangles des lots | 2 638 à l'état initial ; 3 504 à la victoire (Kp = 2500 N/m) | script du rédacteur, commit `119519b` (niveau 1 ; le peintre n'a changé depuis qu'en commentaire jusqu'à T-022, puis T-024 a ajouté la jauge I au niveau 2 seulement, voir plus haut) |
+| appels de dessin | 4 à l'état initial (e2e), 6 au plus (7 jusqu'à T-052) | `render.spec.ts`, `level-view.ts` |
+| triangles des lots | 2 638 à l'état initial ; 3 504 à la victoire (Kp = 2500 N/m), **avant T-052** : non remesurés depuis, le décor a perdu les 23 traits de la jauge de force et le lot `red` n'existe plus | script du rédacteur, commit `119519b` (niveau 1 ; le peintre n'a changé depuis qu'en commentaire jusqu'à T-022, puis T-024 a ajouté la jauge I au niveau 2 seulement, voir plus haut) |
 
 Vite affiche l'avertissement « Some chunks are larger than 500 kB after minification » : three/webgpu fait l'essentiel du fichier. Aucun découpage n'est fait.
 
@@ -298,4 +297,4 @@ Valeurs des constantes du papier : tableau de la section « Papier millimétré 
 
 ## Tests
 
-Tests Vitest de `tests/render/` (136, relevés au commit `3810193`) et tests e2e de `tests/e2e/render.spec.ts`, `level.spec.ts`, `level2.spec.ts`, `failure.spec.ts`, `saturation.spec.ts`, `ui.spec.ts`, `k10-a07.spec.ts`, `reduced-motion.spec.ts` et `v03-rendu.spec.ts` : voir [tests.md](tests.md). Justification des choix : [ADR-010](decisions/ADR-010-rendu-crayon.md).
+Tests Vitest de `tests/render/` (140 en 14 fichiers, relevés au commit `908a62e`) et tests e2e de `tests/e2e/render.spec.ts`, `level.spec.ts`, `level2.spec.ts`, `failure.spec.ts`, `saturation.spec.ts`, `ui.spec.ts`, `k10-a07.spec.ts`, `reduced-motion.spec.ts` et `v03-rendu.spec.ts` : voir [tests.md](tests.md). Justification des choix : [ADR-010](decisions/ADR-010-rendu-crayon.md).

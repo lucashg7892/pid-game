@@ -1,6 +1,6 @@
 # Interface du joueur (`src/ui`)
 
-À quoi sert cette page : décrire ce que le joueur voit et ce qu'il peut faire, phase par phase : textes, panneau de réglage, touches, accessibilité, disposition à l'écran, police. Elle décrit le commit `3810193`, lot A de la v0.3 « salle de contrôle » (branche `v0.3-salle-de-controle`, non fusionnée : T-036 bouton « Niveau suivant », T-037 poste, embarquement et sortie, T-038 rendu des poses, T-039 panneau de réglage stable, annonce de lancement différée et bouton « Action » sans effet à l'issue, T-040 captures refaites). Le reste vient de l'état `02119f7` (interface validée en T-010, corrigée par P-005, T-014, T-015, puis étendue par T-017 : écrans titre et menu, bouton « Menu », destruction de l'interface du niveau ; T-019 : étiquettes de la jauge ; T-021b : niveau 2 ; T-022 : trajet de 10 s, Kp par défaut 2000, annonce « trop court » du niveau 2 ; T-024 : jauge du terme intégral I au niveau 2 ; T-026 à T-033 : correctifs de la chasse aux bugs de la v0.2, voir [CHANGELOG.md](CHANGELOG.md)). T-025 a régénéré les captures périmées par T-022 (K35 corrigé), T-040 celles que le lot A avait périmées (K49) ; celle qui montre encore une ancienne valeur (t010-05) le dit dans sa légende. Le dessin de la scène est dans [rendu.md](rendu.md), les règles du niveau dans [jeu.md](jeu.md).
+À quoi sert cette page : décrire ce que le joueur voit et ce qu'il peut faire, phase par phase : textes, pupitre de réglage, touches, accessibilité, disposition à l'écran, police. Elle décrit le commit `908a62e` (v0.3.0, branche `v0.3-salle-de-controle`). Depuis le lot A (`3810193`) : T-036 bouton « Niveau suivant », T-037 poste, embarquement et sortie, T-038 rendu des poses, T-039 réglage stable, annonce de lancement différée et bouton « Action » sans effet à l'issue, T-040 captures refaites. Depuis les lots B et C : le **pupitre de contrôle remplace le panneau de réglage** (T-049 à T-051, D35 ; page dédiée : [pupitre.md](pupitre.md)), le **tableau d'école** (T-042, T-053 ; [tableau-ecole.md](tableau-ecole.md)) et la **jauge de force quitte la scène** (T-052, D36). Les sections ci-dessous qui parlent encore du « panneau de réglage » ou de la jauge de force décrivent l'état d'avant la v0.3 et le disent. Le reste vient de l'état `02119f7` (interface validée en T-010, corrigée par P-005, T-014, T-015, puis étendue par T-017 : écrans titre et menu, bouton « Menu », destruction de l'interface du niveau ; T-019 : étiquettes de la jauge ; T-021b : niveau 2 ; T-022 : trajet de 10 s, Kp par défaut 2000 ; T-024 : jauge du terme intégral I au niveau 2 ; T-026 à T-033 : correctifs de la chasse aux bugs de la v0.2, voir [CHANGELOG.md](CHANGELOG.md)). T-052 a régénéré par l'e2e la plupart des captures de la scène (sans jauge de force) ; trois n'ont pas été régénérées et sont périmées pour cause de pupitre (registre, ligne T-052) : `t010-02-panneau`, `t021-niveau2-reglage` et `t038-poste-niveau1`. Les légendes des autres captures de cette page ont été écrites avant T-052 et peuvent encore parler de la jauge de force ou du panneau : le texte de la page fait foi, pas la légende. Le dessin de la scène est dans [rendu.md](rendu.md), les règles du niveau dans [jeu.md](jeu.md).
 
 ## Principe
 
@@ -65,7 +65,7 @@ Sans GPU, la page de repli remplace tout, avant le titre (e2e `?renderer=none` d
 
 ## Ce que voit le joueur, phase par phase
 
-En permanence, la barre du haut montre le titre « Huygens’s world », l'**étiquette permanente** « Kp = 2000 N/m » (valeur courante au chargement ; 500 de T-020 à T-021b, 1000 avant ; au niveau 2 : « Kp = 2500 · Ki = 2000 »), et trois boutons : « ? » (aide des commandes), la langue (« English » / « Français ») et « Pause ». Quand le jeu est en pause, un quatrième bouton, « Menu », apparaît à côté (voir plus bas). En bas, le **bandeau d'aide** dit quelle action est possible maintenant et avec quelle touche. Depuis T-019, la jauge de force porte aussi des étiquettes permanentes (voir [plus bas](#étiquettes-de-la-jauge-de-force-t-019)).
+En permanence, la barre du haut montre le titre « Huygens’s world », l'**étiquette permanente** « Kp = 2000 N/m » (valeur courante au chargement ; 500 de T-020 à T-021b, 1000 avant ; au niveau 2 : « Kp = 2500 · Ki = 2000 »), et quatre boutons : « Pupitre » (ouvre ou ferme le pupitre de contrôle, T-049), « ? » (aide des commandes), la langue (« English » / « Français ») et « Pause ». Quand le jeu est en pause, un cinquième bouton, « Menu », apparaît à côté (voir plus bas). En bas, le **bandeau d'aide** dit quelle action est possible maintenant et avec quelle touche. Un **chevalet** sur le quai ouvre le tableau d'école (touche T, voir [tableau-ecole.md](tableau-ecole.md)). Depuis T-052, la scène n'a plus de jauge de force (voir [plus bas](#étiquettes-de-la-jauge-de-force-retirées-par-t-052-d36)).
 
 ### Approche
 
@@ -77,7 +77,9 @@ Une bulle rappelle l'objectif ; le bandeau dit partout « E : régler l'ascenseu
 
 ### Réglage
 
-Le panneau Kp s'ouvre **tout de suite** à l'appui sur E (depuis n'importe où sur le quai), à gauche du bonhomme et de la console, sans les couvrir. Le bonhomme rejoint à 1,5 m/s son poste, à gauche du pupitre (−1,55 m), tourné vers lui, main sur le levier ; E, Entrée ou Espace pendant cette marche lancent le trajet depuis là où il est. Depuis T-039 (R3), la **taille et la position du panneau ne changent plus** pendant la marche vers le poste ni au lancement : la disposition place son obstacle sur le bonhomme au poste, pas sur sa position en direct (voir « Disposition »), et la ligne « verrouillé » reste toujours réservée (classe `is-idle`, invisible tant que le réglage est libre ; effet de bord : un blanc de 27 px au-dessus de « Lancer », K50). Il contient : la valeur en grand (« 2500 N/m »), les boutons − et +, un curseur de 0 à 8000 par pas de 100, un champ numérique, l'aide de Kp, la plage et le bouton « Lancer ». Le curseur part de Kp = 2000 N/m (`KP_DEFAULT`, dans la fenêtre de réussite depuis T-022 : lancer sans régler gagne).
+**Depuis la v0.3 (T-049, D35), le réglage se fait au pupitre de contrôle** : E (de n'importe où sur le quai) ouvre le pupitre en mode `edition`, avec les leviers Kp et Ki, les champs numériques, « Lancer », et, au centre et à droite, la machine et les courbes ; il est décrit dans [pupitre.md](pupitre.md). Le bonhomme marche toujours vers son poste, E, Entrée ou Espace lancent le trajet, Échap referme le pupitre sans lancer ; au lancement, le pupitre se ferme (voir [pupitre.md](pupitre.md#ouverture-fermeture-modes) pour la lecture seule). Le paragraphe suivant décrit le panneau de la v0.2, remplacé :
+
+Le panneau Kp s'ouvrait **tout de suite** à l'appui sur E (depuis n'importe où sur le quai), à gauche du bonhomme et de la console, sans les couvrir. Le bonhomme rejoint à 1,5 m/s son poste, à gauche du pupitre (−1,55 m), tourné vers lui, main sur le levier ; E, Entrée ou Espace pendant cette marche lancent le trajet depuis là où il est. Depuis T-039 (R3), la **taille et la position du panneau ne changent plus** pendant la marche vers le poste ni au lancement : la disposition place son obstacle sur le bonhomme au poste, pas sur sa position en direct (voir « Disposition »), et la ligne « verrouillé » reste toujours réservée (classe `is-idle`, invisible tant que le réglage est libre ; effet de bord : un blanc de 27 px au-dessus de « Lancer », K50). Il contient : la valeur en grand (« 2500 N/m »), les boutons − et +, un curseur de 0 à 8000 par pas de 100, un champ numérique, l'aide de Kp, la plage et le bouton « Lancer ». Le curseur part de Kp = 2000 N/m (`KP_DEFAULT`, dans la fenêtre de réussite depuis T-022 : lancer sans régler gagne).
 
 ![Réglage : panneau Kp ouvert à 2500 N/m, curseur focalisé, bonhomme près du pupitre, bandeau « + / − : régler Kp · Page préc. / Page suiv. : pas de 1000 · E ou Entrée : lancer » (capture e2e de T-010, refaite par T-040)](img/t010-02-panneau.png)
 
@@ -91,7 +93,7 @@ Le panneau Kp s'ouvre **tout de suite** à l'appui sur E (depuis n'importe où s
 
 ### Trajet
 
-Le panneau reste visible mais verrouillé (« Kp est verrouillé pendant le trajet. ») et propose « Recommencer ». À droite de la cage, les **mesures** du trajet : temps, erreur, et la force posée au-dessus de la jauge (« Force : 4200 N »). Les nombres négatifs portent le vrai signe moins U+2212, jamais le trait d'union ASCII (« −0,03 m », « Force : −102 N » ; `formatNumber`, voir [i18n-accessibilite.md](i18n-accessibilite.md#règles-typographiques-des-textes)). La **légende** des tracés (pointillés : consigne ; trait plein : hauteur ; hachures : erreur ; jauge) est dépliée pendant le premier trajet seulement, puis repliée ; le joueur peut la déplier lui-même.
+Au lancement, le pupitre se ferme (v0.3) ; ouvert en lecture seule, il montre le réglage verrouillé avec « Recommencer ». Avec la v0.2, le panneau restait visible mais verrouillé (« Kp est verrouillé pendant le trajet. »). À droite de la cage, les **mesures** du trajet : temps et erreur (la « Force : 4200 N » posée au-dessus de la jauge de la scène a disparu avec T-052 : la force se lit sur le pupitre). Les nombres négatifs portent le vrai signe moins U+2212, jamais le trait d'union ASCII (« −0,03 m », « Force : −102 N » ; `formatNumber`, voir [i18n-accessibilite.md](i18n-accessibilite.md#règles-typographiques-des-textes)). La **légende** des tracés (pointillés : consigne ; trait plein : hauteur ; hachures : erreur ; au niveau 2, jauge I) est dépliée pendant le premier trajet seulement, puis repliée ; le joueur peut la déplier lui-même.
 
 Voir la capture en tête de [rendu.md](rendu.md).
 
@@ -101,9 +103,9 @@ Après une **victoire** (avec animations), le jeu ne montre pas l'issue tout de 
 
 ![Sortie, niveau 1 : à mi-pas, le bonhomme franchit l'écart entre la cabine et le plateau ; la courbe, les mesures (« Temps : 2,4 s », « Erreur : 0,20 m ») et la légende dépliée sont affichées, pas l'issue (capture e2e de T-038)](img/t038-sortie-pas-niveau1.png)
 
-Pendant la saturation du moteur (Kp = 4500 N/m, 0,1 s après le lancement), la jauge est rouge et le mot « Saturé » est affiché (`hud.saturated`) ; la région `aria-live` annonce `level1.saturation`.
+Pendant la saturation du moteur (Kp = 4500 N/m, 0,1 s après le lancement), le mot « Saturé » est affiché (`hud.saturated`) et la région `aria-live` annonce `level1.saturation`. Depuis T-052, la scène n'a plus de crayon rouge (le test de saturation vérifie 0 pixel rouge à l'ancien emplacement de la jauge) : le rouge de la saturation est sur le pupitre (voyant SATURATION, jauge de force, zone rouge des courbes).
 
-![Saturation à Kp = 4500 N/m, 0,1 s après le lancement (capture e2e de T-016)](img/t016-saturation.png)
+![Saturation à Kp = 4500 N/m, 0,1 s après le lancement (capture e2e de T-016, refaite par T-052 : sans jauge de force)](img/t016-saturation.png)
 
 ### Issue
 
@@ -131,21 +133,23 @@ En portrait étroit (≤ 700 px), pour que les quatre boutons de la barre du hau
 
 ![Issue de réussite du niveau 1 avec les boutons « Niveau suivant », « Rejouer le niveau » et « Menu » (capture e2e de T-017e, refaite par T-040 ; faite sans animations, le bonhomme est resté dans la cabine)](img/t017-issue-menu.png)
 
-## Étiquettes de la jauge de force (T-019)
+## Étiquettes de la jauge de force, retirées par T-052 (D36)
 
-À droite de la cage, la jauge de force porte des étiquettes **permanentes**, dès l'approche. Elles sont posées par `src/ui` (classes `ui-gauge-title` et `ui-gauge-tag`), aux ancres calculées par le rendu (`forceGauge`, `gaugeMax`, `gaugeWeight`, voir [rendu.md](rendu.md#interpolation-et-ancres-pour-linterface)) :
+**La jauge de force a quitté la scène** : elle est sur le pupitre, dans la colonne de la machine (voir [pupitre.md](pupitre.md#colonne-du-centre-la-machine)). T-019 lui avait donné trois étiquettes permanentes ; T-052 a retiré celles qui ne servent plus et leurs clés de texte :
 
-| Étiquette | Français | Anglais | Clé |
-|---|---|---|---|
-| légende, au-dessus du cadre | Force du moteur | Motor force | `hud.gauge.title` |
-| haut de l'échelle | 5000 N max | 5000 N max | `hud.gauge.max` (paramètre `{n}`, `ELEVATOR_MAX_FORCE` formaté) |
-| repère du poids m·g | poids | weight | `hud.gauge.weight` |
+| Étiquette de la v0.2 | Clé | Sort |
+|---|---|---|
+| « Force du moteur » (légende au-dessus du cadre) | `hud.gauge.title` | supprimée |
+| « Force : … N » (valeur pendant le trajet, `ui-force`) | `hud.force.value` | supprimée |
+| ligne de légende « Jauge : force du moteur u, rouge quand le moteur sature » | `hud.legend.force` | supprimée |
+| nom accessible de la jauge | `a11y.forceGauge` | supprimée |
+| « 5000 N max » et « poids » | `hud.gauge.max`, `hud.gauge.weight` | **conservées**, mais seulement au niveau 2, à droite de la jauge I (voir la section suivante) |
 
-Dès le lancement du trajet, la légende cède la place à « Force : … N » (`ui-force`) ; « 5000 N max » et « poids » restent. Les trois étiquettes sont `aria-hidden` (le panneau des mesures et le nom de la jauge disent déjà la même chose) et cachées tant que la géométrie manque. La disposition leur réserve `GAUGE_LABELS_ROOM` = 84 px à droite de la jauge (les mesures se posent au-delà) et, en portrait, `GAUGE_TITLE_BAND` = 18 px au-dessus de la scène : la bulle et les mesures s'arrêtent plus haut (`layout.ts`, `tests/ui/layout.test.ts`).
+La mise en page garde l'ancien emplacement de la jauge de force comme repère (ancres `forceGauge`, `gaugeMax`, `gaugeWeight` de `UiGeometry`) : la courbe de position, les mesures et les étiquettes de la jauge I n'ont pas bougé. Les mesures du trajet (temps, erreur) restent à droite de la cage ; la légende des tracés a trois lignes (`hud.legend.setpoint`, `hud.legend.position`, `hud.legend.error` : consigne, hauteur, erreur), plus, au niveau 2, la ligne de la jauge I.
 
 ## Jauge du terme intégral I, niveau 2 (T-024)
 
-Au niveau 2 seulement (`level.snapshot.levelId === 'level2'`, constante `hasIntegral` de `createUi`), une seconde jauge se dresse à droite de la jauge de force. Elle a la même échelle (0 à 5000 N), le même repère du poids m·g et se remplit à |I| (valeur absolue du terme intégral, `iTerm` du snapshot) ; le dessin est décrit dans [rendu.md](rendu.md#jauge-du-terme-intégral-niveau-2). Côté interface, `src/ui` ajoute :
+Au niveau 2 seulement (`level.snapshot.levelId === 'level2'`, constante `hasIntegral` de `createUi`), une jauge se dresse là où était la jauge de force (à droite de la cage ; depuis T-052 c'est la seule jauge de la scène). Elle a la même échelle (0 à 5000 N), le même repère du poids m·g et se remplit à |I| (valeur absolue du terme intégral, `iTerm` du snapshot) ; le dessin est décrit dans [rendu.md](rendu.md#jauge-du-terme-intégral-niveau-2). Côté interface, `src/ui` ajoute :
 
 | Élément | Français | Anglais | Clé |
 |---|---|---|---|
@@ -167,7 +171,7 @@ Au niveau 2 seulement (`level.snapshot.levelId === 'level2'`, constante `hasInte
 
 Le niveau 2 réutilise la même interface : `createUi` lit `level.tuning` (`param`, `min`, `max`, `step`) et `level.snapshot.levelId` pour choisir les textes et la grandeur réglée. Ce qui change :
 
-- **Panneau de réglage** : il règle **Ki** de 0 à 8000 N/(m·s) par pas de 100 (curseur, champ numérique, − et +), avec la valeur en grand (« 2000 N/(m·s) » au chargement ; 500 jusqu'à T-021b) ; une ligne « Kp = 2500 N/m (fixé) » rappelle que Kp n'est pas réglable (`level2.kp.fixed`) ; aide `level2.ki.help` (« chaque seconde, le terme I augmente de Ki × erreur ») ; plage `level2.ki.range` ; verrou `level2.ki.locked`.
+- **Réglage** (pupitre depuis T-049 : le levier Ki est libre, le levier Kp est fixé avec un cadenas ; le texte qui suit décrit le panneau de la v0.2) : il règle **Ki** de 0 à 8000 N/(m·s) par pas de 100 (curseur, champ numérique, − et +), avec la valeur en grand (« 2000 N/(m·s) » au chargement ; 500 jusqu'à T-021b) ; une ligne « Kp = 2500 N/m (fixé) » rappelle que Kp n'est pas réglable (`level2.kp.fixed`) ; aide `level2.ki.help` (« chaque seconde, le terme I augmente de Ki × erreur ») ; plage `level2.ki.range` ; verrou `level2.ki.locked`.
 - **Étiquette de la barre du haut** : « Kp = 2500 · Ki = 2000 » (`hud.ki.tag`, sans unités ; Ki = 500 jusqu'à T-021b).
 - **Touches** : les mêmes qu'au niveau 1 (`+`, `−`, Page préc., Page suiv.), qui appellent `level.adjustTuning` ; le bandeau dit « régler Ki » (`hud.hint.tuneKi`) puis « Ki est verrouillé » (`hud.hint.lockedKi`) pendant le trajet ; l'aide des commandes cite Ki (`controls.help.ki`, `controls.help.pauseKi`, `controls.help.touchKi`).
 - **Annonces** : `hud.status.readyKi`, `hud.status.launchKi` (Kp et Ki), `level2.saturation` à la première saturation, `hud.status.winKi`, `hud.status.fail.stepKi` (T-022 : « Échec : au bout de 10 s, la cabine est encore {e} m sous le plateau d’arrivée, plus loin que les 0,1 m permis. », à la place de `hud.status.fail.step` du niveau 1), `hud.status.fail.slow` (« … n’a pas fini de se stabiliser en 10 s »), `hud.status.resetKi`.
@@ -210,12 +214,14 @@ K32 est corrigé depuis T-022 : la tolérance du niveau 2 est de 0,10 m, et le P
 | `outcome` | issue | R : réessayer | R: try again |
 | `paused` | pause | Jeu en pause. · Échap : reprendre | Game paused. · Esc: resume |
 | `help` | aide des commandes ouverte | Échap : fermer l’aide | Esc: close the help |
+| `board` | tableau d'école ouvert (T-042) | Échap : fermer le tableau | Esc: close the board |
+| `pupitre` | pupitre ouvert en lecture seule (T-049) | Échap : fermer le pupitre | Esc: close the desk |
 
 En français, l'espace avant « : » est une espace insécable (U+00A0), comme partout dans les textes (voir [i18n-accessibilite.md](i18n-accessibilite.md#règles-typographiques-des-textes)).
 
 ## Touches
 
-Traduction touche → intention par la fonction pure `keyToIntent` (`src/ui/keys.ts`), exécutée par `bindKeyboard` (`input.ts`). Vérifiée par `tests/ui/keys.test.ts` (37 tests, dont 27 touches × 28 combinaisons de phase et de focus : 7 phases × 4 cibles de focus, 20 combinaisons avant T-037) et par les scénarios e2e au clavier réel.
+Traduction touche → intention par la fonction pure `keyToIntent` (`src/ui/keys.ts`), exécutée par `bindKeyboard` (`input.ts`). Vérifiée par `tests/ui/keys.test.ts` (52 tests au commit `908a62e` ; 37 à `3810193`, dont 27 touches × 28 combinaisons de phase et de focus : 7 phases × 4 cibles de focus, 20 combinaisons avant T-037) et par les scénarios e2e au clavier réel.
 
 Règles générales :
 
@@ -266,6 +272,13 @@ Les touches de Kp n'agissent qu'en approche et en réglage ; ailleurs, le niveau
 - **E lance le trajet en phase de réglage.** Échap, lui, referme le panneau sans lancer : l'intention `closeTuning` appelle `level.interact()`, qui en réglage referme le panneau (événement `tuningClosed`). Avant P-005, aucune touche ne le faisait (K3).
 - Échap, quand l'aide des commandes est ouverte, la referme (`closeHelp`), sans mettre en pause ni fermer le réglage, quelle que soit la phase.
 
+### Touches ajoutées par la v0.3 (T-042, T-049)
+
+- **T** : ouvre ou ferme le tableau d'école (`openBoard` / `closeBoard`), ignorée dans un champ numérique ; le tableau met le jeu en pause comme l'aide. Voir [tableau-ecole.md](tableau-ecole.md).
+- **E** hors phase de réglage et d'animation : en trajet, à l'issue et en pause, E ouvre le pupitre en lecture seule (`openPupitre`) au lieu de ne rien faire (`block`), et le referme quand il est ouvert (`closePupitre`). Pendant l'embarquement et la sortie, E passe toujours l'animation.
+- **Échap** : l'ordre est tableau (`closeBoard`), aide (`closeHelp`), pupitre en lecture seule (`closePupitre`), puis réglage (`closeTuning`), pause ou reprise.
+- Les flèches, Page précédente et suivante, Début et Fin d'un levier du pupitre et du curseur de relecture sont natives ou propres au composant (voir [pupitre.md](pupitre.md)).
+
 ### Selon le focus
 
 | Focus | Comportement |
@@ -280,7 +293,7 @@ Quand la fenêtre perd le focus ou que l'onglet est masqué : la marche s'arrêt
 
 ### Souris et tactile
 
-- **Souris** : clic sur le pupitre ou le pied de la console (en approche) = ouvrir le réglage. Tous les boutons et le curseur du panneau sont cliquables.
+- **Souris** : clic sur le pupitre dessiné dans la scène ou le pied de la console = ouvrir le réglage (en approche) ou le pupitre en lecture seule (ailleurs, T-049) ; clic sur le chevalet = ouvrir le tableau d'école. Les leviers du pupitre se tirent à la souris, les boutons sont cliquables.
 - **Tactile** (écran à pointeur grossier, `pointer: coarse`) : boutons ◀ et ▶ de 56 × 56 px (marcher tant que le doigt appuie) et un bouton « Action » qui ouvre le réglage (approche), lance (réglage), passe l'embarquement ou la sortie, ou reprend (pause) selon la phase. À l'issue, « Action » n'a **aucun effet** (T-039, R5) : « Rejouer », « Recommencer », « Niveau suivant » et « Menu » servent à cela ; un second appui pendant la sortie ne fait plus perdre l'issue (avant T-039, il la passait puis recommençait). Ces boutons n'ont pas été essayés sur un vrai écran tactile (réserve du log T-010).
 
 ## Aide des commandes « ? »
@@ -290,7 +303,7 @@ Le bouton « ? » ouvre une fenêtre d'aide (`role="dialog"`, `aria-modal="true"
 - **pause** : ouvrir l'aide quand le jeu avance seul (embarquement, trajet, sortie : `isRunningPhase`, T-037) met le jeu en pause ; la fermer reprend le jeu seulement si c'est l'aide qui avait mis en pause (`helpPauseDecision`). Une pause demandée par le joueur avant l'ouverture n'est pas levée par la fermeture. Hors de ces phases, l'aide ne change pas la phase ;
 - **focus** : à l'ouverture, le focus va sur « Fermer l’aide » ; Tab et Maj+Tab restent dans l'aide (`trapFocusIndex`) ; à la fermeture, le focus revient à l'élément qui l'avait à l'ouverture, ou, à défaut (élément disparu, désactivé ou masqué), au bouton « ? » ;
 - Échap ou « Fermer l’aide » la referme ; tant qu'elle est ouverte, le clavier ne commande plus le jeu (B-01, T-026, voir « Touches ») ;
-- l'aide compte **8 lignes** (`helpLines` de `staticTexts`) : déplacement, interaction, passer l'animation, réglage de Kp ou de Ki, recommencer, Échap, souris, tactile. Depuis T-037, le texte d'interaction dit « E, Entrée ou Espace : régler l’ascenseur de n’importe où sur le quai, puis lancer » (`controls.help.interact`) et une ligne neuve « E, Entrée ou Espace pendant l’embarquement ou la sortie : passer l’animation » (`controls.help.skip`) ; la ligne tactile dit encore « Action pour utiliser la console et lancer » (`controls.help.touch`, `controls.help.touchKi`, B-08, T-029), sans citer « passer » : écart du texte tactile, non corrigé ;
+- l'aide compte **10 lignes** (`helpLines` de `staticTexts`) : déplacement, interaction, passer l'animation, réglage de Kp ou de Ki, recommencer, Échap, souris, tactile, tableau d'école (`controls.help.board`, T-042) et pupitre en lecture seule (`controls.help.pupitre`, T-049). Depuis T-037, le texte d'interaction disait « E, Entrée ou Espace : régler l’ascenseur de n’importe où sur le quai, puis lancer » ; depuis T-049 il dit « … ouvrir le pupitre de réglage de n’importe où sur le quai, puis lancer » (`controls.help.interact`), `controls.help.pause` dit « Échap : fermer le pupitre, ou pause », et la ligne souris et la ligne tactile parlent du pupitre et de ses leviers ; T-037 avait ajouté une ligne neuve « E, Entrée ou Espace pendant l’embarquement ou la sortie : passer l’animation » (`controls.help.skip`) ; la ligne tactile dit encore « Action pour utiliser la console et lancer » (`controls.help.touch`, `controls.help.touchKi`, B-08, T-029), sans citer « passer » : écart du texte tactile, non corrigé ;
 - la couche de l'aide est au-dessus des mesures du trajet (`z-index: 2` sur `.ui-help`).
 
 Corrigés par T-017abc : **K23** (le papier de l'aide est opaque, les mesures du trajet ne transparaissent plus ; e2e (p)) et **K24** (tant que l'aide est ouverte, les commandes du niveau sont suspendues : « Pause » / « Reprendre », « Menu », le réglage, le champ numérique, le clic sur la console et le bouton tactile « Action » n'agissent pas ; seule la fermeture de l'aide agit, qui reprend le jeu par `helpPauseDecision` si l'aide l'avait mis en pause ; règle pure `commandsBlocked(helpOpen)` de `src/ui/help.ts` ; e2e (o)).

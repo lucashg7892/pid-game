@@ -1,6 +1,6 @@
 # Tutoriel : lancer le projet sur son PC (Windows)
 
-À quoi sert cette page : guider pas à pas, sous Windows et dans PowerShell, l'installation d'une copie du projet, son lancement dans le navigateur, une partie du niveau 1 (et un mot du niveau 2), les tests et la validation MATLAB. Aucune connaissance en développement n'est supposée. État décrit : commit `3810193` (lot A de la v0.3, branche `v0.3-salle-de-controle`, non fusionnée ; la v0.3 n'est pas publiée et `package.json` reste en 0.2.0 ; les durées et les sorties de terminal recopiées plus bas datent de `566a8a3`, sauf mention ; elles n'ont pas été relancées).
+À quoi sert cette page : guider pas à pas, sous Windows et dans PowerShell, l'installation d'une copie du projet, son lancement dans le navigateur, une partie du niveau 1 (et un mot du niveau 2), les tests et la validation MATLAB. Aucune connaissance en développement n'est supposée. État décrit : commit `908a62e` (v0.3.0, branche `v0.3-salle-de-controle` ; les durées et les sorties de terminal recopiées plus bas datent de `566a8a3`, sauf mention ; elles n'ont pas été relancées).
 
 > **Statut des commandes.** Sous Windows, l'utilisateur a exécuté avec succès le clone, `npm.cmd ci` et `npm.cmd run dev` le 2026-11-13 (décision D16 du registre), puis a joué le niveau. La validation MATLAB (étape 6) a été exécutée sous Windows par le rédacteur. Les autres commandes (`git pull`, `npm run test`, `npm run test:cov`, `npm run check`, réinstallation) ont été exécutées sous Linux seulement et restent marquées « non exécuté sous Windows ».
 >
@@ -87,10 +87,10 @@ L'onglet s'appelle « Huygens’s world ». Le jeu s'ouvre sur un **écran titre
 
 ### Jouer
 
-1. Appuyez sur **E**, de n'importe où sur le quai : le panneau de réglage s'ouvre tout de suite et le bonhomme marche jusqu'à son poste, à gauche du pupitre. (Vous pouvez aussi marcher d'abord avec **→** ou **D** ; ce n'est plus nécessaire.)
-2. Le bonhomme au poste, la main sur le levier, le panneau est prêt.
+1. Appuyez sur **E**, de n'importe où sur le quai : le pupitre de contrôle s'ouvre tout de suite (trois colonnes : réglage, moteur du treuil, courbes ; voir [pupitre.md](pupitre.md)) et le bonhomme marche jusqu'à son poste, à gauche du pupitre dessiné dans la scène. (Vous pouvez aussi marcher d'abord avec **→** ou **D** ; ce n'est plus nécessaire.)
+2. Le bonhomme au poste, la main sur le levier, le pupitre est prêt : le levier Kp se tire à la souris ou se règle au clavier.
 3. Réglez Kp avec **+** et **−** (pas de 100) ou **Page préc.** / **Page suiv.** (pas de 1000). Le jeu commence à 2000 N/m (500 de T-020 à T-021b, 1000 avant) : un lancement sans réglage gagne.
-4. Appuyez sur **E** ou **Entrée** : le bonhomme marche jusqu'à la cabine (environ 2,4 s), puis l'ascenseur part. La courbe de sa hauteur se trace sur le mur de la cage. Pour passer cette marche, appuyez de nouveau sur **E**, **Entrée** ou **Espace**.
+4. Appuyez sur **E** ou **Entrée** (ou sur « Lancer ») : le pupitre se ferme, le bonhomme marche jusqu'à la cabine (environ 2,4 s), puis l'ascenseur part. Pour suivre le moteur et les courbes pendant le trajet, ouvrez le pupitre avec le bouton « Pupitre » ou la touche **E** une fois le trajet parti (lecture seule, le jeu continue) ; à l'issue, un curseur permet de reparcourir le trajet. La courbe de sa hauteur se trace sur le mur de la cage. Pour passer cette marche, appuyez de nouveau sur **E**, **Entrée** ou **Espace**.
 5. À la réussite, le bonhomme sort de la cabine et avance sur le plateau d'arrivée (environ 1,7 s, que la même touche passe), puis l'issue s'affiche. Sur le niveau 1, le bouton « Niveau suivant » mène au niveau 2. Appuyez sur **R** pour réessayer. Si votre système demande de réduire les animations, ces marches sont supprimées.
 
 Pour réussir, Kp doit être entre 1000 et 5000 N/m (2000 et 3800 avant T-020) ; un trajet dure 10 s au plus (6 s de T-020 à T-021b) : trop faible, la cabine s'arrête trop bas ; trop fort, elle dépasse et heurte la poutre. Le **niveau 2** du menu (« la mémoire ») garde les mêmes touches, mais règle Ki, avec Kp fixé à 2500 N/m ; la cabine doit s'arrêter à 0,1 m près, ce que Kp seul ne permet pas.
@@ -102,9 +102,10 @@ Pour réussir, Kp doit être entre 1000 et 5000 N/m (2000 et 3800 avant T-020) ;
 | + / − | Kp ± 100 N/m (niveau 2 : Ki) |
 | Page préc. / Page suiv. | Kp ± 1000 N/m (niveau 2 : Ki) |
 | R | recommencer |
-| Échap | fermer l'aide ou le réglage de Kp ; sinon pause, reprise |
+| Échap | fermer le tableau, l'aide ou le pupitre ; sinon pause, reprise |
+| T | ouvrir ou fermer le tableau d'école (le jeu se met en pause ; clic sur le chevalet aussi) |
 
-Table complète : [interface.md](interface.md#touches). À la souris : cliquez sur la console, puis utilisez le panneau (et « Niveau suivant », « Rejouer le niveau » ou « Menu » à l'issue). Pour jouer en anglais : bouton « English », ou ajoutez `?lang=en` à l'adresse.
+Table complète : [interface.md](interface.md#touches). À la souris : cliquez sur la console, puis utilisez le pupitre (et « Niveau suivant », « Rejouer le niveau » ou « Menu » à l'issue). Pour jouer en anglais : bouton « English », ou ajoutez `?lang=en` à l'adresse.
 
 ## 4. Mettre à jour la copie
 
@@ -130,13 +131,13 @@ Ces commandes ne sont pas nécessaires pour jouer. Elles vérifient le code.
 
 | Commande | Durée indicative | Ce qu'elle montre |
 |---|---|---|
-| `npm run test` | ≈ 30 s | les 731 tests unitaires (50 fichiers) au commit `3810193` (relevé par le rédacteur sous Windows, `npm.cmd test`) ; la fin doit afficher `Test Files  50 passed (50)` et `Tests  731 passed (731)`. Les lignes `T1`, `REF`, `EXACT` comparent la simulation aux formules et à la solution exacte |
+| `npm run test` | ≈ 30 s | les tests unitaires au commit `908a62e` (relevé par le rédacteur sous Windows, `npm.cmd run test`, code de sortie 0) ; la fin doit afficher `Test Files  64 passed | 1 skipped (65)` et `Tests  1043 passed | 1 skipped (1044)` (le test ignoré réécrit des fichiers de maquette, il est désactivé exprès). Les lignes `T1`, `REF`, `EXACT` comparent la simulation aux formules et à la solution exacte |
 | `npm run test:cov` | ≈ 40 s | les mêmes tests, puis un tableau de couverture de `src/sim` : 100 % partout. Échoue sous 95 % des lignes |
 | `npm run check` | ≈ 1 à 2 min | toute la chaîne : vérification des types, lint, formatage, règles d'architecture, tests, construction du site dans `dist\`. Doit se terminer sans erreur |
 
 Durées mesurées sous Linux ; non exécuté sous Windows. Détail des tests : [tests.md](tests.md).
 
-Les tests de bout en bout (`npm run e2e`, 146 tests dans un vrai navigateur au commit `3810193`) demandent d'abord `npx playwright install chromium`, qui télécharge un navigateur. Non exécuté sous Windows ; voir [tests.md](tests.md#tests-de-bout-en-bout-playwright).
+Les tests de bout en bout (`npm run e2e`, 210 tests dans un vrai navigateur au commit `908a62e`) demandent d'abord `npx playwright install chromium`, qui télécharge un navigateur. Non exécuté sous Windows ; voir [tests.md](tests.md#tests-de-bout-en-bout-playwright).
 
 ## 6. Relancer la validation MATLAB
 

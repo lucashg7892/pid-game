@@ -192,7 +192,7 @@ async function checkIGaugeLabels(page: Page, width: number, height: number): Pro
     h: y(0) - y(CONSOLE_ANCHOR_Y + 0.35),
   };
   const labels: [string, Box][] = [];
-  for (const selector of ['.ui-igauge-title', '.ui-force', '.ui-gauge-title', '.ui-gauge-tag']) {
+  for (const selector of ['.ui-igauge-title', '.ui-gauge-tag']) {
     const nodes = await page.locator(`#ui ${selector}`).all();
     for (const node of nodes) {
       if (await node.isVisible())
@@ -522,13 +522,12 @@ for (const lang of ['fr', 'en'] as const) {
     expect(frameInk, 'cadre et graduations de la jauge I').toBeGreaterThan(150);
     expect(emptyInk, 'intérieur vide avant le lancement').toBeLessThan(frameInk / 3);
 
-    // Trajet : à 0,15 s le moteur est encore saturé (5000 N, jauge de force rouge) et I déjà chargé
+    // Trajet : à 0,15 s le moteur est encore saturé (5000 N) et I déjà chargé
     // (capture) ; à 0,3 s la saturation est finie (mesuré : jusqu'à 0,2 s) et I vaut environ 530 N.
     await run(page, [['launch'], ['advance', 0.15]]);
     const early = await run(page, []);
     expect(early.iTerm).toBeGreaterThan(200);
     expect(await page.evaluate(() => window.__huygens?.snapshot().saturated)).toBe(true);
-    await expect(page.locator('#ui .ui-force')).toHaveClass(/is-saturated/);
     await shot(page, 't024-niveau2-jauge-i.png', lang === 'fr');
     await run(page, [['advance', 0.15]]);
     const mid = await run(page, []);
@@ -541,7 +540,6 @@ for (const lang of ['fr', 'en'] as const) {
     );
     expect(Math.abs(digitsOf((await sr.textContent()) ?? '') - mid.iTerm)).toBeLessThanOrEqual(1);
     expect((await sr.textContent()) ?? '').toContain(t('hud.readout.iTerm').split('{i}')[0] ?? '');
-    await expect(page.locator('#ui .ui-force')).toHaveText(/\d/);
     await expect(page.locator('#ui .ui-legend-integral')).toContainText(
       t('level2.legend.integral'),
     );

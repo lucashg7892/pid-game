@@ -74,12 +74,8 @@ export interface StaticTexts {
   readonly saturated: string;
   /** Titre de la légende. */
   readonly legendTitle: string;
-  /** Lignes de la légende (consigne, hauteur, erreur, jauge ; niveau 2 : et jauge I). */
+  /** Lignes de la légende (consigne, hauteur, erreur ; niveau 2 : et jauge I). */
   readonly legendLines: readonly string[];
-  /** Nom de la jauge de force. */
-  readonly gaugeLabel: string;
-  /** Légende de la jauge avant le lancement (« Force du moteur »). */
-  readonly gaugeTitle: string;
   /** Haut de l'échelle de la jauge (« 5000 N max »). */
   readonly gaugeMax: string;
   /** Repère du poids m·g à droite de la jauge (« poids »). */
@@ -134,8 +130,6 @@ export interface ViewModel {
   time: string;
   /** « Erreur : 0,85 m ». */
   error: string;
-  /** « Force : 4200 N », posé à l'ancre de la jauge. */
-  force: string;
   /** « I : 490 N », posé à l'ancre de la jauge du terme intégral (niveau 2) ; vide au niveau 1. */
   integral: string;
   /** « Terme I : 490 N », ligne des mesures lue par les lecteurs d'écran (niveau 2) ; vide sinon. */
@@ -229,11 +223,8 @@ export function staticTexts(tr: Translator, levelId: LevelId = 'level1'): Static
       tr.t('hud.legend.setpoint'),
       tr.t('hud.legend.position'),
       tr.t('hud.legend.error'),
-      tr.t('hud.legend.force'),
       ...(ki ? [tr.t('level2.legend.integral')] : []),
     ],
-    gaugeLabel: tr.t('a11y.forceGauge'),
-    gaugeTitle: tr.t('hud.gauge.title'),
     gaugeMax: tr.t('hud.gauge.max', {
       n: tr.formatNumber(ELEVATOR_MAX_FORCE, { maximumFractionDigits: 0 }),
     }),
@@ -379,7 +370,6 @@ export function createViewModelBuilder(
   let kpKey = Number.NaN;
   let timeKey = Number.NaN;
   let errorKey = Number.NaN;
-  let forceKey = Number.NaN;
   let integralKey = Number.NaN;
   let bubbleKey = '';
   let outcomeKey: TripOutcome | null = null;
@@ -401,7 +391,6 @@ export function createViewModelBuilder(
     readoutVisible: false,
     time: '',
     error: '',
-    force: '',
     integral: '',
     integralReadout: '',
     saturated: false,
@@ -426,7 +415,6 @@ export function createViewModelBuilder(
       kpKey = Number.NaN;
       timeKey = Number.NaN;
       errorKey = Number.NaN;
-      forceKey = Number.NaN;
       integralKey = Number.NaN;
       bubbleKey = '';
       outcomeAttempt = -1;
@@ -483,13 +471,6 @@ export function createViewModelBuilder(
       if (e !== errorKey) {
         errorKey = e;
         model.error = tr.t('hud.error.value', { e: formatError(tr, s.e) });
-      }
-      const u = quantize(s.uSat, 1);
-      if (u !== forceKey) {
-        forceKey = u;
-        model.force = tr.t('hud.force.value', {
-          u: tr.formatNumber(Number.isFinite(s.uSat) ? s.uSat : 0, { maximumFractionDigits: 0 }),
-        });
       }
       if (ki) {
         const i = quantize(s.iTerm, 1);

@@ -392,27 +392,23 @@ export function createUi(options: UiOptions): Ui {
   const legendList = el('ul', '', legend);
   const legendItems: TextSlot[] = [];
   for (const kind of hasIntegral
-    ? ['setpoint', 'position', 'error', 'force', 'integral']
-    : ['setpoint', 'position', 'error', 'force']) {
+    ? ['setpoint', 'position', 'error', 'integral']
+    : ['setpoint', 'position', 'error']) {
     const li = el('li', `ui-legend-${kind}`, legendList);
     el('span', 'ui-swatch', li).setAttribute('aria-hidden', 'true');
     legendItems.push(new TextSlot(el('span', '', li)));
   }
   const readoutBox = new BoxSlot(readout);
-  const forceNode = el('p', 'ui-force num', root);
-  const force = new TextSlot(forceNode);
-  const forcePoint = new PointSlot(forceNode);
-  // Étiquettes permanentes de la jauge (aria-hidden : le panneau des mesures et le nom de la
-  // jauge disent déjà la même chose aux lecteurs d'écran). Cachées tant que la géométrie manque.
+  // Étiquettes permanentes de la jauge du terme intégral et de son échelle (aria-hidden : le
+  // panneau des mesures dit déjà la même chose aux lecteurs d'écran). Cachées tant que la
+  // géométrie manque. La force du moteur n'a plus de jauge dans la scène : elle se lit sur le
+  // pupitre de contrôle.
   const gaugeLabel = (className: string): HTMLParagraphElement => {
     const node = el('p', className, root);
     node.setAttribute('aria-hidden', 'true');
     node.hidden = true;
     return node;
   };
-  const gaugeTitleNode = gaugeLabel('ui-gauge-title');
-  const gaugeTitle = new TextSlot(gaugeTitleNode);
-  const gaugeTitlePoint = new PointSlot(gaugeTitleNode);
   const gaugeMaxNode = gaugeLabel('ui-gauge-tag');
   const gaugeMax = new TextSlot(gaugeMaxNode);
   const gaugeMaxPoint = new PointSlot(gaugeMaxNode);
@@ -637,11 +633,7 @@ export function createUi(options: UiOptions): Ui {
     for (let i = 0; i < legendItems.length; i += 1) {
       legendItems[i]?.set(t.legendLines[i] ?? '');
     }
-    show(forceNode, vm.readoutVisible);
-    force.set(vm.force);
-    forceNode.classList.toggle('is-saturated', vm.saturated);
-    // La légende de la jauge cède la place à « Force : … N » dès le lancement.
-    gaugeTitle.set(t.gaugeTitle);
+    // La légende de la jauge I cède la place à « I : … N » dès le lancement.
     gaugeMax.set(t.gaugeMax);
     gaugeWeight.set(t.gaugeWeight);
     gaugeTitleVisible = !vm.readoutVisible;
@@ -724,18 +716,16 @@ export function createUi(options: UiOptions): Ui {
       Math.round(hitHeight),
     );
     show(boardHit, true);
-    forcePoint.apply(layout.force.x, layout.force.y);
     dimensionPoint.apply(layout.dimension.x, layout.dimension.y);
-    gaugeTitlePoint.apply(layout.force.x, layout.force.y);
     gaugeMaxPoint.apply(layout.gaugeMax.x, layout.gaugeMax.y);
     gaugeWeightPoint.apply(layout.gaugeWeight.x, layout.gaugeWeight.y);
-    show(gaugeTitleNode, gaugeTitleVisible);
     integralTitlePoint.apply(layout.iGauge.x, layout.iGauge.y);
     integralValuePoint.apply(layout.iGauge.x, layout.iGauge.y);
     show(integralTitleNode, hasIntegral && gaugeTitleVisible);
     show(integralValueNode, integralVisible);
-    show(gaugeMaxNode, true);
-    show(gaugeWeightNode, true);
+    // L'échelle (« 5000 N max », « poids ») n'existe qu'avec la jauge I, au niveau 2.
+    show(gaugeMaxNode, hasIntegral);
+    show(gaugeWeightNode, hasIntegral);
   };
 
   let destroyed = false;

@@ -38,10 +38,8 @@ export interface StrokeStyle {
 export const GRAPHITE_COLOR = '#3a3a3a';
 /** Opacité de base du graphite. */
 export const GRAPHITE_OPACITY = 0.85;
-/** Crayon rouge : seule couleur permise, réservée à la jauge de force saturée (sRGB). */
+/** Crayon rouge (sRGB) : plus utilisé dans la scène (D36), repris par la maquette `?proto=c`. */
 export const RED_PENCIL_COLOR = '#c23a2b';
-/** Opacité du crayon rouge. */
-export const RED_PENCIL_OPACITY = 0.9;
 /** Taille d'une cellule de grain du graphite (m). */
 export const PENCIL_GRAIN_CELL = 0.008;
 /** Force du grain : fraction d'opacité retirée au plus (0 = trait uniforme). */
@@ -265,11 +263,14 @@ export const MOTOR_X = 4.42;
 export const MOTOR_Y = 5.15;
 /** Rayon du tambour du moteur (m). */
 export const MOTOR_RADIUS = 0.17;
-/** Jauge de force : bords gauche et droit (m). */
+/**
+ * Ancien emplacement de la jauge de force, quittée de la scène (D36) pour le pupitre : bords
+ * gauche et droit (m). Reste la référence de la mise en page des étiquettes et des mesures.
+ */
 export const GAUGE_MIN_X = 5.2;
 /** Voir {@link GAUGE_MIN_X}. */
 export const GAUGE_MAX_X = 5.62;
-/** Jauge de force : bas (0 N) et haut (pleine échelle) (m). */
+/** Échelle des jauges (0 N en bas, 5000 N en haut) : bas et haut (m). */
 export const GAUGE_MIN_Y = 3.55;
 /** Voir {@link GAUGE_MIN_Y}. */
 export const GAUGE_MAX_Y = 5.35;
@@ -286,8 +287,8 @@ export const GAUGE_HATCH_ANGLE = Math.PI / 4;
 /** Taille du petit poids (repère m·g) dessiné à droite de la jauge (m). */
 export const GAUGE_WEIGHT_SIZE = 0.07;
 /**
- * Jauge du terme intégral I (niveau 2) : bords gauche et droit (m), à droite de la jauge de
- * force et du petit poids de son repère ; mêmes ordonnées et même échelle que la jauge de force.
+ * Jauge du terme intégral I (niveau 2) : bords gauche et droit (m), à l'ancien emplacement de la
+ * jauge de force (à droite d'elle) ; mêmes ordonnées et même échelle que celle-ci.
  */
 export const GAUGE_I_MIN_X = 6;
 /** Voir {@link GAUGE_I_MIN_X}. */

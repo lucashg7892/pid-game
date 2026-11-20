@@ -199,9 +199,9 @@ async function checkPanelsAvoidCage(
       ).toBe(false);
     }
   }
-  // Étiquettes de la jauge (légende ou « Force : … N », « max », « poids ») : mêmes obstacles,
+  // Étiquettes de la jauge (légende ou valeur « I », « max », « poids ») : mêmes obstacles,
   // et jamais sous un panneau (l'aide, fenêtre modale, est exclue).
-  const labels = page.locator('#ui .ui-force, #ui .ui-gauge-title, #ui .ui-gauge-tag');
+  const labels = page.locator('#ui .ui-igauge-title, #ui .ui-gauge-tag');
   for (let i = 0; i < (await labels.count()); i += 1) {
     const node = labels.nth(i);
     if (!(await node.isVisible())) continue;
@@ -241,11 +241,11 @@ test('(a) FR, clavier réel : aide, marche, pupitre (Kp), + ×5, Entrée, victoi
   await expect(banner).toContainText(FR('hud.hint.use'));
   await expect(banner.locator('kbd', { hasText: 'E' })).toBeVisible();
   await expect(page.locator('#ui .ui-bubble')).toHaveText(FR('level1.goal'));
-  // Étiquettes permanentes de la jauge dès l'approche ; « Force : … N » n'apparaît qu'au trajet.
-  await expect(page.locator('#ui .ui-gauge-title')).toHaveText('Force du moteur');
-  await expect(page.locator('#ui .ui-gauge-tag').nth(0)).toHaveText(`5000${NB}N max`);
-  await expect(page.locator('#ui .ui-gauge-tag').nth(1)).toHaveText('poids');
-  await expect(page.locator('#ui .ui-force')).toBeHidden();
+  // D36 : la jauge de force a quitté la scène (elle est sur le pupitre), et ses étiquettes avec.
+  await expect(page.locator('#ui .ui-gauge-tag').nth(0)).toBeHidden();
+  await expect(page.locator('#ui .ui-gauge-tag').nth(1)).toBeHidden();
+  await expect(page.locator('#ui .ui-gauge-title')).toHaveCount(0);
+  await expect(page.locator('#ui .ui-force')).toHaveCount(0);
   await expect(page.locator('#ui .ui-kp-tag')).toHaveText(`Kp = 2000${NB}N/m`);
   await expect(page.locator('#ui .ui-title')).toHaveText('Huygens’s world');
   await capture(page, 't010-01-aide.png');

@@ -380,8 +380,7 @@
   font-size: 0.95em;
 }
 
-.ui-saturated,
-.ui-force.is-saturated {
+.ui-saturated {
   color: var(--ui-red);
   font-weight: 700;
 }
@@ -434,16 +433,7 @@
   background: repeating-linear-gradient(45deg, #3a3a3a 0 1px, transparent 1px 4px);
 }
 
-.ui-legend-force .ui-swatch {
-  width: 10px;
-  height: 16px;
-  border: 1.5px solid #3a3a3a;
-  background: linear-gradient(to top, var(--ui-red) 55%, transparent 55%);
-}
-
 /* Étiquettes posées sur la scène. */
-.ui-force,
-.ui-gauge-title,
 .ui-igauge-title,
 .ui-dimension {
   position: absolute;
@@ -456,15 +446,11 @@
   pointer-events: none;
 }
 
-.ui-force,
-.ui-gauge-title,
 .ui-igauge-title {
   transform: translate(-50%, -100%);
 }
 
 /* `.ui p` (plus spécifique) ajoute une marge : sans elle, l'ancre ne tombe pas au bord de l'étiquette. */
-.ui .ui-force,
-.ui .ui-gauge-title,
 .ui .ui-igauge-title,
 .ui .ui-gauge-tag {
   margin: 0;

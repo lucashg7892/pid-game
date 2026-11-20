@@ -128,11 +128,11 @@ describe('modèle de vue du niveau 2', () => {
       const cat = CATALOGS[locale];
       const t2 = staticTexts(tr(locale), 'level2');
       const t1 = staticTexts(tr(locale));
-      expect(t1.legendLines).toHaveLength(4);
-      expect(t2.legendLines).toHaveLength(5);
-      expect(t2.legendLines.slice(0, 4)).toEqual(t1.legendLines);
-      expect(t2.legendLines[4]).toBe(cat['level2.legend.integral']);
-      expect(t2.legendLines[4]).toContain('490');
+      expect(t1.legendLines).toHaveLength(3);
+      expect(t2.legendLines).toHaveLength(4);
+      expect(t2.legendLines.slice(0, 3)).toEqual(t1.legendLines);
+      expect(t2.legendLines[3]).toBe(cat['level2.legend.integral']);
+      expect(t2.legendLines[3]).toContain('490');
       expect(t2.integralTitle).toBe(cat['hud.igauge.title']);
     }
   });

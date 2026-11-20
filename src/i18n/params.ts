@@ -18,7 +18,6 @@ export const MESSAGE_PARAMS = {
   'hud.kp.value': ['kp'],
   'hud.ki.tag': ['kp', 'ki'],
   'hud.hint.item': ['keys', 'action'],
-  'hud.force.value': ['u'],
   'hud.gauge.max': ['n'],
   'hud.igauge.value': ['i'],
   'hud.readout.iTerm': ['i'],

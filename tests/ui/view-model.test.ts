@@ -84,12 +84,10 @@ describe('bandeau d’aide : chaque phase, FR et EN', () => {
   });
 });
 
-describe('étiquettes de la jauge', () => {
+describe('étiquettes de l’échelle des jauges', () => {
   it('légende, haut d’échelle (tiré de ELEVATOR_MAX_FORCE) et repère du poids, FR et EN', () => {
     const fr = staticTexts(tr('fr'));
     const en = staticTexts(tr('en'));
-    expect(fr.gaugeTitle).toBe('Force du moteur');
-    expect(en.gaugeTitle).toBe('Motor force');
     expect(fr.gaugeMax).toBe(`${String(ELEVATOR_MAX_FORCE)}${NB}N max`);
     expect(en.gaugeMax).toBe(`${String(ELEVATOR_MAX_FORCE)}${NB}N max`);
     expect(fr.gaugeWeight).toBe('poids');
@@ -129,21 +127,19 @@ describe('modèle de vue par phase', () => {
     expect(hintText(fr.hint)).toBe(HINTS.fr.tune);
   });
 
-  it('trajet : temps, erreur et force formatés, saturation', () => {
+  it('trajet : temps et erreur formatés, saturation', () => {
     const level = tuning(2500);
     level.launch();
     advance(level, 0.1);
     const early = build(level, 'fr');
     expect(early.readoutVisible).toBe(true);
     expect(early.saturated).toBe(true); // 2500 × 3 m = 7500 N > 5000 N au départ
-    expect(early.force).toBe(`Force${NB}: 5000${NB}N`);
     advance(level, 0.9);
     const s = level.snapshot;
     expect(s.k).toBe(120);
     const fr = build(level, 'fr');
     expect(fr.time).toBe(`Temps${NB}: 1,0${NB}s`);
     expect(fr.error).toMatch(/^Erreur\u00A0: -?\d+,\d{2}\u00A0m$/);
-    expect(fr.force).toMatch(/^Force\u00A0: -?\d+\u00A0N$/);
     expect(fr.kpTag).toBe(`Kp = 2500${NB}N/m`);
     expect(hintText(fr.hint)).toBe(HINTS.fr.trip);
     const en = build(level, 'en');
@@ -366,7 +362,7 @@ describe('Kp toujours présent, langue et mémoïsation', () => {
       const texts = staticTexts(tr(locale));
       expect(texts.title).toBe('Huygens’s world');
       expect(texts.helpLines).toHaveLength(10);
-      expect(texts.legendLines).toHaveLength(4);
+      expect(texts.legendLines).toHaveLength(3);
       for (const value of Object.values(texts)) {
         if (typeof value === 'string') expect(value.length).toBeGreaterThan(0);
       }

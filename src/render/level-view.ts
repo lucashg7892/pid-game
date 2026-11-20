@@ -5,7 +5,7 @@
  * (`setDrawRange`), la plage à envoyer au GPU (un seul objet de plage par attribut, créé une fois
  * et réutilisé) et `needsUpdate`. Le décor n'est renvoyé au GPU que lorsqu'il a été redessiné.
  *
- * Coût : 5 meshes au plus (5 appels de dessin), masqués quand leur lot est vide.
+ * Coût : 4 meshes au plus (4 appels de dessin), masqués quand leur lot est vide.
  */
 import {
   BufferAttribute,
@@ -20,12 +20,7 @@ import type { SignalRecorder } from '../sim';
 import type { Frame } from './camera';
 import { LevelPainter } from './level-painter';
 import { STROKE_ATTRIBUTE, createPencilMaterial } from './pencil-material';
-import {
-  GRAPHITE_COLOR,
-  GRAPHITE_OPACITY,
-  RED_PENCIL_COLOR,
-  RED_PENCIL_OPACITY,
-} from './pencil-style';
+import { GRAPHITE_COLOR, GRAPHITE_OPACITY } from './pencil-style';
 import { POSITION_ITEM_SIZE, STROKE_ITEM_SIZE, type StrokeBatch } from './stroke-batch';
 
 /** Ordre de dessin du premier lot (le papier est à −1). */
@@ -124,13 +119,11 @@ function sync(entry: BatchMesh): void {
 export function createLevelView(scene: Scene): LevelView {
   const painter = new LevelPainter();
   const graphite = createPencilMaterial(GRAPHITE_COLOR, GRAPHITE_OPACITY, 'graphite');
-  const red = createPencilMaterial(RED_PENCIL_COLOR, RED_PENCIL_OPACITY, 'red-pencil');
   const entries: readonly BatchMesh[] = Object.freeze([
     wrapBatch(painter.decor, graphite, LEVEL_RENDER_ORDER, 'decor'),
     wrapBatch(painter.error, graphite, LEVEL_RENDER_ORDER + 1, 'error'),
     wrapBatch(painter.curve, graphite, LEVEL_RENDER_ORDER + 2, 'curve'),
     wrapBatch(painter.actors, graphite, LEVEL_RENDER_ORDER + 3, 'actors'),
-    wrapBatch(painter.red, red, LEVEL_RENDER_ORDER + 4, 'red'),
   ]);
   for (const entry of entries) {
     scene.add(entry.mesh);
@@ -167,7 +160,6 @@ export function createLevelView(scene: Scene): LevelView {
         entry.mesh.geometry.dispose();
       }
       graphite.dispose();
-      red.dispose();
     },
   };
 }

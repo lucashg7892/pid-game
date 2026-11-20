@@ -1,5 +1,6 @@
 /**
- * Jauge de force du moteur (T-009b) : échelle de 0 N (en bas) à la force maximale du moteur
+ * Échelle des jauges (T-009b ; la jauge de force a quitté la scène, D36, seule reste la jauge du
+ * terme intégral au niveau 2) : échelle de 0 N (en bas) à la force maximale du moteur
  * (5000 N, en haut), graduations tous les 500 N (principales tous les 1000 N), repère du poids
  * m·g = 490,5 N. La jauge montre |uSat| : la force signée peut être négative (freinage du
  * dépassement), la jauge en montre l'intensité. Fonctions pures, sans three.

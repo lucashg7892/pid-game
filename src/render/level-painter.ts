@@ -3,13 +3,14 @@
  * d'après l'instantané du niveau et l'enregistreur de signaux. Fichier pur (ni three ni DOM),
  * testable sous Node ; `level-view.ts` envoie ensuite les lots au GPU.
  *
- * Cinq lots, un par matériau et fréquence de mise à jour (et donc un appel de dessin chacun) :
- * - `decor` : quais, cage, poutre, poulies, moteur, cadre de la jauge, pupitre, axe des temps ;
+ * Quatre lots, un par matériau et fréquence de mise à jour (et donc un appel de dessin chacun) :
+ * - `decor` : quais, cage, poutre, poulies, moteur, pupitre, axe des temps, cadre de la jauge du
+ *   terme intégral (niveau 2) ; la force du moteur n'est plus dessinée dans la scène (D36) : elle
+ *   est lue sur le pupitre de contrôle ;
  *   redessiné seulement quand la graine du « boiling » ou la taille d'un pixel change ;
  * - `error` : hachures de l'erreur e entre la courbe et la consigne ;
  * - `curve` : courbe y(t) et graduations de seconde ;
- * - `actors` : cabine, câbles, levier, consigne pointillée, bonhomme, cote, jauge (graphite) ;
- * - `red` : jauge saturée (crayon rouge, seul usage de la couleur).
+ * - `actors` : cabine, câbles, levier, consigne pointillée, bonhomme, cote, jauge I (graphite).
  *
  * Aucune allocation dans {@link LevelPainter.paint} : tableaux de travail créés au constructeur,
  * rappel de l'enregistreur créé une fois ({@link CurveTrace.add}), aucune référence gardée vers
@@ -83,9 +84,7 @@ import {
   GAUGE_I_MAX_X,
   GAUGE_I_MIN_X,
   GAUGE_MAJOR_TICK,
-  GAUGE_MAX_X,
   GAUGE_MAX_Y,
-  GAUGE_MIN_X,
   GAUGE_MIN_Y,
   GAUGE_MINOR_TICK,
   GAUGE_WEIGHT_SIZE,
@@ -133,15 +132,14 @@ import { HAT_ANGLE_INDEX, JOINT, createPoseBuffer, poseWalker } from './walker-p
  * Capacités en sommets de chaque lot (préallouées). Mesuré sous Node (tests, 1280×720, T-022,
  * trajets de 10 s : niveau 1 à Kp = 800 et 100, niveau 2 à Ki = 0 et 100) : décor 6 798 sommets ;
  * courbe 7 266 au plus (1 201 points) ; erreur 4 518 au plus (Kp = 100) ; éléments mobiles 1 620 au plus (1 338 à 1 620 selon le scénario) ;
- * rouge environ 200. Total préalloué 37 200 sommets = 12 400 triangles au plus, sous le budget de
- * 30 000 triangles même lots pleins.
+ * Total préalloué 36 000 sommets = 12 000 triangles au plus, sous le budget de 30 000 triangles
+ * même lots pleins.
  */
 export const BATCH_CAPACITY = Object.freeze({
   decor: 12_000,
   error: 8_000,
   curve: 12_000,
   actors: 4_000,
-  red: 1_200,
 });
 /** Nombre maximal de sommets du polygone d'erreur (la courbe y est sous-échantillonnée). */
 export const ERROR_POLYGON_MAX = 450;
@@ -172,6 +170,14 @@ const EASEL_SCRIBBLES: readonly EaselScribble[] = Object.freeze([
   { y: 0.91, from: -EASEL_INNER, to: -0.08, phase: 5.3 },
 ]);
 
+/** Traits d'un cadre de jauge : rectangle, graduations, repère du poids pointillé et petit poids. */
+export const GAUGE_FRAME_STROKES = 22;
+/**
+ * Traits que la jauge de force dessinait dans le décor, entre le moteur et la console : le cadre
+ * d'une jauge ({@link GAUGE_FRAME_STROKES}) plus le fil vers le moteur.
+ */
+export const FORCE_GAUGE_STROKES = GAUGE_FRAME_STROKES + 1;
+
 /** Lots de traits du niveau et leur remplissage. */
 export class LevelPainter {
   /** Décor fixe. */
@@ -182,9 +188,7 @@ export class LevelPainter {
   readonly curve = new StrokeBatch(BATCH_CAPACITY.curve);
   /** Éléments mobiles au graphite. */
   readonly actors = new StrokeBatch(BATCH_CAPACITY.actors);
-  /** Crayon rouge (jauge saturée). */
-  readonly red = new StrokeBatch(BATCH_CAPACITY.red);
-  /** Les cinq lots, dans l'ordre de dessin. */
+  /** Les quatre lots, dans l'ordre de dessin. */
   readonly batches: readonly StrokeBatch[];
   /** Points de la courbe de la dernière image. */
   readonly trace = new CurveTrace();
@@ -208,7 +212,7 @@ export class LevelPainter {
   private readonly cabinHatchCount: number;
 
   constructor() {
-    this.batches = Object.freeze([this.decor, this.error, this.curve, this.actors, this.red]);
+    this.batches = Object.freeze([this.decor, this.error, this.curve, this.actors]);
     // Hachures du plateau de la cabine, en coordonnées locales (plancher à y = 0) : calculées
     // une fois, translatées à chaque image.
     this.cabinHatch = new Float64Array(128 * SEGMENT_STRIDE);
@@ -367,10 +371,10 @@ export class LevelPainter {
       b.line(MOTOR_X - c, MOTOR_Y - s, MOTOR_X + c, MOTOR_Y + s, STYLE_THIN);
     }
     b.line(VOID_MAX_X, MOTOR_Y - MOTOR_RADIUS * 1.6, MOTOR_X, MOTOR_Y, STYLE_OUTLINE);
-    // Jauge de force : cadre, graduations tous les 500 N (0 en bas, 5000 N en haut), repère du
-    // poids m·g (pointillés et petit poids), fil vers le moteur.
-    this.gaugeFrame(GAUGE_MIN_X, GAUGE_MAX_X);
-    b.line(MOTOR_X + MOTOR_RADIUS, MOTOR_Y, GAUGE_MIN_X - GAUGE_MAJOR_TICK, MOTOR_Y, STYLE_THIN);
+    // Jauge de force quittée de la scène (D36) : ses traits (cadre, graduations, repère du poids,
+    // fil du moteur) sont sautés, pour que la console, l'axe des temps et le chevalet gardent la
+    // graine de tremblé qu'ils avaient.
+    b.skipStrokes(FORCE_GAUGE_STROKES);
     // Console : pied, pupitre incliné hachuré, bouton.
     const top = CONSOLE_POST_HEIGHT;
     b.line(CONSOLE_X, START_LEDGE_HEIGHT, CONSOLE_X, top, STYLE_OUTLINE);
@@ -401,6 +405,7 @@ export class LevelPainter {
     b.line(axisEnd - 0.08, CURVE_AXIS_Y + 0.04, axisEnd, CURVE_AXIS_Y, STYLE_THIN);
     b.line(axisEnd - 0.08, CURVE_AXIS_Y - 0.04, axisEnd, CURVE_AXIS_Y, STYLE_THIN);
     // Jauge du terme intégral (niveau 2), en dernier : le décor du niveau 1 reste inchangé.
+    // Graduations tous les 500 N (0 en bas, 5000 N en haut), repère du poids m·g.
     if (this.integralGauge) {
       this.gaugeFrame(GAUGE_I_MIN_X, GAUGE_I_MAX_X);
     }
@@ -560,7 +565,6 @@ export class LevelPainter {
   private paintActors(s: Readonly<LevelSnapshot>): void {
     const b = this.actors;
     b.reset();
-    this.red.reset();
     const d = this.display;
     const y = d.cabinY;
     // Cabine : plancher (le trait le plus appuyé), plateau hachuré, rambarde, câbles.
@@ -610,9 +614,8 @@ export class LevelPainter {
     }
     // En dernier : nombre de traits variable (graines des traits précédents stables).
     if (d.tripVisible) {
-      this.paintGauge(s.uSat, s.saturated);
       if (this.integralGauge) {
-        // Choix : |I| (la jauge montre l'intensité, comme celle de la force) ; jamais en rouge.
+        // Choix : |I| (la jauge montre l'intensité) ; jamais en rouge.
         this.fillGauge(b, GAUGE_I_MIN_X, GAUGE_I_MAX_X, forceToGaugeY(s.iTerm));
       }
     }
@@ -706,20 +709,6 @@ export class LevelPainter {
       b.line(DIMENSION_X + w, high + a, DIMENSION_X, high, STYLE_DIMENSION);
       b.line(DIMENSION_X - w, low - a, DIMENSION_X, low, STYLE_DIMENSION);
       b.line(DIMENSION_X + w, low - a, DIMENSION_X, low, STYLE_DIMENSION);
-    }
-  }
-
-  private paintGauge(uSat: number, saturated: boolean): void {
-    const b = saturated ? this.red : this.actors;
-    const level = forceToGaugeY(uSat);
-    this.fillGauge(b, GAUGE_MIN_X, GAUGE_MAX_X, level);
-    if (saturated) {
-      // Saturé : cadre repassé au crayon rouge et petits éclats au-dessus.
-      b.rect(GAUGE_MIN_X, GAUGE_MIN_Y, GAUGE_MAX_X, GAUGE_MAX_Y, STYLE_OUTLINE);
-      const cx = (GAUGE_MIN_X + GAUGE_MAX_X) / 2;
-      for (let k = -1; k <= 1; k += 1) {
-        b.line(cx + k * 0.08, GAUGE_MAX_Y + 0.04, cx + k * 0.14, GAUGE_MAX_Y + 0.14, STYLE_THIN);
-      }
     }
   }
 

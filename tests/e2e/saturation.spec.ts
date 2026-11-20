@@ -1,11 +1,12 @@
 /**
  * Saturation du moteur (K20) de bout en bout, WebGL2 imposé, crochet `?e2e=1` (temps déterministe).
  * Kp = 4500 et Kp = 2500 demandent plus que les 5000 N du moteur au départ (erreur ≈ 3 m) : la
- * jauge de force est rouge, l'instantané signale la saturation, l'interface affiche « Saturé » et
- * annonce l'événement. Capture : docs/img/t016-saturation.png.
+ * jauge de force n'est plus dans la scène (D36, elle est sur le pupitre : aucun rouge à son ancien
+ * emplacement), l'instantané signale la saturation, l'interface affiche « Saturé » et annonce
+ * l'événement. Capture : docs/img/t016-saturation.png.
  *
  * Reconnaissance du crayon rouge : r ≥ 120, r − g ≥ 60 et r − b ≥ 60 (le graphite est neutre,
- * le papier millimétré bleu-vert), comptée dans le rectangle monde de la jauge (cadre et éclats).
+ * le papier millimétré bleu-vert), comptée dans le rectangle monde de l'ancienne jauge (cadre et éclats).
  */
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
@@ -22,7 +23,7 @@ const FR = JSON.parse(
   readFileSync(new URL('../../src/i18n/locales/fr.json', import.meta.url), 'utf8'),
 ) as Record<string, string | undefined>;
 
-/** Pixels de crayon rouge dans la jauge de force (marge d'un éclat au-dessus du cadre). */
+/** Pixels de crayon rouge à l'ancien emplacement de la jauge de force (marge d'un éclat au-dessus du cadre). */
 function redInGauge(image: DecodedPng): number {
   const frame = computeFrame(WIDTH, HEIGHT);
   const x0 = Math.floor(worldXToPixel(frame, WIDTH, GAUGE_MIN_X - 0.05));
@@ -77,8 +78,8 @@ async function start(page: Page, kp: number): Promise<string[]> {
   return problems;
 }
 
-/** Kp 2500 : saturé à 0,1 s (jauge rouge), plus à 0,5 s (jauge au crayon ordinaire). */
-test('(a) Kp = 2500 : jauge rouge à 0,1 s, non rouge à 0,5 s', async ({ page }) => {
+/** Kp 2500 : saturé à 0,1 s, plus à 0,5 s ; jamais de rouge dans la scène (D36). */
+test('(a) Kp = 2500 : aucun crayon rouge dans la scène, saturé ou non', async ({ page }) => {
   const problems = await start(page, 2500);
   await hideUi(page);
   await advance(page, 0.1);
@@ -100,8 +101,8 @@ test('(a) Kp = 2500 : jauge rouge à 0,1 s, non rouge à 0,5 s', async ({ page }
     type: 'pixels rouges',
     description: `saturé : ${String(redEarly)}, non saturé : ${String(redLate)}`,
   });
-  expect(redEarly, 'crayon rouge dans la jauge saturée').toBeGreaterThanOrEqual(500);
-  expect(redLate, 'aucun rouge dans la jauge non saturée').toBe(0);
+  expect(redEarly, 'aucun rouge à l’ancien emplacement de la jauge, saturé').toBe(0);
+  expect(redLate, 'aucun rouge à l’ancien emplacement de la jauge, non saturé').toBe(0);
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });
 
@@ -117,7 +118,6 @@ test('(b) Kp = 4500 : interface « Saturé », annonce, capture', async ({ page 
   await frames(page);
   await expect(page.locator('.ui-saturated')).toBeVisible();
   await expect(page.locator('.ui-saturated')).toHaveText(FR['hud.saturated'] ?? '');
-  await expect(page.locator('.ui-force')).toHaveClass(/is-saturated/);
   await expect(page.locator('[aria-live="polite"]')).toContainText(FR['level1.saturation'] ?? '');
   await page.screenshot({ path: 'docs/img/t016-saturation.png' });
 
@@ -128,6 +128,5 @@ test('(b) Kp = 4500 : interface « Saturé », annonce, capture', async ({ page 
   expect(after?.saturated).toBe(false);
   expect(after?.saturationSeen).toBe(true);
   await expect(page.locator('.ui-saturated')).toBeHidden();
-  await expect(page.locator('.ui-force')).not.toHaveClass(/is-saturated/);
   expect(problems, CONSOLE_FAILURE).toEqual([]);
 });

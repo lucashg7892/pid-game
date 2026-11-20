@@ -21,7 +21,13 @@ import {
 } from '../../src/render/level-display';
 import { BATCH_CAPACITY, LevelPainter } from '../../src/render/level-painter';
 import { GAUGE_WEIGHT_Y } from '../../src/render/gauge';
-import { DIMENSION_X, GAUGE_MAX_X, GAUGE_MAX_Y, GAUGE_MIN_X } from '../../src/render/pencil-style';
+import {
+  DIMENSION_X,
+  GAUGE_MAX_X,
+  GAUGE_MAX_Y,
+  GAUGE_MIN_X,
+  GAUGE_MIN_Y,
+} from '../../src/render/pencil-style';
 import { CURVE_ORIGIN_X, CURVE_SPAN } from '../../src/render/curve';
 
 const FRAME = 1 / 60;
@@ -58,7 +64,7 @@ function playTrip(
 }
 
 describe('LevelPainter', () => {
-  it('état initial : décor, bonhomme, cabine, levier ; ni courbe ni erreur ni jauge', () => {
+  it('état initial : décor, bonhomme, cabine, levier ; ni courbe ni erreur', () => {
     const painter = new LevelPainter();
     const level = createLevel1({ animations: false });
     painter.setPixelSize(PIXEL);
@@ -67,7 +73,6 @@ describe('LevelPainter', () => {
     expect(painter.actors.vertexCount).toBeGreaterThan(100);
     expect(painter.curve.vertexCount).toBe(0);
     expect(painter.error.vertexCount).toBe(0);
-    expect(painter.red.vertexCount).toBe(0);
     expect(painter.dropped).toBe(0);
     expect(painter.display.pose).toBe('stand');
     expect(painter.display.walkerX).toBe(-5.5);
@@ -102,27 +107,30 @@ describe('LevelPainter', () => {
     });
   }
 
-  it('jauge : crayon rouge seulement quand la force est saturée', () => {
+  it('la jauge de force a quitté la scène : rien dans son ancien cadre, saturée ou non (D36)', () => {
     const painter = new LevelPainter();
+    painter.setPixelSize(PIXEL);
     const level = createLevel1({ animations: false });
     toConsole(level);
     level.setKp(2500);
     level.launch();
-    let sawRed = false;
-    let sawGraphiteOnly = false;
+    let sawSaturation = false;
     for (let i = 0; i < 400 && level.snapshot.phase === 'trip'; i += 1) {
       level.update(FRAME);
       painter.paint(level.snapshot, level.signals, 0, true);
-      if (level.snapshot.saturated) {
-        expect(painter.red.vertexCount).toBeGreaterThan(0);
-        sawRed = true;
-      } else {
-        expect(painter.red.vertexCount).toBe(0);
-        sawGraphiteOnly = true;
+      sawSaturation ||= level.snapshot.saturated;
+      for (const batch of [painter.decor, painter.actors, painter.curve, painter.error]) {
+        for (let v = 0; v < batch.vertexCount; v += 1) {
+          const x = batch.positions[3 * v] as number;
+          const y = batch.positions[3 * v + 1] as number;
+          const inOldGauge =
+            x > GAUGE_MIN_X - 0.2 && x < GAUGE_MAX_X + 0.3 && y > GAUGE_MIN_Y && y < GAUGE_MAX_Y;
+          expect(inOldGauge).toBe(false);
+        }
       }
     }
-    expect(sawRed).toBe(true);
-    expect(sawGraphiteOnly).toBe(true);
+    expect(sawSaturation).toBe(true);
+    expect(painter.batches).toHaveLength(4);
   });
 
   it('cote d’erreur seulement à la victoire', () => {
@@ -182,7 +190,7 @@ describe('LevelPainter', () => {
       painter.paint(level.snapshot, level.signals, time, false);
     }
     const after = painter.batches.flatMap((b) => [b.positions.buffer, b.strokes.buffer]);
-    expect(after.length).toBe(10);
+    expect(after.length).toBe(8);
     after.forEach((buffer, i) => {
       expect(buffer).toBe(buffers[i]);
     });

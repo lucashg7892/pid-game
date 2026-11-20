@@ -168,7 +168,7 @@ export interface LevelAnchors {
   readonly errorDimension: ScreenPoint;
   /** Haut de la tête du bonhomme (chapeau compris). */
   readonly walkerHead: ScreenPoint;
-  /** Milieu du bord haut de la jauge de force (étiquette « force » / « N »). */
+  /** Milieu du bord haut de l'ancien emplacement de la jauge de force : référence de mise en page. */
   readonly forceGauge: ScreenPoint;
   /** Bord gauche, au niveau du haut de l'échelle des jauges (« 5000 N max » ; niveau 2 : à droite de la jauge I). */
   readonly gaugeMax: ScreenPoint;

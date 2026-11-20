@@ -14,7 +14,7 @@ import {
   createAnchors,
   createDisplay,
 } from '../../src/render/level-display';
-import { LevelPainter } from '../../src/render/level-painter';
+import { GAUGE_FRAME_STROKES, LevelPainter } from '../../src/render/level-painter';
 import {
   GAUGE_I_MAX_X,
   GAUGE_I_MIN_X,
@@ -36,7 +36,7 @@ function ready(level: Level, ki: number): void {
 }
 
 /** Sommets (x) du lot dans la bande d'abscisses de la jauge I, ordonnée sous `top`. */
-function verticesInIGauge(painter: LevelPainter, batch: 'actors' | 'red' | 'decor'): number {
+function verticesInIGauge(painter: LevelPainter, batch: 'actors' | 'decor'): number {
   const b = painter[batch];
   let n = 0;
   for (let v = 0; v < b.vertexCount; v += 1) {
@@ -78,6 +78,19 @@ describe('jauge du terme intégral : peintre', () => {
     expect(l2.dropped).toBe(0);
   });
 
+  it('traits sautés à la place de la jauge de force : le cadre de la jauge I en compte autant (D36)', () => {
+    const l2 = new LevelPainter();
+    const l1 = new LevelPainter();
+    l2.setPixelSize(PIXEL);
+    l1.setPixelSize(PIXEL);
+    const level2 = createLevel2({ animations: false });
+    const level1 = createLevel1({ animations: false });
+    l2.paint(level2.snapshot, level2.signals, 0, false);
+    l1.paint(level1.snapshot, level1.signals, 0, false);
+    // La seule différence de décor entre les deux niveaux est le cadre de la jauge I.
+    expect(l2.decor.strokeCount - l1.decor.strokeCount).toBe(GAUGE_FRAME_STROKES);
+  });
+
   it('remplissage hachuré qui suit |I|, au graphite, jamais en rouge ; valeur finale gardée', () => {
     const painter = new LevelPainter();
     painter.setPixelSize(PIXEL);
@@ -93,9 +106,8 @@ describe('jauge du terme intégral : peintre', () => {
       painter.paint(level.snapshot, level.signals, i * FRAME, true);
       if (level.snapshot.saturated) {
         sawSaturation = true;
-        // La jauge de force est rouge ; la jauge I reste au graphite.
-        expect(verticesInIGauge(painter, 'red')).toBe(0);
-        expect(painter.red.vertexCount).toBeGreaterThan(0);
+        // Plus de crayon rouge dans la scène (la jauge de force est sur le pupitre, D36).
+        expect(painter.batches).toHaveLength(4);
       }
       if (i % 20 === 0) counts.push(verticesInIGauge(painter, 'actors'));
       expect(painter.dropped).toBe(0);

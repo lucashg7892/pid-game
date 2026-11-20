@@ -104,6 +104,20 @@ export class StrokeBatch {
     return this.pathCount;
   }
 
+  /** Nombre de traits commencés depuis le dernier {@link reset} (la numérotation des graines). */
+  get strokeCount(): number {
+    return this.strokeIndex;
+  }
+
+  /**
+   * Saute `count` numéros de trait sans rien dessiner : les traits suivants gardent la graine de
+   * tremblé qu'ils avaient quand les traits sautés existaient encore.
+   * @param count nombre de traits à sauter (entier positif).
+   */
+  skipStrokes(count: number): void {
+    this.strokeIndex += count;
+  }
+
   /** Vide le lot (sans réallouer) ; la numérotation des traits repart de zéro. */
   reset(): void {
     this.vertexCount = 0;

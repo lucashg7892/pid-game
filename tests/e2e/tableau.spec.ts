@@ -343,6 +343,115 @@ for (const lvl of LEVELS) {
       expect(problems, CONSOLE_FAILURE).toEqual([]);
     });
 
+    test("« D'où vient la force ? » : les dessins et les calculs sont ceux de l'instant de la pause", async ({
+      page,
+    }) => {
+      const problems = await open(page, lvl.id);
+      await toTrip(page, lvl.id, lvl.win);
+      await page.keyboard.press('t');
+      const dialog = dialogOf(page);
+      await expect(dialog).toBeVisible();
+      const forces = dialog.locator('.ui-board-forces');
+      await expect(forces.getByRole('heading', { name: FR('board.forces.title') })).toBeVisible();
+      // Instantané figé par la pause : les valeurs lues par le tableau.
+      const s = await page.evaluate(() => {
+        const hook = window.__huygens;
+        if (hook === undefined) throw new Error('crochet absent');
+        const q = hook.snapshot();
+        return {
+          phase: q.phase,
+          e: q.stepError,
+          p: q.pTerm,
+          i: q.iTermUsed,
+          uCmd: q.uCmd,
+          uSat: q.uSat,
+          saturated: q.saturated,
+          v: q.stepVelocity,
+          kp: q.kp,
+          ki: q.ki,
+        };
+      });
+      expect(s.phase).toBe('paused');
+      const fmt = (v: number, d = 0): string =>
+        new Intl.NumberFormat('fr', { maximumFractionDigits: d, useGrouping: false })
+          .format(v)
+          .replace('-', '−');
+      await expect(forces.locator('.ui-board-forces-idle')).toBeHidden();
+      // Ressort P, butée, bilan : présents aux deux niveaux ; le bocal au niveau 2 seulement.
+      const cards = forces.locator('.ui-board-card');
+      await expect(cards).toHaveCount(lvl.id === 'level1' ? 3 : 4);
+      await expect(forces.locator('.ui-board-card-i')).toHaveCount(lvl.id === 'level1' ? 0 : 1);
+      await expect(forces.locator('.ui-board-card-p .ui-board-calc').nth(1)).toContainText(
+        `P = Kp × e = ${fmt(s.kp)} × ${fmt(s.e, 3)} = ${fmt(s.p)}${NB}N`,
+      );
+      await expect(forces.locator('.ui-board-card-stop .ui-board-calc').nth(0)).toContainText(
+        `${fmt(s.uCmd)}${NB}N`,
+      );
+      await expect(forces.locator('.ui-board-card-stop .ui-board-calc').nth(1)).toContainText(
+        `${fmt(s.uSat)}${NB}N`,
+      );
+      await expect(forces.locator('.ui-board-card-stop .ui-board-calc').nth(2)).toHaveText(
+        s.saturated ? new RegExp('N en trop') : FR('board.forces.stop.ok'),
+      );
+      const bal = forces.locator('.ui-board-card-bal .ui-board-calc');
+      await expect(bal.nth(0)).toContainText(`T = ${fmt(s.uSat)}${NB}N`);
+      await expect(bal.nth(1)).toContainText(`m·g = 50 × 9,81 = 491${NB}N`);
+      if (lvl.id === 'level2') {
+        await expect(forces.locator('.ui-board-card-i .ui-board-calc').nth(1)).toContainText(
+          `I = Ki × ∫e dt = ${fmt(s.ki)}`,
+        );
+        await expect(forces.locator('.ui-board-card-i .ui-board-calc').nth(1)).toContainText(
+          `= ${fmt(s.i)}${NB}N`,
+        );
+      }
+      // Chaque dessin est une image nommée, avec les valeurs.
+      const svgs = forces.locator('svg[role="img"]');
+      await expect(svgs).toHaveCount(lvl.id === 'level1' ? 3 : 4);
+      for (let n = 0; n < (await svgs.count()); n += 1) {
+        const name = await svgs.nth(n).getAttribute('aria-label');
+        expect(name?.length ?? 0).toBeGreaterThan(30);
+      }
+      await expect(forces.locator('.ui-board-card-p svg')).toHaveAttribute(
+        'aria-label',
+        new RegExp(fmt(s.p)),
+      );
+      // Les dessins ont une taille et le ressort est tracé.
+      const boxes = await forces.locator('svg[role="img"]').evaluateAll((all) =>
+        all.map((e) => {
+          const r = e.getBoundingClientRect();
+          return { w: r.width, h: r.height };
+        }),
+      );
+      for (const b of boxes) {
+        expect(b.w).toBeGreaterThan(100);
+        expect(b.h).toBeGreaterThan(40);
+      }
+      const points = await forces
+        .locator('.ui-board-card-p polyline')
+        .first()
+        .getAttribute('points');
+      expect(points?.split(' ').length).toBeGreaterThan(8);
+      expect(problems, CONSOLE_FAILURE).toEqual([]);
+    });
+
+    test("« D'où vient la force ? » avant tout trajet : tout à zéro, message d'attente, cabine posée", async ({
+      page,
+    }) => {
+      const problems = await open(page, lvl.id);
+      await tune(page, lvl.id, lvl.win);
+      await page.keyboard.press('t');
+      const dialog = dialogOf(page);
+      const forces = dialog.locator('.ui-board-forces');
+      await expect(forces.locator('.ui-board-forces-idle')).toHaveText(FR('board.forces.idle'));
+      await expect(forces.locator('.ui-board-card-stop .ui-board-calc').nth(1)).toContainText(
+        `0${NB}N`,
+      );
+      await expect(forces.locator('.ui-board-card-bal .ui-board-calc').nth(3)).toHaveText(
+        FR('board.forces.bal.ground'),
+      );
+      expect(problems, CONSOLE_FAILURE).toEqual([]);
+    });
+
     test('aucune commande de jeu ne passe tant que le tableau est ouvert (clavier et pointeur)', async ({
       page,
     }) => {
@@ -529,4 +638,47 @@ test('captures du tableau d’école (niveaux 1 et 2) et du chevalet sur le quai
   await expect(dialogOf(page)).toBeVisible();
   await page.screenshot({ path: 'docs/img/t042-tableau-niveau2.png' });
   expect(problems, CONSOLE_FAILURE).toEqual([]);
+});
+
+test('captures « d’où vient la force ? » en pause pendant un trajet (niveaux 1 et 2, paysage et portrait)', async ({
+  page,
+}, testInfo) => {
+  for (const lvl of LEVELS) {
+    for (const size of VIEWPORTS) {
+      const problems = await open(page, lvl.id, 'fr', size);
+      // Au départ du trajet (0,3 s) : la demande dépasse la butée (niveau 1) ou le bocal se remplit.
+      await tune(page, lvl.id, lvl.win);
+      await page.evaluate(() => {
+        window.__huygens?.commands.launch();
+        window.__huygens?.advance(0.3);
+      });
+      await page.keyboard.press('t');
+      const dialog = dialogOf(page);
+      await expect(dialog).toBeVisible();
+      const forces = dialog.locator('.ui-board-forces');
+      await forces.scrollIntoViewIfNeeded();
+      await page.locator('#ui .ui-board-body').evaluate((e) => {
+        e.scrollTop = e.scrollHeight;
+      });
+      // Rien ne déborde du tableau, ni en largeur ni sous « Fermer ».
+      const overflow = await page.evaluate(() => {
+        const body = document.querySelector('#ui .ui-board-body');
+        if (body === null) throw new Error('tableau absent');
+        const b = body.getBoundingClientRect();
+        return Array.from(body.querySelectorAll('.ui-board-forces svg, .ui-board-forces p'))
+          .filter((e) => {
+            const r = e.getBoundingClientRect();
+            return r.width > 0 && (r.left < b.left - 1 || r.right > b.right + 1);
+          })
+          .map((e) => `${e.tagName}.${e.getAttribute('class') ?? ''}`);
+      });
+      expect(overflow).toEqual([]);
+      const landscape = size.width > size.height;
+      const path = landscape
+        ? `docs/img/t053-tableau-${lvl.id.replace('level', 'niveau')}.png`
+        : testInfo.outputPath(`t053-portrait-${lvl.id}.png`);
+      await page.screenshot({ path });
+      expect(problems, CONSOLE_FAILURE).toEqual([]);
+    }
+  }
 });

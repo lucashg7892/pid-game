@@ -72,7 +72,14 @@ describe('contenu du tableau', () => {
   for (const locale of ['fr', 'en'] as const) {
     it(`${locale}, niveau 1 : mouvement, erreur, loi P, saturation, valeur de Kp seule`, () => {
       const sections = buildBoardSections(tr(locale), 'level1');
-      expect(sections.map((s) => s.id)).toEqual(['motion', 'error', 'law', 'saturation', 'values']);
+      expect(sections.map((s) => s.id)).toEqual([
+        'motion',
+        'error',
+        'law',
+        'saturation',
+        'forces',
+        'values',
+      ]);
       const law = section(sections, 'law');
       expect(law.heading).toBe(CATALOGS[locale]['board.law.titleP']);
       expect(formulas([law]).map(textOf)).toEqual(['u=Kp·e']);

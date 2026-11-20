@@ -9,6 +9,7 @@
  */
 import { ELEVATOR_MAX_FORCE, ELEVATOR_PARAMS, LEVEL1_SETPOINT, type LevelId } from '../game';
 import type { Translator } from '../i18n';
+import { createForcesView, type ForcesView } from './board-forces-view';
 import {
   SIGN,
   createMathElement,
@@ -34,7 +35,9 @@ export type BoardBlock =
   /** Formule seule sur sa ligne. */
   | { readonly kind: 'formula'; readonly math: MathNode; readonly small?: boolean }
   /** Valeur courante d'un gain (réécrite en direct, voir {@link boardValues}). */
-  | { readonly kind: 'value'; readonly id: BoardValueId };
+  | { readonly kind: 'value'; readonly id: BoardValueId }
+  /** Dessins « d'où vient la force ? », réécrits en direct (`board-forces-view.ts`). */
+  | { readonly kind: 'forces' };
 
 /** Valeurs courantes affichées. */
 export type BoardValueId = 'kp' | 'ki';
@@ -42,7 +45,7 @@ export type BoardValueId = 'kp' | 'ki';
 /** Section du tableau : un titre et ses éléments. */
 export interface BoardSection {
   /** Identifiant (classe CSS et test). */
-  readonly id: 'motion' | 'error' | 'law' | 'saturation' | 'values';
+  readonly id: 'motion' | 'error' | 'law' | 'saturation' | 'forces' | 'values';
   /** Colonne d'affichage : 1 et 2 côte à côte (l'une sous l'autre en portrait), 3 pleine largeur. */
   readonly column: 1 | 2 | 3;
   /** Titre. */
@@ -233,6 +236,12 @@ export function buildBoardSections(tr: Translator, levelId: LevelId): readonly B
       },
     ],
   };
+  const forces: BoardSection = {
+    id: 'forces',
+    column: 3,
+    heading: tr.t('board.forces.title'),
+    blocks: [{ kind: 'text', text: tr.t('board.forces.intro') }, { kind: 'forces' }],
+  };
   const values: BoardSection = {
     id: 'values',
     column: 3,
@@ -244,7 +253,7 @@ export function buildBoardSections(tr: Translator, levelId: LevelId): readonly B
         ]
       : [{ kind: 'value', id: 'kp' }],
   };
-  return [motion, error, law, saturation, values];
+  return [motion, error, law, saturation, forces, values];
 }
 
 /**
@@ -270,23 +279,30 @@ export function boardValues(
   return { kp: tr.t('hud.kp.value', { kp: kpText }), ki: '' };
 }
 
-/** Éléments réécrits en direct par l'interface : les lignes de valeurs. */
-export type BoardValueNodes = Readonly<Partial<Record<BoardValueId, HTMLElement>>>;
+/** Éléments réécrits en direct par l'interface : les lignes de valeurs et la vue des forces. */
+export type BoardValueNodes = Readonly<Partial<Record<BoardValueId, HTMLElement>>> & {
+  /** Vue « d'où vient la force ? ». */
+  readonly forces?: ForcesView;
+};
 
 /**
  * Remplit `container` avec les sections du tableau (DOM) ; vide d'abord son contenu.
  * @param doc document.
  * @param container élément à remplir.
  * @param sections contenu ({@link buildBoardSections}).
- * @returns les lignes de valeurs, à mettre à jour en direct.
+ * @param tr traducteur (textes des dessins).
+ * @param levelId niveau.
+ * @returns les lignes de valeurs et la vue des forces, à mettre à jour en direct.
  */
 export function renderBoard(
   doc: Document,
   container: HTMLElement,
   sections: readonly BoardSection[],
+  tr: Translator,
+  levelId: LevelId,
 ): BoardValueNodes {
   container.replaceChildren();
-  const nodes: Partial<Record<BoardValueId, HTMLElement>> = {};
+  const nodes: Partial<Record<BoardValueId, HTMLElement>> & { forces?: ForcesView } = {};
   const columns = [1, 2].map((n) => {
     const column = doc.createElement('div');
     column.className = `ui-board-col ui-board-col-${String(n)}`;
@@ -313,6 +329,12 @@ export function renderBoard(
             block.small === true ? 'ui-board-formula ui-board-small' : 'ui-board-formula';
           wrapper.append(createMathElement(doc, block.math));
           node.append(wrapper);
+          break;
+        }
+        case 'forces': {
+          const view = createForcesView(doc, tr, levelId);
+          node.append(view.root);
+          nodes.forces = view;
           break;
         }
         case 'value': {

@@ -780,6 +780,97 @@
   font-size: 1.25em;
 }
 
+/* « D'où vient la force ? » : vignettes à la craie sous les équations (T-053). */
+.ui-board-forces {
+  grid-column: 1 / -1;
+  padding-top: 4px;
+  border-top: 1.5px dashed rgb(241 238 227 / 35%);
+}
+
+.ui-board-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.ui-board-forces-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 6px 20px;
+}
+
+.ui-board-card {
+  min-width: 0;
+}
+
+.ui .ui-board h4 {
+  margin: 0.5em 0 0.1em;
+  color: #fff;
+  font-size: 1em;
+  font-weight: 400;
+  text-decoration: underline dotted rgb(241 238 227 / 45%);
+  text-underline-offset: 3px;
+}
+
+.ui-board-svg {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  fill: none;
+  stroke: var(--chalk);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.4;
+}
+
+.ui-board-hatch-line {
+  stroke: var(--chalk-soft);
+  stroke-width: 1.1;
+}
+
+.ui-board-stroke {
+  stroke: var(--chalk);
+}
+
+.ui-board-thick {
+  stroke-width: 2;
+}
+
+.ui-board-dash {
+  stroke-dasharray: 3 3;
+  stroke-width: 1;
+}
+
+.ui-board-dash-wide {
+  stroke-dasharray: 6 4;
+}
+
+.ui-board-svg-text {
+  fill: var(--chalk);
+  stroke: none;
+  font-size: 12px;
+}
+
+/* Saturation : la butée et le trop-plein passent à la craie rose. */
+.ui-board-svg.is-saturated .ui-board-wall,
+.ui-board-svg.is-saturated .ui-board-dash-wide {
+  stroke: #ff9b8a;
+}
+
+.ui .ui-board p.ui-board-calc {
+  margin: 0.1em 0;
+  font-size: 0.95em;
+}
+
+.ui .ui-board p.ui-board-calc.is-saturated {
+  color: #ff9b8a;
+}
+
+.ui .ui-board .ui-board-forces-idle {
+  color: var(--chalk-soft);
+}
+
 @media (max-width: 860px) {
   .ui-board-body {
     grid-template-columns: minmax(0, 1fr);

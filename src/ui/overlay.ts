@@ -15,6 +15,8 @@ import type { Translator } from '../i18n';
 import { admitEvent, announcementFor, createLaunchGate, releaseLaunch } from './announce';
 import type { HintLine } from './hints';
 import { boardValues, buildBoardSections, renderBoard, type BoardValueNodes } from './board';
+import { computeForces } from './board-forces';
+import type { ForcesView } from './board-forces-view';
 import {
   commandsBlocked,
   cycleFocusIndex,
@@ -360,6 +362,7 @@ export function createUi(options: UiOptions): Ui {
   // Contenu construit à l'ouverture et à chaque changement de langue ; valeurs réécrites en direct.
   let boardBuiltFor = '';
   let boardKpSlot: TextSlot | null = null;
+  let boardForces: ForcesView | null = null;
   let boardKiSlot: TextSlot | null = null;
   let boardKpShown = Number.NaN;
   let boardKiShown = Number.NaN;
@@ -579,7 +582,10 @@ export function createUi(options: UiOptions): Ui {
           document,
           boardBody,
           buildBoardSections(tr, levelId),
+          tr,
+          levelId,
         );
+        boardForces = nodes.forces ?? null;
         boardKpSlot = nodes.kp === undefined ? null : new TextSlot(nodes.kp);
         boardKiSlot = nodes.ki === undefined ? null : new TextSlot(nodes.ki);
         boardKpShown = Number.NaN;
@@ -593,6 +599,8 @@ export function createUi(options: UiOptions): Ui {
         boardKpSlot?.set(values.kp);
         boardKiSlot?.set(values.ki);
       }
+      // « D'où vient la force ? » : valeurs du dernier pas du jeu (figées pendant la pause).
+      boardForces?.update(computeForces(level.snapshot));
     }
 
     // Aide.

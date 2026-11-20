@@ -37,6 +37,12 @@ const IDENTICAL_ALLOWED: Readonly<Record<string, string>> = {
   'hud.ki.tag': 'notation « Kp = … · Ki = … » : symboles identiques, seuls {kp} et {ki} varient.',
   'hud.kp.value': 'notation « Kp = … N/m » : symbole et unité SI identiques, seul {kp} varie.',
   'pupitre.courbes.temps': 'notation « t = … s » : symbole et unité SI identiques, seul {t} varie.',
+  'board.forces.p.error':
+    'notation « e = r − y = … m » : symboles et unité SI identiques, seul {e} varie.',
+  'board.forces.p.line':
+    'calcul « P = Kp × e = … N » : symboles et unité SI identiques, seuls les nombres varient.',
+  'board.forces.i.line':
+    'calcul « I = Ki × ∫e dt = … N » : symboles et unité SI identiques, seuls les nombres varient.',
   'board.value.ki':
     'notation « Ki = … N/(m·s) » : symbole et unité SI identiques, seul {ki} varie.',
   'title.copyright':

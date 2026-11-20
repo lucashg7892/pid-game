@@ -72,9 +72,9 @@ export interface ModuleMaquette {
 }
 
 /** Noms des maquettes. */
-export type NomMaquette = 'a' | 'b' | 'c' | 'd';
+export type NomMaquette = 'c';
 
-/** Message envoyé par la page `?proto=tous` aux maquettes montées en iframe (`embed=1`). */
+/** Message envoyé par une page parente aux maquettes montées en iframe (`embed=1`). */
 export interface MessageCommande {
   readonly proto: 'cmd';
   readonly cmd: 'trajet' | 'pause' | 'rejouer';

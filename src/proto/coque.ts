@@ -1,11 +1,11 @@
 /**
  * Coque des maquettes (lot B, v0.3) : monte une maquette dans la page, tient l'horloge de rejeu
  * des trajets de référence (`common/`), traite les touches réservées (1, 2, 3, P, R, H) et les
- * messages de la page `?proto=tous`. Jetable comme les maquettes : aucun test, aucun texte EN.
+ * messages d une page parente (plus de page `tous`). Jetable comme les maquettes : aucun test, aucun texte EN.
  *
- * Paramètres d'URL : `proto=a|b|c|d|tous` ; `trajet=victoire|choc|saturation` (défaut victoire) ;
+ * Paramètres d'URL : `proto=c` ; `trajet=victoire|choc|saturation` (défaut victoire) ;
  * `autoplay=1` (lance le trajet au montage) ; `chrome=0` (masque l'aide de la coque : captures) ;
- * `embed=1` (montée en iframe par `?proto=tous` : pas d'aide, écoute les messages du parent).
+ * `embed=1` (montée en iframe : pas d'aide, écoute les messages du parent).
  */
 import { creerLecteur, type LecteurTrajet } from './common/replay';
 import { TRAJETS_REFERENCE } from './common/trajets';
@@ -22,10 +22,7 @@ import type {
 
 /** Chargeurs des maquettes (imports dynamiques : rien de tout cela n'entre dans le jeu normal). */
 const MAQUETTES: Readonly<Record<NomMaquette, () => Promise<ModuleMaquette>>> = {
-  a: () => import('./a/index'),
-  b: () => import('./b/index'),
   c: () => import('./c/index'),
-  d: () => import('./d/index'),
 };
 
 /** Ordre des trajets pour les touches 1, 2, 3. */
@@ -36,7 +33,7 @@ type EtatModifiable = { -readonly [K in keyof EtatRejeu]: EtatRejeu[K] };
 
 /** Vrai si le nom désigne une maquette. */
 export function estNomMaquette(nom: string): nom is NomMaquette {
-  return nom === 'a' || nom === 'b' || nom === 'c' || nom === 'd';
+  return nom === 'c';
 }
 
 function trajetParId(id: string | null): TrajetReference {

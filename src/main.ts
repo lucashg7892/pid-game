@@ -358,7 +358,7 @@ function installTestHook(
 }
 
 async function main(): Promise<void> {
-  // Maquettes du lot B (v0.3) : `?proto=a|b|c|d|tous` monte une maquette jetable à la place du jeu
+  // Maquettes du lot B (v0.3) : `?proto=c` monte la maquette jetable C à la place du jeu
   // (import dynamique : rien de `src/proto` n'entre dans le chargement normal).
   const params = new URLSearchParams(location.search);
   const proto = params.get('proto');
